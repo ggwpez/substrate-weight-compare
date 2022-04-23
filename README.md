@@ -18,7 +18,9 @@ Cloning will take a while. It then checks out the two commits and compares the w
 
 ```sh
 # Set the threshold to 30% for less output.
-$ ./compare.sh 20467ccea1ae ef922a7110eb --threshold 30
+$ git clone https://github.com/ggwpez/substrate-weight-compare
+cd substrate-weight-compare
+./compare.sh 20467ccea1ae ef922a7110eb --threshold 30
 
 pallet_scheduler.rs::on_initialize_named_aborted 4957 -> 3406 ns (-31.29 %)
 pallet_election_provider_multi_phase.rs::finalize_signed_phase_reject_solution 33389 -> 19348 ns (-42.05 %)
