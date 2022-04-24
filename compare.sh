@@ -29,4 +29,4 @@ cd "$ROOT/polkadot_new" && git checkout "$NEW" && cd -
 echo "Compiling…"
 # This also includes the mod.rs, but that is skipped by the CLI.
 # It runs in debug mode, but its fast enough anyway ¯\_(ツ)_/¯.
-cargo r --quiet -- --new `find $ROOT/polkadot_new/$SUBFOLDER -type f` --old `find $ROOT/polkadot_old/$SUBFOLDER -type f` "${@:3}"
+cargo r --quiet --bin cli -- --new `find $ROOT/polkadot_new/$SUBFOLDER -type f` --old `find $ROOT/polkadot_old/$SUBFOLDER -type f` "${@:3}"

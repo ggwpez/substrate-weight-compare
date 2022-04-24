@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::Args;
 use log::*;
 use std::collections::BTreeMap as Map;
 use std::collections::BTreeSet as Set;
@@ -8,9 +8,26 @@ use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
 
 // 1000 weight
 type WeightNs = u64;
+type Percent = f64;
 
-#[derive(Debug, clap::Parser)]
-struct MainCmd {
+pub enum ExtrinsicChange {
+    Same,
+    Added,
+    Removed,
+    Change(WeightNs, WeightNs, Percent),
+}
+
+pub struct ExtrinsicDiff {
+    pub name: String,
+    pub file: String,
+    pub old: WeightNs,
+    pub new: WeightNs,
+    pub change: Percent,
+}
+
+/// Parameters for modifying the benchmark behaviour.
+#[derive(Debug, Default, Clone, PartialEq, Args)]
+pub struct CompareParams {
     /// The old weight files.
     #[clap(long, required(true), multiple_values(true))]
     pub old: Vec<PathBuf>,
@@ -27,26 +44,12 @@ struct MainCmd {
     pub threshold: Percent,
 }
 
-type Percent = f64;
-
-enum ExtrinsicDiff {
-    Same,
-    Added,
-    Removed,
-    Change(WeightNs, WeightNs, Percent),
-}
-
 // File -> Extrinsic -> Diff
-type TotalDiff = Map<String, Map<String, ExtrinsicDiff>>;
+pub type TotalDiff = Map<String, Map<String, ExtrinsicChange>>;
 
-fn main() {
-    env_logger::init_from_env(
-        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-    );
-    let args = MainCmd::parse();
-
-    let olds = parse_files(&args.old, args.blacklist_file.clone()).unwrap();
-    let news = parse_files(&args.new, args.blacklist_file).unwrap();
+pub fn compare_files(params: &CompareParams) -> TotalDiff {
+    let olds = parse_files(&params.old, &params.blacklist_file).unwrap();
+    let news = parse_files(&params.new, &params.blacklist_file).unwrap();
     let files = Set::from_iter(olds.keys().cloned().chain(news.keys().cloned()));
     let mut diff = TotalDiff::new();
 
@@ -59,7 +62,7 @@ fn main() {
             for extrinsic in olds.get(&file).unwrap() {
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.0.clone(), ExtrinsicDiff::Removed);
+                    .insert(extrinsic.0.clone(), ExtrinsicChange::Removed);
             }
             continue;
         } else if !olds.contains_key(&file) {
@@ -67,7 +70,7 @@ fn main() {
             for extrinsic in news.get(&file).unwrap() {
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.0.clone(), ExtrinsicDiff::Added);
+                    .insert(extrinsic.0.clone(), ExtrinsicChange::Added);
             }
             continue;
         }
@@ -81,13 +84,13 @@ fn main() {
                 debug!("{} got deleted", extrinsic);
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.clone(), ExtrinsicDiff::Removed);
+                    .insert(extrinsic.clone(), ExtrinsicChange::Removed);
                 continue;
             } else if !olds.contains_key(&extrinsic) {
                 debug!("{} got added", extrinsic);
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.clone(), ExtrinsicDiff::Added);
+                    .insert(extrinsic.clone(), ExtrinsicChange::Added);
                 continue;
             }
 
@@ -98,52 +101,67 @@ fn main() {
             if p == 0.0 {
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.clone(), ExtrinsicDiff::Same);
+                    .insert(extrinsic.clone(), ExtrinsicChange::Same);
             } else {
                 diff.get_mut(&file)
                     .unwrap()
-                    .insert(extrinsic.clone(), ExtrinsicDiff::Change(old_w, new_w, p));
+                    .insert(extrinsic.clone(), ExtrinsicChange::Change(old_w, new_w, p));
             }
         }
     }
 
+    diff
+}
+
+pub fn extract_changes(params: &CompareParams, diff: TotalDiff) -> Vec<ExtrinsicDiff> {
     let mut changed = Vec::new();
     for (file, diff) in diff.iter() {
         for (extrinsic, diff) in diff {
             match diff {
-                ExtrinsicDiff::Change(old, new, p) => {
-                    changed.push(((file, extrinsic), old, new, p))
+                ExtrinsicChange::Change(old, new, p) => {
+                    if p.abs() >= params.threshold {
+                        changed.push(ExtrinsicDiff {
+                            name: extrinsic.clone(),
+                            file: file.clone(),
+                            old: *old,
+                            new: *new,
+                            change: *p,
+                        });
+                    }
                 }
                 _ => {}
             }
         }
     }
-    changed.sort_by(|a, b| a.3.abs().partial_cmp(&b.3.abs()).unwrap());
+    changed.sort_by(|b, a| a.change.partial_cmp(&b.change).unwrap());
+    changed
+}
 
-    for ((file, extrinsic), old, new, p) in changed.iter().cloned() {
-        if *p < -args.threshold {
+pub fn fmt_changes(changes: &Vec<ExtrinsicDiff>) -> Vec<String> {
+	let mut out = Vec::new();
+    for diff in changes {
+		out.push(format!(
+			"{}::{} {} -> {} ns ({} %)",
+			diff.file,
+			diff.name,
+			diff.old,
+			diff.new,
+			color_percent(diff.change),
+		));
+    }
+	out
+    /*for diff in changes.iter().cloned() {
+        if *p > 0 {
             info!(
                 "{}::{} {} -> {} ns ({} %)",
                 file,
-                extrinsic,
-                old,
-                new,
-                color_percent(*p)
+                diff.name,
+                diff.old,
+                diff.new,
+                color_percent(*diff.change),
             );
         }
-    }
-    for ((file, extrinsic), old, new, p) in changed.iter().cloned() {
-        if *p > args.threshold {
-            info!(
-                "{}::{} {} -> {} ns ({} %)",
-                file,
-                extrinsic,
-                old,
-                new,
-                color_percent(*p)
-            );
-        }
-    }
+    }*/
 }
 
 fn percent(old: WeightNs, new: WeightNs) -> f64 {
@@ -175,11 +193,11 @@ fn color_percent(p: f64) -> String {
 // retusn file -> extrinsics
 fn parse_files(
     paths: &Vec<PathBuf>,
-    blacklist: Vec<String>,
+    blacklist: &Vec<String>,
 ) -> Result<Map<String, Map<String, WeightNs>>, String> {
     let mut map = Map::new();
     'outer: for path in paths {
-        for skip in &blacklist {
+        for skip in blacklist {
             if path.to_string_lossy().to_string().ends_with(skip) {
                 continue 'outer;
             }
