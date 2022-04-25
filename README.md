@@ -6,7 +6,7 @@ It currently only analyzes the constant factor of the weight. Parsing the linear
 ## Example: Web Interface
 
 ```sh
-git submodule update --ini # This takes a while
+git submodule update --init # This takes a while
 cargo r --bin web --release
 ```
 
