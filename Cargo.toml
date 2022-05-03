@@ -1,15 +1,15 @@
 [package]
 name = "substrate-weight-compare"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
 [[bin]]
-name = "cli"
+name = "swc"
 path = "src/cli.rs"
 
 [[bin]]
-name = "web"
+name = "swc-web"
 path = "src/web.rs"
 
 [dependencies]
