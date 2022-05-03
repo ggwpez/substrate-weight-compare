@@ -46,7 +46,7 @@ async fn compare(commits: web::Path<(String, String, Option<String>)>) -> impl R
         ));
     }
     output.push_str("</table>");
-    
+
     HttpResponse::Ok().content_type("text/html; charset=utf-8").body(format!("Compared Polkadot {old} (old) to {new} (new) with {thresh}% threshold:</br>{output}"))
 }
 
@@ -91,13 +91,17 @@ async fn compare_index() -> HttpResponse {
 
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    let endpoint = "127.0.0.1:8080";
+    println!("Listening to http://{}", endpoint);
+    println!("try {}", "http://localhost:8080/compare");
+
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Compress::default())
             .service(compare)
             .service(compare_index)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(endpoint)?
     .run()
     .await
 }
