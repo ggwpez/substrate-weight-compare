@@ -11,7 +11,7 @@ fn swc_web_version_works() {
     succeeds(&output);
 
     let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    assert_eq!(out, "substrate-weight-compare 0.1.1");
+    assert_eq!(out, "substrate-weight-compare 0.2.0");
 }
 
 #[test]
