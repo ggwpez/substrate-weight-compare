@@ -13,7 +13,7 @@ name = "swc-web"
 path = "src/web.rs"
 
 [features]
-version_locked_tests = []
+version-locked-tests = []
 
 [dependencies]
 actix-web = "4.0.1"
@@ -34,3 +34,4 @@ assert_cmd = "2.0.4"
 rstest = "0.12.0"
 walkdir = "2.3.2"
 test-env-log = "0.2.8"
+serial_test = "*"

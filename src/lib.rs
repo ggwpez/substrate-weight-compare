@@ -1,4 +1,5 @@
 use clap::Args;
+use git2::*;
 use log::*;
 use std::collections::BTreeMap as Map;
 use std::collections::BTreeSet as Set;
@@ -10,7 +11,7 @@ pub mod parse;
 #[cfg(test)]
 mod test;
 
-use parse::parse_files;
+use parse::{parse_files, ParsedFiles};
 
 // 1000 weight
 type WeightNs = u64;
@@ -34,14 +35,6 @@ pub struct ExtrinsicDiff {
 /// Parameters for modifying the benchmark behaviour.
 #[derive(Debug, Default, Clone, PartialEq, Args)]
 pub struct CompareParams {
-    /// The old weight files.
-    #[clap(long, required(true), multiple_values(true))]
-    pub old: Vec<PathBuf>,
-
-    /// The new weight files.
-    #[clap(long, required(true), multiple_values(true))]
-    pub new: Vec<PathBuf>,
-
     /// Skips files that end with any of these strings.
     #[clap(long, multiple_values(true), default_values = &["mod.rs"])]
     pub blacklist_file: Vec<String>,
@@ -53,9 +46,52 @@ pub struct CompareParams {
 // File -> Extrinsic -> Diff
 pub type TotalDiff = Map<String, Map<String, ExtrinsicChange>>;
 
-pub fn compare_files(params: &CompareParams) -> TotalDiff {
-    let olds = parse_files(&params.old, &params.blacklist_file).unwrap();
-    let news = parse_files(&params.new, &params.blacklist_file).unwrap();
+pub fn compare_commits(
+    old: &str,
+    new: &str,
+    thresh: Percent,
+    blacklist_file: Vec<String>,
+) -> Result<Vec<ExtrinsicDiff>, String> {
+    // Parse the old files.
+    if let Err(err) = checkout("repos/polkadot".into(), old) {
+        return Err(format!("{:?}", err));
+    }
+    let paths = list_files("repos/polkadot/runtime/polkadot/src/weights/*.rs");
+    let olds = parse_files(&paths, &blacklist_file).unwrap();
+
+    // Parse the new files.
+    if let Err(err) = checkout("repos/polkadot".into(), new) {
+        return Err(format!("{:?}", err));
+    }
+    let paths = list_files("repos/polkadot/runtime/polkadot/src/weights/*.rs");
+    let news = parse_files(&paths, &blacklist_file).unwrap();
+    let diff = compare_files(olds, news);
+
+    Ok(extract_changes(diff, thresh))
+}
+
+pub(crate) fn checkout(path: PathBuf, commit_hash: &str) -> Result<(), git2::Error> {
+    let repo = Repository::open(path)?;
+
+    let refname = commit_hash; // or a tag (v0.1.1) or a commit (8e8128)
+    let (object, reference) = repo.revparse_ext(refname)?;
+
+    repo.checkout_tree(&object, None)?;
+
+    match reference {
+        // gref is an actual reference like branches or tags
+        Some(gref) => repo.set_head(gref.name().unwrap()),
+        // this is a commit, not a reference
+        None => repo.set_head_detached(object.id()),
+    }
+}
+
+fn list_files(regex: &str) -> Vec<PathBuf> {
+    let files = glob::glob(regex).unwrap();
+    files.map(|f| f.unwrap()).collect()
+}
+
+pub fn compare_files(olds: ParsedFiles, news: ParsedFiles) -> TotalDiff {
     let files = Set::from_iter(olds.keys().cloned().chain(news.keys().cloned()));
     let mut diff = TotalDiff::new();
 
@@ -119,12 +155,12 @@ pub fn compare_files(params: &CompareParams) -> TotalDiff {
     diff
 }
 
-pub fn extract_changes(params: &CompareParams, diff: TotalDiff) -> Vec<ExtrinsicDiff> {
+pub fn extract_changes(diff: TotalDiff, threshold: Percent) -> Vec<ExtrinsicDiff> {
     let mut changed = Vec::new();
     for (file, diff) in diff.iter() {
         for (extrinsic, diff) in diff {
             if let ExtrinsicChange::Change(old, new, p) = diff {
-                if p.abs() >= params.threshold {
+                if p.abs() >= threshold {
                     changed.push(ExtrinsicDiff {
                         name: extrinsic.clone(),
                         file: file.clone(),

@@ -1,14 +1,35 @@
+use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
+use clap::Parser;
 use glob::glob;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use std::{path::PathBuf, str::FromStr};
-use substrate_weight_compare::*;
+use substrate_weight_compare::{parse::*, *};
 
-use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
-use git2::*;
+#[derive(Debug, Parser)]
+#[clap(author, version)]
+pub(crate) struct WebCmd {}
 
 lazy_static! {
     static ref MUTEX: Mutex<()> = Mutex::new(());
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let _cmd = WebCmd::parse();
+    let endpoint = "localhost:8080";
+    println!("Listening to http://{}", endpoint);
+
+    HttpServer::new(|| {
+        App::new()
+            .wrap(middleware::Compress::default())
+            .service(compare)
+            .service(compare_index)
+            .service(root)
+    })
+    .bind(endpoint)?
+    .run()
+    .await
 }
 
 #[get("/compare/{old}/{new}/{thresh}")]
@@ -19,24 +40,9 @@ async fn compare(commits: web::Path<(String, String, Option<String>)>) -> impl R
         commits.1.trim(),
         commits.2.clone().unwrap_or_else(|| "30".into()),
     );
+    let blacklist_file = vec!["mod.rs".into()];
 
-    if let Err(err) = checkout("test_data/polkadot_old".into(), old) {
-        return HttpResponse::InternalServerError().body(format!("{:?}", err));
-    }
-    if let Err(err) = checkout("test_data/polkadot_new".into(), new) {
-        return HttpResponse::InternalServerError().body(format!("{:?}", err));
-    }
-    let old_paths = list_files("test_data/polkadot_old/runtime/polkadot/src/weights/*.rs");
-    let new_paths = list_files("test_data/polkadot_new/runtime/polkadot/src/weights/*.rs");
-
-    let params = CompareParams {
-        old: old_paths,
-        new: new_paths,
-        blacklist_file: vec!["mod.rs".into()],
-        threshold: thresh.parse().unwrap(),
-    };
-    let diff = compare_files(&params);
-    let per_extrinsic = extract_changes(&params, diff);
+    let per_extrinsic = compare_commits(old, new, thresh.parse().unwrap(), blacklist_file).unwrap();
 
     let mut output = String::from_str(
         "<table><tr><th>Extrinsic</th><th>Old [ns]</th><th>New [ns]</th><th>Diff [%]</th></tr>",
@@ -73,27 +79,6 @@ fn html_color_percent(p: f64) -> String {
     }
 }
 
-fn list_files(regex: &str) -> Vec<PathBuf> {
-    let files = glob(regex).unwrap();
-    files.map(|f| f.unwrap()).collect()
-}
-
-fn checkout(path: PathBuf, commit_hash: &str) -> Result<(), git2::Error> {
-    let repo = Repository::open(path)?;
-
-    let refname = commit_hash; // or a tag (v0.1.1) or a commit (8e8128)
-    let (object, reference) = repo.revparse_ext(refname)?;
-
-    repo.checkout_tree(&object, None)?;
-
-    match reference {
-        // gref is an actual reference like branches or tags
-        Some(gref) => repo.set_head(gref.name().unwrap()),
-        // this is a commit, not a reference
-        None => repo.set_head_detached(object.id()),
-    }
-}
-
 #[get("/compare")]
 async fn compare_index() -> HttpResponse {
     let index = r#"
@@ -118,21 +103,4 @@ async fn root() -> HttpResponse {
     HttpResponse::Found()
         .append_header(("Location", "/compare"))
         .finish()
-}
-
-#[actix_web::main] // or #[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let endpoint = "localhost:8080";
-    println!("Listening to http://{}", endpoint);
-
-    HttpServer::new(|| {
-        App::new()
-            .wrap(middleware::Compress::default())
-            .service(compare)
-            .service(compare_index)
-            .service(root)
-    })
-    .bind(endpoint)?
-    .run()
-    .await
 }

@@ -10,12 +10,12 @@ pub type ExtrinsicName = String;
 /// Maps an Extrinsic in the form of (PalletName, ExtrinsicName) to its Weight.
 ///
 /// NOTE: Uses a 2D map for prefix matching.
-pub type ParsedFile = Map<PalletName, Map<ExtrinsicName, WeightNs>>;
+pub type ParsedFiles = Map<PalletName, Map<ExtrinsicName, WeightNs>>;
 pub type ParsedExtrinsic = Map<ExtrinsicName, WeightNs>;
 
 const LOG: &str = "parser";
 
-pub fn parse_files(paths: &Vec<PathBuf>, blacklist: &Vec<String>) -> Result<ParsedFile, String> {
+pub fn parse_files(paths: &Vec<PathBuf>, blacklist: &Vec<String>) -> Result<ParsedFiles, String> {
     let mut map = Map::new();
     'outer: for path in paths {
         for skip in blacklist {
@@ -34,6 +34,7 @@ fn file_of(path: &Path) -> String {
 }
 
 pub fn parse_file(path: &PathBuf) -> Result<ParsedExtrinsic, String> {
+    debug!(target: LOG, "Entering file: {}", path.to_string_lossy());
     let mut file = ::std::fs::File::open(&path).unwrap();
     let mut content = String::new();
     file.read_to_string(&mut content).unwrap();

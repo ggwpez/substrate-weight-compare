@@ -1,6 +1,7 @@
 use assert_cmd::cargo::CommandCargoExt;
 use std::path::Path;
 use std::process::Command;
+use serial_test::serial;
 
 const ROOT_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -31,10 +32,55 @@ fn swc_help_works() {
 }
 
 #[test]
-fn swc_compare_works() {
+#[serial]
+fn swc_compare_commits_works() {
     let output = Command::cargo_bin("swc")
         .unwrap()
-        .env("RUST_LOG", "INFO")
+        .args(["compare", "commits"])
+        .args(["v0.9.19", "v0.9.20"])
+        .output()
+        .unwrap();
+    succeeds(&output);
+
+    let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    assert!(out.contains("pallet_election_provider_multi_phase.rs"));
+}
+
+#[test]
+#[serial]
+fn swc_compare_commits_same_no_changes() {
+    let output = Command::cargo_bin("swc")
+        .unwrap()
+        .args(["compare", "commits"])
+        .args(["v0.9.19", "v0.9.19"])
+        .output()
+        .unwrap();
+    succeeds(&output);
+
+    let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    assert!(out.contains("No changes found."));
+}
+
+#[test]
+#[serial]
+fn swc_compare_commits_errors() {
+    let output = Command::cargo_bin("swc")
+        .unwrap()
+        .args(["compare", "commits"])
+        .args(["vWrong"])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+
+    let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    assert!(out.contains("revspec 'vWrong' not found"));
+}
+
+#[test]
+fn swc_compare_files_works() {
+    let output = Command::cargo_bin("swc")
+        .unwrap()
+        .args(["compare", "files"])
         .args([
             "--old",
             Path::new(ROOT_DIR)
@@ -53,15 +99,42 @@ fn swc_compare_works() {
         .unwrap();
     succeeds(&output);
 
-    let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
     assert!(out.contains("payout_stakers_dead_controller"));
 }
 
 #[test]
-fn swc_compare_errors() {
+fn swc_compare_files_same_no_changes() {
     let output = Command::cargo_bin("swc")
         .unwrap()
-        .env("RUST_LOG", "INFO")
+        .args(["compare", "files"])
+        .args([
+            "--old",
+            Path::new(ROOT_DIR)
+                .join("test_data/new/pallet_staking.rs.txt")
+                .to_str()
+                .unwrap(),
+            "--new",
+            Path::new(ROOT_DIR)
+                .join("test_data/new/pallet_staking.rs.txt")
+                .to_str()
+                .unwrap(),
+            "--threshold",
+            "0",
+        ])
+        .output()
+        .unwrap();
+    succeeds(&output);
+
+    let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    assert!(out.contains("No changes found."));
+}
+
+#[test]
+fn swc_compare_files_errors() {
+    let output = Command::cargo_bin("swc")
+        .unwrap()
+        .args(["compare", "files"])
         .args([
             "--old",
             Path::new(ROOT_DIR)
