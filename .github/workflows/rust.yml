@@ -55,8 +55,8 @@ jobs:
           command: build
           args: --all-targets --all-features
 
-      - uses: actions-rs/cargo@v1
-        name: Tests
-        with:
-          command: test
-          args: --release --all-targets --all-features
+      #- uses: actions-rs/cargo@v1
+      #  name: Tests
+      #  with:
+      #    command: test
+      #    args: --release --all-targets --all-features
