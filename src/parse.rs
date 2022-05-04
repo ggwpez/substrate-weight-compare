@@ -1,5 +1,5 @@
 use log::debug;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::PathBuf;
 
 use crate::*;
@@ -13,7 +13,7 @@ pub type ExtrinsicName = String;
 pub type ParsedFile = Map<PalletName, Map<ExtrinsicName, WeightNs>>;
 pub type ParsedExtrinsic = Map<ExtrinsicName, WeightNs>;
 
-const LOG: &'static str = "parser";
+const LOG: &str = "parser";
 
 pub fn parse_files(paths: &Vec<PathBuf>, blacklist: &Vec<String>) -> Result<ParsedFile, String> {
     let mut map = Map::new();
@@ -48,8 +48,7 @@ pub fn parse_file(path: &PathBuf) -> Result<ParsedExtrinsic, String> {
         "Could not find weight implementation in the passed file: {}\n\
     Ensure that you are using the template from the Substrate .maintain folder.",
         path.display()
-    )
-    .into())
+    ))
 }
 
 fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {

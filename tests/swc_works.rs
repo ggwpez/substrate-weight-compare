@@ -2,7 +2,7 @@ use assert_cmd::cargo::CommandCargoExt;
 use std::path::Path;
 use std::process::Command;
 
-const ROOT_DIR: &'static str = env!("CARGO_MANIFEST_DIR");
+const ROOT_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[test]
 fn swc_version_works() {
@@ -46,7 +46,8 @@ fn swc_compare_works() {
                 .join("test_data/new/pallet_staking.rs.txt")
                 .to_str()
                 .unwrap(),
-            "--threshold", "0"
+            "--threshold",
+            "0",
         ])
         .output()
         .unwrap();
@@ -72,7 +73,8 @@ fn swc_compare_errors() {
                 .join("test_data/new/pallet_staking.rs.txt")
                 .to_str()
                 .unwrap(),
-            "--threshold", "0"
+            "--threshold",
+            "0",
         ])
         .output()
         .unwrap();

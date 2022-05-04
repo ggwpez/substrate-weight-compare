@@ -2,7 +2,6 @@ use clap::Args;
 use log::*;
 use std::collections::BTreeMap as Map;
 use std::collections::BTreeSet as Set;
-use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
@@ -141,7 +140,7 @@ pub fn extract_changes(params: &CompareParams, diff: TotalDiff) -> Vec<Extrinsic
     changed
 }
 
-pub fn fmt_changes(changes: &Vec<ExtrinsicDiff>) -> Vec<String> {
+pub fn fmt_changes(changes: &[ExtrinsicDiff]) -> Vec<String> {
     let mut out = Vec::new();
     for diff in changes {
         out.push(format!(
