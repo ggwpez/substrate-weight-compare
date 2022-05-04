@@ -17,7 +17,7 @@ mod version_locked {
     /// Other tests could have messed it up.
     fn init() {
         crate::checkout(polkadot_root(), "master").unwrap();
-    } 
+    }
 
     /// The number of rust files in the Polkadot repo.
     ///

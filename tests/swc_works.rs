@@ -1,7 +1,7 @@
 use assert_cmd::cargo::CommandCargoExt;
+use serial_test::serial;
 use std::path::Path;
 use std::process::Command;
-use serial_test::serial;
 
 const ROOT_DIR: &str = env!("CARGO_MANIFEST_DIR");
 

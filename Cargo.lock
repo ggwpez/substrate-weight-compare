@@ -1485,7 +1485,6 @@ dependencies = [
  "log",
  "prettytable-rs",
  "rstest",
- "semver",
  "serial_test",
  "syn",
  "test-env-log",

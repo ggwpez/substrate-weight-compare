@@ -1,10 +1,9 @@
 use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
-use glob::glob;
 use lazy_static::lazy_static;
+use std::str::FromStr;
 use std::sync::Mutex;
-use std::{path::PathBuf, str::FromStr};
-use substrate_weight_compare::{parse::*, *};
+use substrate_weight_compare::compare_commits;
 
 #[derive(Debug, Parser)]
 #[clap(author, version)]

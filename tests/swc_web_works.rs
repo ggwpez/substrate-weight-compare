@@ -1,5 +1,4 @@
 use assert_cmd::cargo::CommandCargoExt;
-use std::path::Path;
 use std::process::Command;
 
 #[test]
