@@ -26,34 +26,34 @@ jobs:
         name: Rust Cache
 
       - uses: actions-rs/cargo@v1
-        name: Check
-        with:
-          command: check
-          args: -q --all-targets --all-features
-
-      - uses: actions-rs/cargo@v1
         name: Format
         with:
           command: fmt
           args: --all -- --check
 
       - uses: actions-rs/cargo@v1
-        name: Documentation
+        name: Check
         with:
-          command: doc
-          args: -q --no-deps --all-features
-
-      - uses: actions-rs/cargo@v1
-        name: Build
-        with:
-          command: build
-          args: -q --all-targets --all-features
+          command: check
+          args: --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Style
         with:
           command: clippy
-          args: -q --all-features
+          args: --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Documentation
+        with:
+          command: doc
+          args: --no-deps --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Build
+        with:
+          command: build
+          args: --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Tests
