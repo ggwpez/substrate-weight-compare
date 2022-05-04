@@ -24,6 +24,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
         name: Rust Cache
+        with:
+          cache-on-failure: true
 
       - uses: actions-rs/cargo@v1
         name: Format
@@ -55,8 +57,8 @@ jobs:
           command: build
           args: --all-targets --all-features
 
-      #- uses: actions-rs/cargo@v1
-      #  name: Tests
-      #  with:
-      #    command: test
-      #    args: --release --all-targets --all-features
+      - uses: actions-rs/cargo@v1
+        name: Build Tests
+        with:
+          command: test
+          args: --release --all-targets --all-features
