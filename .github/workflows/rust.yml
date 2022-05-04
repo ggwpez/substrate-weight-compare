@@ -31,7 +31,8 @@ jobs:
           command: check
           args: -q --all-targets --all-features
 
-      - name: Format
+      - uses: actions-rs/cargo@v1
+        name: Format
         with:
           command: fmt
           args: --all -- --check
