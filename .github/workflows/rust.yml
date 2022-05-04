@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 100
+          fetch-depth: 0
           submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
@@ -59,6 +59,12 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         name: Build Tests
+        with:
+          command: test
+          args: --no-run --release --all-targets --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Run Tests
         with:
           command: test
           args: --release --all-targets --all-features
