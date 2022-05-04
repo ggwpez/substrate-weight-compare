@@ -1,9 +1,3 @@
-[submodule "test_data/polkadot_new"]
-	path = test_data/polkadot_new
-	url = https://github.com/paritytech/polkadot/
-[submodule "test_data/polkadot_old"]
-	path = test_data/polkadot_old
-	url = https://github.com/paritytech/polkadot/
 [submodule "repos/polkadot"]
 	path = repos/polkadot
 	url = https://github.com/paritytech/polkadot/
