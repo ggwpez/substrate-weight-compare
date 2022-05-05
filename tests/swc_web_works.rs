@@ -29,11 +29,7 @@ fn swc_web_help_works() {
 #[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn swc_web_url_works() {
 	let _cmd = KillChildOnDrop(
-		Command::cargo_bin("swc-web")
-			.unwrap()
-			.env("RUST_LOG", "error")
-			.spawn()
-			.unwrap(),
+		Command::cargo_bin("swc-web").unwrap().env("RUST_LOG", "error").spawn().unwrap(),
 	);
 
 	for _ in 0..20 {
@@ -55,11 +51,7 @@ fn swc_web_url_works() {
 #[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn swc_web_compare_works() {
 	let _cmd = KillChildOnDrop(
-		Command::cargo_bin("swc-web")
-			.unwrap()
-			.env("RUST_LOG", "error")
-			.spawn()
-			.unwrap(),
+		Command::cargo_bin("swc-web").unwrap().env("RUST_LOG", "error").spawn().unwrap(),
 	);
 
 	for _ in 0..20 {
