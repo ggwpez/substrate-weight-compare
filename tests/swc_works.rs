@@ -35,6 +35,7 @@ fn swc_help_works() {
 
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn swc_compare_commits_works() {
     let output = Command::cargo_bin("swc")
         .unwrap()
@@ -50,6 +51,7 @@ fn swc_compare_commits_works() {
 
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn swc_compare_commits_same_no_changes() {
     let output = Command::cargo_bin("swc")
         .unwrap()
@@ -65,6 +67,7 @@ fn swc_compare_commits_same_no_changes() {
 
 #[test]
 #[serial]
+#[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn swc_compare_commits_errors() {
     let output = Command::cargo_bin("swc")
         .unwrap()

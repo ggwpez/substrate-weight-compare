@@ -14,6 +14,7 @@ path = "src/web.rs"
 
 [features]
 version-locked-tests = []
+polkadot-tests = []
 
 [dependencies]
 actix-web = "4.0.1"

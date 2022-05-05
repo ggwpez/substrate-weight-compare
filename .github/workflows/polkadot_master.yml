@@ -36,4 +36,4 @@ jobs:
         name: Polkadot Tests (master)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests
+          args: --release --all-targets --features version-locked-tests,polkadot-tests
