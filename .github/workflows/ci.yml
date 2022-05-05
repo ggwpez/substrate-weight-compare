@@ -66,8 +66,10 @@ jobs:
         with:
           command: test
           args: --release --all-targets
+
   polkadot_version_locked:
     name: "Polkadot (version locked)"
+    needs: rust
     runs-on: buildjet-4vcpu-ubuntu-2004
 
     steps:
@@ -98,6 +100,7 @@ jobs:
   
   polkadot_master:
     name: "Polkadot (master)"
+    needs: rust
     runs-on: buildjet-4vcpu-ubuntu-2004
 
     steps:
