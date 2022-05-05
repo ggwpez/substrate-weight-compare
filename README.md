@@ -49,7 +49,7 @@ THRESHOLD=30
 # Clone the polkadot repo
 git clone https://github.com/paritytech/polkadot/ repos/polkadot
 # Compare the commits
-swc compare commits $FROM $TO --threshold $THRESHOLD
+swc compare commits $FROM $TO --threshold $THRESHOLD --repo repos/polkadot
 
 pallet_scheduler.rs::on_initialize_named_aborted 4957 -> 3406 ns (-31.29 %)
 pallet_election_provider_multi_phase.rs::finalize_signed_phase_reject_solution 33389 -> 19348 ns (-42.05 %)
