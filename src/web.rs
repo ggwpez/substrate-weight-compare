@@ -3,10 +3,10 @@ use clap::Parser;
 use lazy_static::lazy_static;
 use std::str::FromStr;
 use std::sync::Mutex;
-use substrate_weight_compare::compare_commits;
+use swc::{compare_commits, VERSION};
 
 #[derive(Debug, Parser)]
-#[clap(author, version)]
+#[clap(author, version(&VERSION[..]))]
 pub(crate) struct WebCmd {}
 
 lazy_static! {

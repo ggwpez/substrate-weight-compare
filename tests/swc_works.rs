@@ -3,6 +3,8 @@ use serial_test::serial;
 use std::path::Path;
 use std::process::Command;
 
+mod common;
+
 const ROOT_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[test]
@@ -15,7 +17,7 @@ fn swc_version_works() {
     succeeds(&output);
 
     let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    assert_eq!(out, "substrate-weight-compare 0.2.0");
+    common::valid_version(&out);
 }
 
 #[test]

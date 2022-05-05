@@ -1470,7 +1470,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
-name = "substrate-weight-compare"
+name = "swc"
 version = "0.2.0"
 dependencies = [
  "actix-web",
@@ -1485,6 +1485,7 @@ dependencies = [
  "log",
  "prettytable-rs",
  "rstest",
+ "semver",
  "serial_test",
  "syn",
  "test-env-log",

@@ -1,10 +1,10 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use substrate_weight_compare::{parse::*, *};
+use swc::{parse::*, *};
 
 #[derive(Debug, Parser)]
-#[clap(author, version)]
+#[clap(author, version(&VERSION[..]))]
 struct MainCmd {
     #[clap(subcommand)]
     subcommand: SubCommand,

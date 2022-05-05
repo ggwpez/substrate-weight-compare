@@ -1,5 +1,7 @@
 use clap::Args;
 use git2::*;
+use git_version::git_version;
+use lazy_static::lazy_static;
 use log::*;
 use std::collections::BTreeMap as Map;
 use std::collections::BTreeSet as Set;
@@ -7,11 +9,16 @@ use std::path::Path;
 use std::path::PathBuf;
 use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
 
+use parse::{parse_files, ParsedFiles};
+
 pub mod parse;
 #[cfg(test)]
 mod test;
 
-use parse::{parse_files, ParsedFiles};
+lazy_static! {
+    /// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
+    pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!());
+}
 
 // 1000 weight
 type WeightNs = u64;
@@ -70,12 +77,11 @@ pub fn compare_commits(
     Ok(extract_changes(diff, thresh))
 }
 
-pub(crate) fn checkout(path: PathBuf, commit_hash: &str) -> Result<(), git2::Error> {
+/// Checks out a repo to a given commit / branch / tag.
+pub fn checkout(path: PathBuf, refname: &str) -> Result<(), git2::Error> {
     let repo = Repository::open(path)?;
 
-    let refname = commit_hash; // or a tag (v0.1.1) or a commit (8e8128)
     let (object, reference) = repo.revparse_ext(refname)?;
-
     repo.checkout_tree(&object, None)?;
 
     match reference {

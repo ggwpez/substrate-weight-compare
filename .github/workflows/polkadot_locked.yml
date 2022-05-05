@@ -1,0 +1,39 @@
+name: Polkadot version-locked
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  polkadot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v1
+        name: Rust Cache
+        with:
+          cache-on-failure: true
+
+      - name: Checkout Polkadot (version locked)
+        uses: actions/checkout@v3
+        with:
+          repository: paritytech/polkadot
+          path: repos/polkadot
+          # CHANGE HERE
+          ref: 190515004445a60a54711547765baf7e5bcb5e6d
+
+      - uses: actions-rs/cargo@v1
+        name: Polkadot Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests
