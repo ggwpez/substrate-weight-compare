@@ -8,5 +8,5 @@ use crate::parse::parse_file;
 #[case("test_data/new/pallet_staking.rs.txt")]
 #[case("test_data/old/pallet_staking.rs.txt")]
 fn parses_weight_files(#[case] path: PathBuf) {
-    assert!(parse_file(&path).is_ok());
+	assert!(parse_file(&path).is_ok());
 }
