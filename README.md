@@ -16,8 +16,9 @@ cargo install --git https://github.com/ggwpez/substrate-weight-compare
 ## Example: Web Interface
 
 ```sh
-git submodule update --init # This takes a while
-swc-web
+# Clone the polkadot repo if you don't already have it.
+git clone https://github.com/paritytech/polkadot/ repos/polkadot
+swc-web --repo repos/polkadot
 ```
 
 then open your browser and try the following:
@@ -48,7 +49,7 @@ THRESHOLD=30
 # Clone the polkadot repo
 git clone https://github.com/paritytech/polkadot/ repos/polkadot
 # Compare the commits
-swc compare commits $FROM $TO --threshold $THRESHOLD --repo repos/polkadot
+swc compare commits $FROM $TO --threshold $THRESHOLD
 
 pallet_scheduler.rs::on_initialize_named_aborted 4957 -> 3406 ns (-31.29 %)
 pallet_election_provider_multi_phase.rs::finalize_signed_phase_reject_solution 33389 -> 19348 ns (-42.05 %)
@@ -69,10 +70,11 @@ It prints first the ones that decreased (good) and then the ones that increased 
 
 ## Running the Tests
 
-The test use the Polkadot repo in `repo/Polkadot` and assume that it a specific version is checked out.
+The test use the Polkadot repo in `repo/Polkadot`.
 
 ```sh
 git clone https://github.com/ggwpez/substrate-weight-compare
-git submodule update --init # This takes a while
-cargo test --release --features version-locked-tests
+cd substrate-weight-compare
+git clone https://github.com/paritytech/polkadot/ repos/polkadot
+cargo test --release --all-features
 ```

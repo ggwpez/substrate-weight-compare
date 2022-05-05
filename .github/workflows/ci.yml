@@ -97,7 +97,7 @@ jobs:
           args: --release --all-targets --features version-locked-tests,polkadot-tests
   
   polkadot_master:
-    name: "Polkadot master"
+    name: "Polkadot (master)"
     runs-on: buildjet-4vcpu-ubuntu-2004
 
     steps:
