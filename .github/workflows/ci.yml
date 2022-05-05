@@ -19,6 +19,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          components: rustfmt
 
       - uses: Swatinem/rust-cache@v1
         name: Rust Cache
