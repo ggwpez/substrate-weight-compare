@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: "Rust"
+    runs-on: buildjet-4vcpu-ubuntu-2004
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v1
+        name: Rust Cache
+        with:
+          cache-on-failure: true
+
+      - uses: actions-rs/cargo@v1
+        name: Format
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - uses: actions-rs/cargo@v1
+        name: Check
+        with:
+          command: check
+          args: --all-targets --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Style
+        with:
+          command: clippy
+          args: --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Documentation
+        with:
+          command: doc
+          args: --no-deps --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Build
+        with:
+          command: build
+          args: --all-targets --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Build (Tests)
+        with:
+          command: test
+          args: --no-run --release --all-targets --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Static Tests
+        with:
+          command: test
+          args: --release --all-targets
+  polkadot_version_locked:
+    name: "Polkadot (version locked)"
+    runs-on: buildjet-4vcpu-ubuntu-2004
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v1
+        name: Rust Cache
+        with:
+          cache-on-failure: true
+
+      - name: Checkout Polkadot (version locked)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: paritytech/polkadot
+          path: repos/polkadot
+          # CHANGE HERE
+          ref: 190515004445a60a54711547765baf7e5bcb5e6d
+
+      - uses: actions-rs/cargo@v1
+        name: Polkadot Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,polkadot-tests
+  
+  polkadot_master:
+    name: "Polkadot master"
+    runs-on: buildjet-4vcpu-ubuntu-2004
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v1
+        name: Rust Cache
+        with:
+          cache-on-failure: true
+
+      - name: Checkout Polkadot (master)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: paritytech/polkadot
+          path: repos/polkadot
+          ref: master
+
+      - uses: actions-rs/cargo@v1
+        name: Polkadot Tests (master)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,polkadot-tests
