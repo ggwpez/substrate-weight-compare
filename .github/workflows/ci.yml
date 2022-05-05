@@ -87,7 +87,7 @@ jobs:
           fetch-depth: 0
           repository: paritytech/polkadot
           path: repos/polkadot
-          # CHANGE HERE
+          # CHANGE HERE and in `polkadot_parse.rs``.
           ref: 190515004445a60a54711547765baf7e5bcb5e6d
 
       - uses: actions-rs/cargo@v1

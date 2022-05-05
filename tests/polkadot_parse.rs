@@ -31,7 +31,7 @@ mod version_locked {
     ///
     /// Other tests could have messed it up.
     fn init() {
-        if let Err(err) = checkout(polkadot_root(), "master") {
+        if let Err(err) = checkout(polkadot_root(), "190515004445a60a54711547765baf7e5bcb5e6d") {
             panic!(
                 "Folder `repos/polkadot` must contain the Polkadot repo: {}",
                 err
