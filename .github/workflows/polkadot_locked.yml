@@ -1,10 +1,10 @@
 name: Polkadot version-locked
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_run:
+    workflows: ["Rust"]
+    types:
+      - completed
 
 env:
   CARGO_TERM_COLOR: always
