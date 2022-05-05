@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, dev]
   pull_request:
     branches: [master]
 
@@ -19,17 +19,15 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          components: rustfmt
 
       - uses: Swatinem/rust-cache@v1
         name: Rust Cache
         with:
           cache-on-failure: true
 
-      - uses: actions-rs/cargo@v1
-        name: Format
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Format
+        run: cargo +nightly fmt --all -- --check
 
       - uses: actions-rs/cargo@v1
         name: Check
