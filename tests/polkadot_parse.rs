@@ -32,8 +32,7 @@ mod version_locked {
     /// Other tests could have messed it up.
     fn init() {
         if let Err(err) = checkout(polkadot_root(), "master") {
-            panic!("Failed to checkout Polkadot master: {}."
-            "Folder `repos/polkadot` must contain the Polkadot repo.", err);
+            panic!("Folder `repos/polkadot` must contain the Polkadot repo.", err);
         }
     }
 
