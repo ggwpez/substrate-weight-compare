@@ -5,7 +5,7 @@ It currently only analyzes the constant factor of the weight. Parsing the linear
 
 ## Install
 
-```
+```sh
 cargo install --git https://github.com/ggwpez/substrate-weight-compare
 ```
 
@@ -16,8 +16,9 @@ cargo install --git https://github.com/ggwpez/substrate-weight-compare
 ## Example: Web Interface
 
 ```sh
-git submodule update --init # This takes a while
-swc-web --release
+# Clone the polkadot repo if you don't already have it.
+git clone https://github.com/paritytech/polkadot/ repos/polkadot
+swc-web --repo repos/polkadot
 ```
 
 then open your browser and try the following:
@@ -27,12 +28,12 @@ then open your browser and try the following:
 ## Example: Weight files
 
 Suppose you have some weight files in:
-- `OLD=test_data/polkadot_old` and
-- `NEW=test_data/polkadot_new`. 
+- `OLD=repos/polkadot/` and
+- `NEW=my_other_repos/polkadot`. 
 Compare them with:
 
 ```sh
-swc --old $OLD/* --new $NEW/*
+swc compare files --old $OLD/* --new $NEW/*
 ```
 
 ## Example: Polkadot Commits
@@ -40,14 +41,15 @@ swc --old $OLD/* --new $NEW/*
 Compare arbitrary Polkadot commits with the [compare.sh](compare.sh) script.   It has the [Polkadot](https://github.com/paritytech/polkadot) as submodule twice.
 Cloning will take a while. It then checks out the two commits and compares the weights of the Polkadot runtime.
 
-Clone the repo then:
-
 ```sh
 FROM=20467ccea1ae
 TO=ef922a7110eb
 THRESHOLD=30
 
-./compare.sh $FROM $TO --threshold $THRESHOLD
+# Clone the polkadot repo
+git clone https://github.com/paritytech/polkadot/ repos/polkadot
+# Compare the commits
+swc compare commits $FROM $TO --threshold $THRESHOLD
 
 pallet_scheduler.rs::on_initialize_named_aborted 4957 -> 3406 ns (-31.29 %)
 pallet_election_provider_multi_phase.rs::finalize_signed_phase_reject_solution 33389 -> 19348 ns (-42.05 %)
@@ -65,3 +67,14 @@ pallet_scheduler.rs::on_initialize_periodic 5139 -> 7913 ns (+53.98 %)
 runtime_common_crowdloan.rs::on_initialize 0 -> 4293 ns (+100.00 %)
 ```
 It prints first the ones that decreased (good) and then the ones that increased (bad) sorted by ascending absolute value.
+
+## Running the Tests
+
+The test use the Polkadot repo in `repo/Polkadot`.
+
+```sh
+git clone https://github.com/ggwpez/substrate-weight-compare
+cd substrate-weight-compare
+git clone https://github.com/paritytech/polkadot/ repos/polkadot
+cargo test --release --all-features
+```
