@@ -12,7 +12,7 @@ env:
 jobs:
   rust:
     name: "Rust"
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -68,7 +68,7 @@ jobs:
   polkadot_version_locked:
     name: "Polkadot (version locked)"
     needs: rust
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -99,7 +99,7 @@ jobs:
   polkadot_master:
     name: "Polkadot (master)"
     needs: rust
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
