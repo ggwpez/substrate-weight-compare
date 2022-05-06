@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 // 1000 weight
-type WeightNs = u64;
+type WeightNs = u128;
 type Percent = f64;
 
 pub enum ExtrinsicChange {
