@@ -13,7 +13,7 @@ pub type ExtrinsicName = String;
 pub type ParsedFiles = Map<PalletName, Map<ExtrinsicName, WeightNs>>;
 pub type ParsedExtrinsic = Map<ExtrinsicName, WeightNs>;
 
-const LOG: &str = "parser";
+const LOG: &str = "ext-parser";
 
 pub fn parse_files(paths: &Vec<PathBuf>, blacklist: &Vec<String>) -> Result<ParsedFiles, String> {
 	let mut map = Map::new();
@@ -134,7 +134,7 @@ use std::boxed::Box;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Term {
 	Value(u128),
-	Variable(String),
+	Var(String),
 	Read,
 	Write,
 
@@ -185,7 +185,7 @@ impl Term {
 			Self::Mul(x, y) => x.eval(ctx) * y.eval(ctx),
 			Self::Read => ctx.read(),
 			Self::Write => ctx.write(),
-			Self::Variable(x) => {
+			Self::Var(x) => {
 				let var = ctx.get(&x).expect(&format!("Variable '{}' not found", x));
 				var.clone().eval(ctx)
 			},
@@ -211,7 +211,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term, String> {
 				return Err("Unexpected path as weight constant".into())
 			}
 			let ident = p.path.segments.first().unwrap().ident.to_string();
-			Ok(Term::Variable(ident))
+			Ok(Term::Var(ident))
 		},
 		_ => Err("Unexpected expression".into()),
 	}
@@ -242,7 +242,7 @@ fn validate_db_func(func: &Expr) -> Result<(), String> {
 				.iter()
 				.map(|s| s.ident.to_string())
 				.collect::<Vec<_>>()
-				.connect("::");
+				.join("::");
 			if path != "T::DbWeight::get" {
 				Err(format!("Unexpected DB path: {}", path))
 			} else {
@@ -289,7 +289,7 @@ fn parse_args(args: &Vec<&Expr>) -> Result<Term, String> {
 	parse_expression(&args)
 }
 
-fn lit_to_value(lit: &Lit) -> u128 {
+pub(crate) fn lit_to_value(lit: &Lit) -> u128 {
 	match lit {
 		Lit::Int(i) => i.base10_digits().parse().unwrap(),
 		_ => unreachable!(),
@@ -334,6 +334,6 @@ macro_rules! writes {
 #[macro_export]
 macro_rules! var {
 	($a:expr) => {
-		Term::Variable($a.into())
+		Term::Var($a.into())
 	};
 }

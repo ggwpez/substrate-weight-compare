@@ -12,7 +12,7 @@ env:
 jobs:
   rust:
     name: "Rust"
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -65,10 +65,10 @@ jobs:
           command: test
           args: --release --all-targets
 
-  polkadot_version_locked:
-    name: "Polkadot (version locked)"
+  substrate_version_locked:
+    name: "Substrate (version locked)"
     needs: rust
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -81,7 +81,44 @@ jobs:
         with:
           cache-on-failure: true
 
-      - name: Checkout Polkadot (version locked)
+      - name: Checkout Substrate
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: paritytech/substrate
+          path: repos/substrate
+          ref: 06d43cba9c2498d058a600dfe200c75e36d1181f
+
+      - uses: actions-rs/cargo@v1
+        name: Polkadot Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,substrate-tests
+
+  polkadot_version_locked:
+    name: "Polkadot (version locked)"
+    needs: rust
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v1
+        name: Rust Cache
+        with:
+          cache-on-failure: true
+
+      - name: Checkout Polkadot
+        run: |
+          mkdir -p repos/substrate
+          cd repos/substrate
+          git init
+          git remote add origin https://github.com/paritytech/substrate
+          git fetch origin master
+          gc master
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -98,8 +135,8 @@ jobs:
   
   polkadot_master:
     name: "Polkadot (master)"
-    needs: rust
-    runs-on: ubuntu-latest
+    needs: polkadot_version_locked
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -112,7 +149,7 @@ jobs:
         with:
           cache-on-failure: true
 
-      - name: Checkout Polkadot (master)
+      - name: Checkout Polkadot
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
