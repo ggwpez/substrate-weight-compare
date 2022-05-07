@@ -9,7 +9,7 @@ use std::{
 };
 use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
 
-use parse::extrinsic::{parse_file, parse_files, ParsedFiles};
+use parse::extrinsic::{parse_files, ParsedFiles};
 
 pub mod parse;
 #[cfg(test)]
@@ -63,7 +63,7 @@ pub fn compare_commits(
 	let olds = parse_files(&paths).unwrap();
 
 	// Parse the new files.
-	if let Err(err) = checkout(&repo, new) {
+	if let Err(err) = checkout(repo, new) {
 		return Err(format!("{:?}", err))
 	}
 	let news = parse_files(&paths).unwrap();
@@ -73,7 +73,7 @@ pub fn compare_commits(
 }
 
 /// Checks out a repo to a given commit / branch / tag.
-pub fn checkout(path: &PathBuf, refname: &str) -> Result<(), git2::Error> {
+pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 	let repo = Repository::open(path)?;
 
 	let (object, reference) = repo.revparse_ext(refname)?;
