@@ -38,7 +38,7 @@ jobs:
         name: Style
         with:
           command: clippy
-          args: --release --all-targets --all-features --check
+          args: --release --all-targets --all-features -- -D warnings
 
       - uses: actions-rs/cargo@v1
         name: Documentation
