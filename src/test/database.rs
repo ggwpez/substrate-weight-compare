@@ -1,19 +1,18 @@
 use rstest::*;
 use std::path::PathBuf;
-use syn::*;
 
 use crate::parse::{
 	database::{parse_file, Db, DbWeights, RWs},
 	extrinsic::Term,
 };
-
+/*
 macro_rules! ok {
 	($e:expr) => {
 		if let Err(err) = $e {
 			assert!(false, "Unexpected error: {:?}", err)
 		}
 	};
-}
+}*/
 
 /// Parses hard-coded DB weight files correctly.
 #[rstest]

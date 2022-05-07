@@ -152,5 +152,5 @@ fn swc_compare_files_errors() {
 	assert!(!output.status.success());
 
 	let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-	assert!(out.contains("Could not find weight implementation in the passed file"));
+	assert!(out.contains("Could not find a weight implementation in the passed file"));
 }

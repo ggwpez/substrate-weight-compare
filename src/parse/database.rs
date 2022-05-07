@@ -1,7 +1,7 @@
 use super::extrinsic::Term;
 use log::debug;
-use std::{io::Read, path::PathBuf};
-use syn::{BinOp, ExprCall, ExprMethodCall, ExprStruct, ItemConst, ItemMacro, Macro};
+use std::path::PathBuf;
+use syn::{BinOp, ExprStruct, ItemConst};
 
 use crate::*;
 
@@ -25,13 +25,13 @@ pub struct DbWeights {
 	pub weights: RWs,
 }
 
-pub fn parse_file(path: &PathBuf) -> Result<DbWeights, String> {
-	debug!(target: LOG, "Entering file: {}", path.to_string_lossy());
-	let mut file = ::std::fs::File::open(&path).unwrap();
-	let mut content = String::new();
-	file.read_to_string(&mut content).unwrap();
+pub fn parse_file(file: &PathBuf) -> Result<DbWeights, String> {
+	let content = super::read_file(file)?;
+	parse_content(content)
+}
 
-	let ast = syn::parse_file(&content).unwrap();
+pub fn parse_content(content: String) -> Result<DbWeights, String> {
+	let ast = syn::parse_file(&content).map_err(err_to_str)?;
 	for item in ast.items {
 		if let Ok(res) = handle_item(&item) {
 			return Ok(res)
@@ -75,14 +75,14 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 /// Handles the content of the `parameter_types!` macro.
 ///
 /// Example:
-/// ```rust nocompile
+/// ```nocompile
 /// pub const RocksDbWeight: RuntimeDbWeight = RuntimeDbWeight {
 /// 	read: 25_000 * constants::WEIGHT_PER_NANOS,
 /// 	write: 100_000 * constants::WEIGHT_PER_NANOS,
 /// };
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<DbWeights, String> {
-	let def: ItemConst = syn::parse2(tokens).unwrap();
+	let def: ItemConst = syn::parse2(tokens).map_err(err_to_str)?;
 	let name = def.ident.to_string();
 
 	let db = match name.as_str() {
@@ -168,4 +168,8 @@ fn member_to_string(m: &syn::Member) -> String {
 		syn::Member::Named(ident) => ident.to_string(),
 		_ => "".into(),
 	}
+}
+
+fn err_to_str<E: std::string::ToString>(err: E) -> String {
+	err.to_string()
 }

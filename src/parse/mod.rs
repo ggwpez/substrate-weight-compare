@@ -10,4 +10,20 @@
 
 pub mod database;
 pub mod extrinsic;
+
+pub use database::DbWeights;
 pub use extrinsic::*;
+
+use std::{io::Read, path::PathBuf};
+
+pub enum ParseResult {
+	ExtrinsicWeight(ParsedExtrinsic),
+	DbWeights(DbWeights),
+}
+
+pub fn read_file(file: &PathBuf) -> Result<String, String> {
+	let mut file = std::fs::File::open(file).map_err(|e| format!("{:?}", e))?;
+	let mut content = String::new();
+	file.read_to_string(&mut content).map_err(|e| format!("{:?}", e))?;
+	Ok(content)
+}

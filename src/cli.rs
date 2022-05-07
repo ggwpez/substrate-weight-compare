@@ -1,7 +1,10 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use swc::{parse::*, *};
+use swc::{
+	compare_commits, compare_files, extract_changes, fmt_changes, parse::extrinsic::parse_files,
+	CompareParams, ExtrinsicDiff, VERSION,
+};
 
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]
@@ -70,15 +73,14 @@ fn main() -> Result<(), String> {
 
 	match cmd.subcommand {
 		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
-			let olds = parse_files(&old, &params.blacklist_file)?;
-			let news = parse_files(&new, &params.blacklist_file)?;
+			let olds = parse_files(&old)?;
+			let news = parse_files(&new)?;
 			let diff = compare_files(olds, news);
 			let per_extrinsic = extract_changes(diff, params.threshold);
 			print_changes(per_extrinsic, cmd.verbose);
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo })) => {
-			let per_extrinsic =
-				compare_commits(&repo, &old, &new, params.threshold, params.blacklist_file)?;
+			let per_extrinsic = compare_commits(&repo, &old, &new, params.threshold)?;
 			print_changes(per_extrinsic, cmd.verbose);
 		},
 	}

@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Skip if Draft
         if: github.event.pull_request.draft == true
-        run: exit 1
+        run: exit 0
 
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -87,7 +87,7 @@ jobs:
         name: Polkadot Tests (version locked)
         with:
           command: test
-          args: --release --all-targets
+          args: --release --all-targets version-locked-tests,substrate-tests
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"

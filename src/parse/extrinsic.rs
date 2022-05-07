@@ -1,6 +1,6 @@
 use log::debug;
 use std::{io::Read, path::PathBuf};
-use syn::{ExprCall, ExprMethodCall};
+use syn::ExprMethodCall;
 
 use crate::*;
 
@@ -15,51 +15,32 @@ pub type ParsedExtrinsic = Map<ExtrinsicName, WeightNs>;
 
 const LOG: &str = "ext-parser";
 
-pub fn parse_files(paths: &Vec<PathBuf>, blacklist: &Vec<String>) -> Result<ParsedFiles, String> {
-	let mut map = Map::new();
-	'outer: for path in paths {
-		for skip in blacklist {
-			if path.to_string_lossy().to_string().ends_with(skip) {
-				continue 'outer
-			}
-		}
-		map.insert(file_of(path), parse_file(path)?);
-	}
-	Ok(map)
-}
-
 /// Strips the path and only returns the file name.
 fn file_of(path: &Path) -> String {
 	path.file_name().unwrap().to_str().unwrap().to_string()
 }
 
-/// Parse the `BlockExecutionWeight` from the given file.
-pub fn block_weight(path: &PathBuf) {}
+pub fn parse_file(file: &PathBuf) -> Result<ParsedExtrinsic, String> {
+	let content = super::read_file(file)?;
+	parse_content(content)
+}
 
-/// Parse the `ExtrinsicBaseWeight` from the given file.
-pub fn extrinsic_weight(path: &PathBuf) {}
+pub fn parse_files(paths: &Vec<PathBuf>) -> Result<ParsedFiles, String> {
+	let mut map = Map::new();
+	for path in paths {
+		map.insert(file_of(path), parse_file(path)?);
+	}
+	Ok(map)
+}
 
-/// Parse DB read+write weights from the given file.
-pub fn db_weight(path: &PathBuf) {}
-
-/// Parse extrinsic weight from the given file.
-pub fn parse_file(path: &PathBuf) -> Result<ParsedExtrinsic, String> {
-	debug!(target: LOG, "Entering file: {}", path.to_string_lossy());
-	let mut file = ::std::fs::File::open(&path).unwrap();
-	let mut content = String::new();
-	file.read_to_string(&mut content).unwrap();
-
+pub fn parse_content(content: String) -> Result<ParsedExtrinsic, String> {
 	let ast = syn::parse_file(&content).unwrap();
 	for item in ast.items {
 		if let Some(weights) = handle_item(&item) {
 			return Ok(weights)
 		}
 	}
-	Err(format!(
-		"Could not find weight implementation in the passed file: {}\n\
-    Ensure that you are using the template from the Substrate .maintain folder.",
-		path.display()
-	))
+	Err("Could not find a weight implementation in the passed file".into())
 }
 
 fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {

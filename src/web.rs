@@ -53,10 +53,8 @@ async fn compare(commits: web::Path<(String, String, Option<String>)>) -> impl R
 
 	let (old, new, thresh) =
 		(commits.0.trim(), commits.1.trim(), commits.2.clone().unwrap_or_else(|| "30".into()));
-	let blacklist_file = vec!["mod.rs".into()];
 
-	let per_extrinsic =
-		compare_commits(&repo_path, old, new, thresh.parse().unwrap(), blacklist_file).unwrap();
+	let per_extrinsic = compare_commits(&repo_path, old, new, thresh.parse().unwrap()).unwrap();
 
 	let mut output = String::from_str(
 		"<table><tr><th>Extrinsic</th><th>Old [ns]</th><th>New [ns]</th><th>Diff [%]</th></tr>",

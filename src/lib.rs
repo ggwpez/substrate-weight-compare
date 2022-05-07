@@ -9,7 +9,7 @@ use std::{
 };
 use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
 
-use parse::{parse_files, ParsedFiles};
+use parse::extrinsic::{parse_file, parse_files, ParsedFiles};
 
 pub mod parse;
 #[cfg(test)]
@@ -42,10 +42,6 @@ pub struct ExtrinsicDiff {
 /// Parameters for modifying the benchmark behaviour.
 #[derive(Debug, Default, Clone, PartialEq, Args)]
 pub struct CompareParams {
-	/// Skips files that end with any of these strings.
-	#[clap(long, multiple_values(true), default_values = &["mod.rs"])]
-	pub blacklist_file: Vec<String>,
-
 	#[clap(long, value_name = "PERCENT", default_value = "5")]
 	pub threshold: Percent,
 }
@@ -58,20 +54,19 @@ pub fn compare_commits(
 	old: &str,
 	new: &str,
 	thresh: Percent,
-	blacklist_file: Vec<String>,
 ) -> Result<Vec<ExtrinsicDiff>, String> {
 	// Parse the old files.
 	if let Err(err) = checkout(&repo, old) {
 		return Err(format!("{:?}", err))
 	}
 	let paths = list_files(format!("{}/runtime/polkadot/src/weights/*.rs", repo.display()));
-	let olds = parse_files(&paths, &blacklist_file).unwrap();
+	let olds = parse_files(&paths).unwrap();
 
 	// Parse the new files.
 	if let Err(err) = checkout(&repo, new) {
 		return Err(format!("{:?}", err))
 	}
-	let news = parse_files(&paths, &blacklist_file).unwrap();
+	let news = parse_files(&paths).unwrap();
 	let diff = compare_files(olds, news);
 
 	Ok(extract_changes(diff, thresh))
@@ -94,7 +89,7 @@ pub fn checkout(path: &PathBuf, refname: &str) -> Result<(), git2::Error> {
 
 fn list_files(regex: String) -> Vec<PathBuf> {
 	let files = glob::glob(&regex).unwrap();
-	files.map(|f| f.unwrap()).collect()
+	files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect()
 }
 
 pub fn compare_files(olds: ParsedFiles, news: ParsedFiles) -> TotalDiff {
