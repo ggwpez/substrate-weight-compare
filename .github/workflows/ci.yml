@@ -93,7 +93,7 @@ jobs:
         name: Polkadot Tests (version locked)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests,substrate-tests
+          args: --release --all-targets
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
@@ -116,16 +116,11 @@ jobs:
           mkdir -p repos/substrate
           cd repos/substrate
           git init
-          git remote add origin https://github.com/paritytech/substrate
-          git fetch origin master
-          gc master
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: paritytech/polkadot
-          path: repos/polkadot
-          # CHANGE HERE and in `polkadot_parse.rs``.
-          ref: 190515004445a60a54711547765baf7e5bcb5e6d
+          git remote add origin https://github.com/paritytech/polkadot
+          git fetch origin 190515004445a60a54711547765baf7e5bcb5e6d
+          git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
+          git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
+          gc 190515004445a60a54711547765baf7e5bcb5e6d
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (version locked)
@@ -150,12 +145,15 @@ jobs:
           cache-on-failure: true
 
       - name: Checkout Polkadot
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: paritytech/polkadot
-          path: repos/polkadot
-          ref: master
+        run: |
+          mkdir -p repos/substrate
+          cd repos/substrate
+          git init
+          git remote add origin https://github.com/paritytech/polkadot
+          git fetch origin master
+          git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
+          git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
+          gc master
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (master)
