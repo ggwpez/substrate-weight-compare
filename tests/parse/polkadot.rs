@@ -90,13 +90,9 @@ fn parses_exactly_ext_weight_files(
 	polkadot_rust_files: Vec<PathBuf>,
 	polkadot_extrinsic_files: Vec<PathBuf>,
 ) {
-	let weights = polkadot_rust_files
-		.iter()
-		.map(parse_file)
-		.filter_map(|r| r.ok())
-		.collect::<Vec<_>>();
+	let weights = polkadot_rust_files.iter().map(|p| parse_file(p)).filter_map(|r| r.ok());
 
-	assert_eq!(weights.len(), polkadot_extrinsic_files.len());
+	assert_eq!(weights.count(), polkadot_extrinsic_files.len());
 }
 
 #[rstest]
@@ -117,11 +113,10 @@ fn parses_exactly_db_weight_files(
 ) {
 	let weights = polkadot_rust_files
 		.iter()
-		.map(swc::parse::database::parse_file)
-		.filter_map(|r| r.ok())
-		.collect::<Vec<_>>();
+		.map(|p| swc::parse::database::parse_file(p))
+		.filter_map(|r| r.ok());
 
-	assert_eq!(weights.len(), polkadot_db_files.len());
+	assert_eq!(weights.count(), polkadot_db_files.len());
 }
 
 // Setup code

@@ -40,10 +40,11 @@ fn swc_web_url_works() {
 			.text()
 			.unwrap();
 
-		assert!(resp.contains("Example #1"));
-		return
+		if resp.contains("Example #1") {
+			return
+		}
 	}
-	assert!(false, "Failed to make request in time");
+	panic!("Failed to make request in time");
 }
 
 #[test]
@@ -60,8 +61,9 @@ fn swc_web_compare_works() {
 		let url = "http://localhost:8080/compare/v0.9.19/v0.9.20/30";
 		let resp = reqwest::blocking::get(url).expect("Request error").text().unwrap();
 
-		assert!(resp.contains("pallet_election_provider_multi_phase.rs"));
-		return
+		if resp.contains("pallet_election_provider_multi_phase.rs") {
+			return
+		}
 	}
-	assert!(false, "Failed to make request in time");
+	panic!("Failed to make request in time");
 }

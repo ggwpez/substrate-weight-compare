@@ -1,6 +1,6 @@
 use log::debug;
 use std::path::PathBuf;
-use syn::ExprMethodCall;
+use syn::{punctuated::Punctuated, ExprMethodCall, Token};
 
 use crate::*;
 
@@ -25,7 +25,7 @@ pub fn parse_file(file: &Path) -> Result<ParsedExtrinsic, String> {
 	parse_content(content)
 }
 
-pub fn parse_files(paths: &Vec<PathBuf>) -> Result<ParsedFiles, String> {
+pub fn parse_files(paths: &[PathBuf]) -> Result<ParsedFiles, String> {
 	let mut map = Map::new();
 	for path in paths {
 		map.insert(file_of(path), parse_file(path)?);
@@ -234,32 +234,28 @@ fn parse_method_call(call: &ExprMethodCall) -> Result<Term, String> {
 		"reads" => {
 			// Can only be called on T::DbWeight::get()
 			validate_db_call(&call.receiver)?;
-			let reads = parse_args(&call.args.iter().collect())?;
+			let reads = parse_args(&call.args)?;
 			Ok(reads!(reads))
 		},
 		"writes" => {
 			// Can only be called on T::DbWeight::get()
 			validate_db_call(&call.receiver)?;
-			let writes = parse_args(&call.args.iter().collect())?;
+			let writes = parse_args(&call.args)?;
 			Ok(writes!(writes))
 		},
-		"saturating_add" => Ok(Term::Add(
-			parse_expression(&call.receiver)?.into(),
-			parse_args(&call.args.iter().collect())?.into(),
-		)),
-		"saturating_mul" => Ok(Term::Mul(
-			parse_expression(&call.receiver)?.into(),
-			parse_args(&call.args.iter().collect())?.into(),
-		)),
+		"saturating_add" =>
+			Ok(Term::Add(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
+		"saturating_mul" =>
+			Ok(Term::Mul(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
 }
 
-fn parse_args(args: &Vec<&Expr>) -> Result<Term, String> {
+fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term, String> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}
-	let args = *args.first().unwrap();
+	let args = args.first().unwrap();
 	parse_expression(args)
 }
 
