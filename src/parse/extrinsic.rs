@@ -20,7 +20,7 @@ fn file_of(path: &Path) -> String {
 	path.file_name().unwrap().to_str().unwrap().to_string()
 }
 
-pub fn parse_file(file: &PathBuf) -> Result<ParsedExtrinsic, String> {
+pub fn parse_file(file: &Path) -> Result<ParsedExtrinsic, String> {
 	let content = super::read_file(file)?;
 	parse_content(content)
 }
@@ -151,14 +151,6 @@ impl Term {
 		Term::Value(value)
 	}
 
-	pub fn add(self, x: Self) -> Self {
-		Term::Add(self.into(), x.into())
-	}
-
-	pub fn mul(self, x: Self) -> Self {
-		Term::Mul(self.into(), x.into())
-	}
-
 	pub fn eval(self, ctx: &impl Scope) -> u128 {
 		match self {
 			Self::Value(x) => x,
@@ -167,8 +159,9 @@ impl Term {
 			Self::Read => ctx.read(),
 			Self::Write => ctx.write(),
 			Self::Var(x) => {
-				let var = ctx.get(&x).expect(&format!("Variable '{}' not found", x));
-				var.clone().eval(ctx)
+				// TODO change to result
+				let var = ctx.get(&x).unwrap_or_else(|| panic!("Variable '{}' not found", x));
+				var.eval(ctx)
 			},
 		}
 	}
@@ -267,7 +260,7 @@ fn parse_args(args: &Vec<&Expr>) -> Result<Term, String> {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}
 	let args = *args.first().unwrap();
-	parse_expression(&args)
+	parse_expression(args)
 }
 
 pub(crate) fn lit_to_value(lit: &Lit) -> u128 {

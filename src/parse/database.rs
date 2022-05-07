@@ -1,6 +1,5 @@
 use super::extrinsic::Term;
 use log::debug;
-use std::path::PathBuf;
 use syn::{BinOp, ExprStruct, ItemConst};
 
 use crate::*;
@@ -25,7 +24,7 @@ pub struct DbWeights {
 	pub weights: RWs,
 }
 
-pub fn parse_file(file: &PathBuf) -> Result<DbWeights, String> {
+pub fn parse_file(file: &Path) -> Result<DbWeights, String> {
 	let content = super::read_file(file)?;
 	parse_content(content)
 }
@@ -46,10 +45,10 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 		// The current Substrate template has a useless `constants` mod.
 		Item::Mod(m) => {
 			debug!(target: LOG, "Entering module");
-			if m.ident.to_string() == "constants" {
+			if m.ident == "constants" {
 				if let Some((_, content)) = m.content.as_ref() {
 					for item in content {
-						let res = handle_item(&item);
+						let res = handle_item(item);
 						// Ignore errors
 						if res.is_ok() {
 							return res
@@ -58,11 +57,11 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 					return Err("Did not find parameter_types!".into())
 				}
 			}
-			Err(format!("Unexpected module: {}", m.ident.to_string()))
+			Err(format!("Unexpected module: {}", m.ident))
 		},
 		Item::Macro(m) => {
 			let name = m.mac.path.segments.last();
-			if name.unwrap().ident.to_string() == "parameter_types" {
+			if name.unwrap().ident == "parameter_types" {
 				parse_macro(m.mac.tokens.clone())
 			} else {
 				Err("Unexpected macro def".into())
@@ -77,8 +76,8 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 /// Example:
 /// ```nocompile
 /// pub const RocksDbWeight: RuntimeDbWeight = RuntimeDbWeight {
-/// 	read: 25_000 * constants::WEIGHT_PER_NANOS,
-/// 	write: 100_000 * constants::WEIGHT_PER_NANOS,
+///     read: 25_000 * constants::WEIGHT_PER_NANOS,
+///     write: 100_000 * constants::WEIGHT_PER_NANOS,
 /// };
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<DbWeights, String> {
@@ -160,7 +159,7 @@ fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
 		.iter()
 		.map(|s| s.ident.to_string())
 		.collect::<Vec<_>>()
-		.join(&delimiter.unwrap_or_default())
+		.join(delimiter.unwrap_or_default())
 }
 
 fn member_to_string(m: &syn::Member) -> String {

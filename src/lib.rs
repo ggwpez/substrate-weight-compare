@@ -50,13 +50,13 @@ pub struct CompareParams {
 pub type TotalDiff = Map<String, Map<String, ExtrinsicChange>>;
 
 pub fn compare_commits(
-	repo: &PathBuf,
+	repo: &Path,
 	old: &str,
 	new: &str,
 	thresh: Percent,
 ) -> Result<Vec<ExtrinsicDiff>, String> {
 	// Parse the old files.
-	if let Err(err) = checkout(&repo, old) {
+	if let Err(err) = checkout(repo, old) {
 		return Err(format!("{:?}", err))
 	}
 	let paths = list_files(format!("{}/runtime/polkadot/src/weights/*.rs", repo.display()));
