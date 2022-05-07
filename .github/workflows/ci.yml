@@ -21,11 +21,6 @@ jobs:
           toolchain: nightly
           components: rustfmt
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
       - name: Format
         run: cargo +nightly fmt --all -- --check
 
@@ -33,13 +28,13 @@ jobs:
         name: Check
         with:
           command: check
-          args: --all-targets --all-features
+          args: --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Style
         with:
           command: clippy
-          args: --all-features
+          args: --release --all-features
 
       - uses: actions-rs/cargo@v1
         name: Documentation
@@ -51,7 +46,7 @@ jobs:
         name: Build
         with:
           command: build
-          args: --all-targets --all-features
+          args: --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build (Tests)
@@ -75,11 +70,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
 
       - name: Checkout Substrate
         uses: actions/checkout@v3
@@ -106,11 +96,6 @@ jobs:
         with:
           toolchain: nightly
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
       - name: Checkout Polkadot
         run: |
           mkdir -p repos/substrate
@@ -120,7 +105,7 @@ jobs:
           git fetch origin 190515004445a60a54711547765baf7e5bcb5e6d
           git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
           git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
-          gc 190515004445a60a54711547765baf7e5bcb5e6d
+          git checkout 190515004445a60a54711547765baf7e5bcb5e6d
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (version locked)
@@ -139,11 +124,6 @@ jobs:
         with:
           toolchain: nightly
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
       - name: Checkout Polkadot
         run: |
           mkdir -p repos/substrate
@@ -153,7 +133,7 @@ jobs:
           git fetch origin master
           git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
           git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
-          gc master
+          git checkout master
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (master)
