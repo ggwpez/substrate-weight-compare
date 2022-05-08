@@ -1,0 +1,28 @@
+name: TOML
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Skip if draft
+        if: github.event.pull_request.draft == true
+        run: exit 0
+
+      - uses: actions/checkout@v2
+
+      - name: Install Cargo TOML linter
+        run: cargo install --git https://github.com/FuelLabs/cargo-toml-lint
+
+      - name: Lint Cargo.toml
+        run: cargo-toml-lint Cargo.toml

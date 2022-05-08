@@ -1,0 +1,27 @@
+name: Markdown
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Skip if draft
+        if: github.event.pull_request.draft == true
+        run: exit 0
+
+      - uses: actions/checkout@v2
+
+      - name: Link Markdown
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: "yes"

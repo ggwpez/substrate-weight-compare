@@ -1,4 +1,5 @@
-name: CI
+# CI concerned with Rust code.
+name: Rust
 
 on:
   push:
@@ -15,7 +16,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Skip if Draft
+      - name: Skip if draft
         if: github.event.pull_request.draft == true
         run: exit 0
 
@@ -64,30 +65,30 @@ jobs:
           command: test
           args: --release --all-targets
 
-  substrate_version_locked:
-    name: "Substrate (version locked)"
-    needs: rust
-    runs-on: self-hosted
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-
-      - name: Checkout Substrate
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-          repository: paritytech/substrate
-          path: repos/substrate
-          ref: 06d43cba9c2498d058a600dfe200c75e36d1181f
-
-      - uses: actions-rs/cargo@v1
-        name: Polkadot Tests (version locked)
-        with:
-          command: test
-          args: --release --all-targets version-locked-tests,substrate-tests
+  #substrate_version_locked:
+  #  name: "Substrate (version locked)"
+  #  needs: rust
+  #  runs-on: self-hosted
+#
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - uses: actions-rs/toolchain@v1
+  #      with:
+  #        toolchain: nightly
+#
+  #    - name: Checkout Substrate
+  #      uses: actions/checkout@v3
+  #      with:
+  #        fetch-depth: 1
+  #        repository: paritytech/substrate
+  #        path: repos/substrate
+  #        ref: 06d43cba9c2498d058a600dfe200c75e36d1181f
+#
+  #    - uses: actions-rs/cargo@v1
+  #      name: Polkadot Tests (version locked)
+  #      with:
+  #        command: test
+  #        args: --release --all-targets version-locked-tests,substrate-tests
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
