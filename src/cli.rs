@@ -2,7 +2,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 use swc::{
-	compare_commits, compare_files, extract_changes, fmt_changes, parse::extrinsic::parse_files,
+	compare_commits, compare_files, extract_changes, fmt_changes, parse::pallet::parse_files,
 	CompareParams, ExtrinsicDiff, VERSION,
 };
 

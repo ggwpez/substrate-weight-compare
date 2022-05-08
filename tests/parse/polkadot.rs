@@ -5,7 +5,7 @@ use rstest::*;
 use serial_test::serial;
 use std::path::PathBuf;
 
-use swc::{checkout, parse::parse_file};
+use swc::{checkout, parse::pallet::parse_file};
 
 /// These tests only work on Polkadot master and are therefore not run by default.
 /// They must possibly be updated on every Polkadot update.
@@ -100,7 +100,7 @@ fn parses_exactly_ext_weight_files(
 #[cfg_attr(not(feature = "polkadot-tests"), ignore)]
 fn parses_db_weight_files(polkadot_db_files: Vec<PathBuf>) {
 	for file in polkadot_db_files {
-		swc::parse::database::parse_file(&file).unwrap();
+		swc::parse::storage::parse_file(&file).unwrap();
 	}
 }
 
@@ -113,7 +113,7 @@ fn parses_exactly_db_weight_files(
 ) {
 	let weights = polkadot_rust_files
 		.iter()
-		.map(|p| swc::parse::database::parse_file(p))
+		.map(|p| swc::parse::storage::parse_file(p))
 		.filter_map(|r| r.ok());
 
 	assert_eq!(weights.count(), polkadot_db_files.len());

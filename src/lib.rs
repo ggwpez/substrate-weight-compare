@@ -1,3 +1,5 @@
+//! Parse and compare weight Substrate weight files.
+
 use clap::Args;
 use git2::*;
 use git_version::git_version;
@@ -7,20 +9,22 @@ use std::{
 	collections::{BTreeMap as Map, BTreeSet as Set},
 	path::{Path, PathBuf},
 };
-use syn::{Expr, ImplItem, ImplItemMethod, Item, Lit, Stmt, Type};
-
-use parse::extrinsic::{parse_files, ParsedFiles};
+use syn::{Expr, Item, Type};
 
 pub mod parse;
+pub mod scope;
+pub mod term;
 #[cfg(test)]
 mod test;
+
+use parse::pallet::*;
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
 	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!());
 }
 
-// 1000 weight
+// 1000 weight TODO remove
 type WeightNs = u128;
 type Percent = f64;
 
@@ -72,7 +76,7 @@ pub fn compare_commits(
 	Ok(extract_changes(diff, thresh))
 }
 
-/// Checks out a repo to a given commit / branch / tag.
+/// Check out a repo to a given *commit*, *branch* or *tag*.
 pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 	let repo = Repository::open(path)?;
 

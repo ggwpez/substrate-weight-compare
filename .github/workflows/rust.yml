@@ -59,7 +59,7 @@ jobs:
         name: Test
         with:
           command: test
-          args: --release --all-targets
+          args: --no-run --release --all-targets # no --all-features
 
   #substrate_version_locked:
   #  name: "Substrate (version locked)"

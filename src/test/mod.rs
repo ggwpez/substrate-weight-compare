@@ -1,2 +1,2 @@
-pub mod database;
-pub mod extrinsic;
+pub mod pallet;
+pub mod storage;

@@ -2,7 +2,14 @@ use rstest::*;
 use std::path::PathBuf;
 use syn::*;
 
-use crate::parse::{extrinsic::*, parse_file};
+use crate::{
+	add, mul,
+	parse::pallet::{parse_expression, parse_file},
+	reads,
+	scope::MockedScope,
+	term::Term,
+	val, var, writes,
+};
 
 /// Parses hard-coded weight files.
 #[rstest]
@@ -11,8 +18,6 @@ use crate::parse::{extrinsic::*, parse_file};
 fn parses_weight_files(#[case] path: PathBuf) {
 	assert!(parse_file(&path).is_ok());
 }
-
-use crate::*;
 
 #[rstest]
 // Basic arithmetic.

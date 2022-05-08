@@ -1,8 +1,8 @@
-use super::extrinsic::Term;
 use log::debug;
-use syn::{BinOp, ExprStruct, ItemConst};
+use std::path::Path;
+use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
-use crate::*;
+use crate::term::Term;
 
 const LOG: &str = "db-parser";
 
@@ -24,6 +24,25 @@ pub struct DbWeights {
 	pub weights: RWs,
 }
 
+/// Multiplies a [`Term`] with the [`Term::Read`] constant.
+#[macro_export]
+macro_rules! reads {
+	($a:expr) => {
+		Term::Mul($a.into(), Term::Read.into())
+	};
+}
+
+/// Multiplies a [`Term`] with the [`Term::Write`] constant.
+#[macro_export]
+macro_rules! writes {
+	($a:expr) => {
+		Term::Mul($a.into(), Term::Write.into())
+	};
+}
+
+/// Parses a storage weight file.
+///
+/// These files are often named: `paritydb_weights.rs.txt` or `rocksdb_weights.rs.txt`.
 pub fn parse_file(file: &Path) -> Result<DbWeights, String> {
 	let content = super::read_file(file)?;
 	parse_content(content)
@@ -139,7 +158,7 @@ fn parse_expression(expr: &Expr) -> Result<Term, String> {
 			};
 			Ok(term)
 		},
-		Expr::Lit(lit) => Ok(Term::Value(super::extrinsic::lit_to_value(&lit.lit))),
+		Expr::Lit(lit) => Ok(Term::Value(super::pallet::lit_to_value(&lit.lit))),
 		Expr::Path(p) => Ok(Term::Var(path_to_string(&p.path, Some("::")))),
 		_ => Err("Unexpected expression".into()),
 	}

@@ -1,8 +1,15 @@
+use crate::{reads, writes};
 use log::debug;
-use std::path::PathBuf;
-use syn::{punctuated::Punctuated, ExprMethodCall, Token};
+use std::{
+	collections::BTreeMap as Map,
+	path::{Path, PathBuf},
+};
+use syn::{
+	punctuated::Punctuated, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit, Stmt, Token,
+	Type,
+};
 
-use crate::*;
+use crate::{mul, scope::MockedScope, term::Term, WeightNs};
 
 pub type PalletName = String;
 pub type ExtrinsicName = String;
@@ -110,69 +117,6 @@ fn handle_method(m: &ImplItemMethod) -> Result<(String, Term), String> {
 	Ok((name, weight))
 }
 
-use std::boxed::Box;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Term {
-	Value(u128),
-	Var(String),
-	Read,
-	Write,
-
-	Add(Box<Term>, Box<Term>),
-	Mul(Box<Term>, Box<Term>),
-}
-
-pub trait Scope {
-	fn get(&self, name: &str) -> Option<Term>;
-	fn read(&self) -> u128;
-	fn write(&self) -> u128;
-}
-
-#[derive(Default)]
-pub struct MockedScope {}
-
-impl Scope for MockedScope {
-	fn get(&self, _name: &str) -> Option<Term> {
-		Some(val!(7))
-	}
-
-	fn read(&self) -> u128 {
-		50
-	}
-
-	fn write(&self) -> u128 {
-		100
-	}
-}
-
-impl Term {
-	pub fn new(value: u128) -> Self {
-		Term::Value(value)
-	}
-
-	pub fn eval(self, ctx: &impl Scope) -> u128 {
-		match self {
-			Self::Value(x) => x,
-			Self::Add(x, y) => x.eval(ctx) + y.eval(ctx),
-			Self::Mul(x, y) => x.eval(ctx) * y.eval(ctx),
-			Self::Read => ctx.read(),
-			Self::Write => ctx.write(),
-			Self::Var(x) => {
-				// TODO change to result
-				let var = ctx.get(&x).unwrap_or_else(|| panic!("Variable '{}' not found", x));
-				var.eval(ctx)
-			},
-		}
-	}
-}
-
-impl From<u128> for Term {
-	fn from(x: u128) -> Self {
-		Term::Value(x)
-	}
-}
-
 pub(crate) fn parse_expression(expr: &Expr) -> Result<Term, String> {
 	match expr {
 		Expr::Paren(expr) => parse_expression(&expr.expr),
@@ -245,8 +189,7 @@ fn parse_method_call(call: &ExprMethodCall) -> Result<Term, String> {
 		},
 		"saturating_add" =>
 			Ok(Term::Add(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
-		"saturating_mul" =>
-			Ok(Term::Mul(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
+		"saturating_mul" => Ok(mul!(parse_expression(&call.receiver)?, parse_args(&call.args)?)),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
 }
@@ -264,46 +207,4 @@ pub(crate) fn lit_to_value(lit: &Lit) -> u128 {
 		Lit::Int(i) => i.base10_digits().parse().unwrap(),
 		_ => unreachable!(),
 	}
-}
-
-#[macro_export]
-macro_rules! val {
-	($a:expr) => {
-		Term::Value(($a as u128).into())
-	};
-}
-
-#[macro_export]
-macro_rules! add {
-	($a:expr, $b:expr) => {
-		Term::Add($a.into(), $b.into())
-	};
-}
-
-#[macro_export]
-macro_rules! mul {
-	($a:expr, $b:expr) => {
-		Term::Mul($a.into(), $b.into())
-	};
-}
-
-#[macro_export]
-macro_rules! reads {
-	($a:expr) => {
-		mul!($a, Term::Read)
-	};
-}
-
-#[macro_export]
-macro_rules! writes {
-	($a:expr) => {
-		mul!($a, Term::Write)
-	};
-}
-
-#[macro_export]
-macro_rules! var {
-	($a:expr) => {
-		Term::Var($a.into())
-	};
 }

@@ -8,17 +8,15 @@
 //!
 //! Each module corresponds to one of these categories.
 
-pub mod database;
-pub mod extrinsic;
-
-pub use database::DbWeights;
-pub use extrinsic::*;
+pub mod overhead;
+pub mod pallet;
+pub mod storage;
 
 use std::{io::Read, path::Path};
 
 pub enum ParseResult {
-	ExtrinsicWeight(ParsedExtrinsic),
-	DbWeights(DbWeights),
+	Pallet(pallet::ParsedExtrinsic),
+	Db(storage::DbWeights),
 }
 
 pub fn read_file(file: &Path) -> Result<String, String> {
