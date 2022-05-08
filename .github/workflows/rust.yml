@@ -1,4 +1,3 @@
-# CI concerned with Rust code.
 name: Rust
 
 on:
@@ -61,30 +60,30 @@ jobs:
           command: test
           args: --no-run --release --all-targets # no --all-features
 
-  #substrate_version_locked:
-  #  name: "Substrate (version locked)"
-  #  needs: basic
-  #  runs-on: self-hosted
-#
-  #  steps:
-  #    - uses: actions/checkout@v2
-  #    - uses: actions-rs/toolchain@v1
-  #      with:
-  #        toolchain: nightly
-#
-  #    - name: Checkout Substrate
-  #      uses: actions/checkout@v3
-  #      with:
-  #        fetch-depth: 1
-  #        repository: paritytech/substrate
-  #        path: repos/substrate
-  #        ref: 06d43cba9c2498d058a600dfe200c75e36d1181f
-#
-  #    - uses: actions-rs/cargo@v1
-  #      name: Polkadot Tests (version locked)
-  #      with:
-  #        command: test
-  #        args: --release --all-targets version-locked-tests,substrate-tests
+  composable_version_locked:
+    name: "ComposableFI (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Checkout ComposableFI
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: ComposableFi/composable
+          path: repos/composable
+          ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+
+      - uses: actions-rs/cargo@v1
+        name: ComposableFI Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,composable "composable::"
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
@@ -112,7 +111,7 @@ jobs:
         name: Polkadot Tests (version locked)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests,polkadot-tests
+          args: --release --all-targets --features version-locked-tests,polkadot "polkadot::"
   
   polkadot_master:
     name: "Polkadot (master)"
@@ -140,4 +139,29 @@ jobs:
         name: Polkadot Tests (master)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests,polkadot-tests
+          args: --release --all-targets --features version-locked-tests,polkadot "polkadot::"
+
+  moonbeam_version_locked:
+    name: "Moonbeam (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Checkout Moonbeam
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: PureStake/moonbeam
+          path: repos/moonbeam
+          ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+
+      - uses: actions-rs/cargo@v1
+        name: Moonbeam Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,moonbeam "moonbeam::"

@@ -1,1 +1,2 @@
-pub mod polkadot;
+mod common;
+pub mod integration_tests;

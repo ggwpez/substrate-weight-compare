@@ -57,7 +57,7 @@ fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {
 				Type::Tuple(t) if t.elems.is_empty() => {
 					debug!(target: LOG, "Skipped fn: impl tuple type empty");
 					// The substrate template contains the weight info twice.
-					// By skipping the `impl ()` we ensure to parse it only once.
+					// By skipping the not `impl ()` we ensure to parse it only once.
 					return None
 				},
 				Type::Path(p) => {
@@ -71,7 +71,7 @@ fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {
 					}
 					if let Some(last) = p.path.segments.last() {
 						let name = last.ident.to_string();
-						if name != "WeightInfo" {
+						if name != "WeightInfo" && name != "SubstrateWeight" {
 							debug!(target: LOG, "Skipped fn: impl name last: {}", name);
 							return None
 						}
@@ -161,7 +161,10 @@ fn validate_db_func(func: &Expr) -> Result<(), String> {
 				.map(|s| s.ident.to_string())
 				.collect::<Vec<_>>()
 				.join("::");
-			if path != "T::DbWeight::get" {
+			if path != "T::DbWeight::get" &&
+				!path.ends_with("RocksDbWeight::get") &&
+				!path.ends_with("ParityDbWeight::get")
+			{
 				Err(format!("Unexpected DB path: {}", path))
 			} else {
 				Ok(())
