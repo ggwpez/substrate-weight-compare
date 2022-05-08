@@ -16,8 +16,7 @@ jobs:
 
     steps:
       - name: Skip if draft
-        if: github.event.pull_request.draft == true
-        run: exit 1
+        if: github.event.pull_request.draft == false
 
       - uses: actions/checkout@v2
 
