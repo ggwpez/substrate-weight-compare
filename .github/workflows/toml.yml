@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, dev]
   pull_request:
-    branches: [master]
+        types: [review_requested, ready_for_review]
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,9 +15,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Skip if draft
-        if: github.event.pull_request.draft == false
-
       - uses: actions/checkout@v2
 
       - name: Install Cargo TOML linter
