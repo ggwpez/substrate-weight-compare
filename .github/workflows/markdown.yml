@@ -20,4 +20,5 @@ jobs:
       - name: Link Markdown
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
+          ignorePatterns: [{ pattern: "^http://localhost"}]
           use-quiet-mode: "yes"

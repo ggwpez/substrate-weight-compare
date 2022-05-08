@@ -22,7 +22,7 @@ swc-web --repo repos/polkadot
 ```
 
 then open your browser and try the following:
-- [http://127.0.0.1:8080/compare](http://127.0.0.1:8080/compare)
+- [http://localhost:8080/compare](http://localhost:8080/compare)
 - [http://localhost:8080/compare/v0.9.18/v0.9.19/10](http://localhost:8080/compare/v0.9.18/v0.9.19/10)
 
 ## Example: Weight files
@@ -38,8 +38,7 @@ swc compare files --old $OLD/* --new $NEW/*
 
 ## Example: Polkadot Commits
 
-Compare arbitrary Polkadot commits with the [compare.sh](compare.sh) script.   It has the [Polkadot](https://github.com/paritytech/polkadot) as submodule twice.
-Cloning will take a while. It then checks out the two commits and compares the weights of the Polkadot runtime.
+Compare arbitrary Polkadot commits with:
 
 ```sh
 FROM=20467ccea1ae
