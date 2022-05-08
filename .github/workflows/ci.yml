@@ -1,4 +1,4 @@
-name: Rust
+name: CI
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   basic:
-    name: "Basic"
+    name: "Rust"
     runs-on: self-hosted
 
     steps:
@@ -158,7 +158,7 @@ jobs:
           fetch-depth: 1
           repository: PureStake/moonbeam
           path: repos/moonbeam
-          ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+          ref: 9665bd46a19ef4cc4ad1327f360150d7743dfd76
 
       - uses: actions-rs/cargo@v1
         name: Moonbeam Tests (version locked)

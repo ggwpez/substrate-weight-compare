@@ -19,7 +19,7 @@ pub fn parse_file(file: &Path) -> Result<Weight, String> {
 }
 
 pub fn parse_content(content: String) -> Result<Weight, String> {
-	let ast = syn::parse_file(&content).map_err(err_to_str)?;
+	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
 	for item in ast.items {
 		if let Ok(res) = handle_item(&item) {
 			return Ok(res)
@@ -50,7 +50,7 @@ fn handle_item(item: &Item) -> Result<Weight, String> {
 /// pub const BlockExecutionWeight: Weight = 5_481_991 * WEIGHT_PER_NANOS;
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
-	let def: ItemConst = syn::parse2(tokens).map_err(err_to_str)?;
+	let def: ItemConst = syn::parse2(tokens).map_err(|e| e.to_string())?;
 	let name = def.ident.to_string();
 
 	let type_name = type_to_string(&def.ty, None)?;
@@ -84,8 +84,4 @@ fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
 		.map(|s| s.ident.to_string())
 		.collect::<Vec<_>>()
 		.join(delimiter.unwrap_or_default())
-}
-
-fn err_to_str<E: std::string::ToString>(err: E) -> String {
-	err.to_string()
 }

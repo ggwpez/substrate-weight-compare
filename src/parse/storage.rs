@@ -49,7 +49,7 @@ pub fn parse_file(file: &Path) -> Result<DbWeights, String> {
 }
 
 pub fn parse_content(content: String) -> Result<DbWeights, String> {
-	let ast = syn::parse_file(&content).map_err(err_to_str)?;
+	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
 	for item in ast.items {
 		if let Ok(res) = handle_item(&item) {
 			return Ok(res)
@@ -100,7 +100,7 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 /// };
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<DbWeights, String> {
-	let def: ItemConst = syn::parse2(tokens).map_err(err_to_str)?;
+	let def: ItemConst = syn::parse2(tokens).map_err(|e| e.to_string())?;
 	let name = def.ident.to_string();
 
 	let db = match name.as_str() {
@@ -186,8 +186,4 @@ fn member_to_string(m: &syn::Member) -> String {
 		syn::Member::Named(ident) => ident.to_string(),
 		_ => "".into(),
 	}
-}
-
-fn err_to_str<E: std::string::ToString>(err: E) -> String {
-	err.to_string()
 }

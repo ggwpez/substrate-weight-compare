@@ -41,16 +41,16 @@ pub fn parse_files(paths: &[PathBuf]) -> Result<ParsedFiles, String> {
 }
 
 pub fn parse_content(content: String) -> Result<ParsedExtrinsic, String> {
-	let ast = syn::parse_file(&content).unwrap();
+	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
 	for item in ast.items {
-		if let Some(weights) = handle_item(&item) {
+		if let Ok(weights) = handle_item(&item) {
 			return Ok(weights)
 		}
 	}
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
-fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {
+fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> {
 	match item {
 		Item::Impl(imp) => {
 			match imp.self_ty.as_ref() {
@@ -58,44 +58,44 @@ fn handle_item(item: &Item) -> Option<Map<String, WeightNs>> {
 					debug!(target: LOG, "Skipped fn: impl tuple type empty");
 					// The substrate template contains the weight info twice.
 					// By skipping the not `impl ()` we ensure to parse it only once.
-					return None
+					return Err("Skipped".to_string())
 				},
 				Type::Path(p) => {
 					if p.path.leading_colon.is_some() {
 						debug!(target: LOG, "Skipped fn: impl leading color");
-						return None
+						return Err("Skipped".to_string())
 					}
 					if p.path.segments.len() != 1 {
 						debug!(target: LOG, "Skipped fn: impl path segment len");
-						return None
+						return Err("Skipped".to_string())
 					}
 					if let Some(last) = p.path.segments.last() {
 						let name = last.ident.to_string();
 						if name != "WeightInfo" && name != "SubstrateWeight" {
 							debug!(target: LOG, "Skipped fn: impl name last: {}", name);
-							return None
+							return Err("Skipped".to_string())
 						}
 						debug!(target: LOG, "Using fn: impl name: {}", name);
 					} else {
 						debug!(target: LOG, "Skipped fn: impl name segments");
-						return None
+						return Err("Skipped".to_string())
 					}
 				},
 				_ => {
 					debug!(target: LOG, "Skipped fn: impl type");
-					return None
+					return Err("Skipped".to_string())
 				},
 			}
 			let mut weights = Map::new();
 			for f in &imp.items {
 				if let ImplItem::Method(m) = f {
-					let (name, weight) = handle_method(m).unwrap();
+					let (name, weight) = handle_method(m)?;
 					weights.insert(name, weight.eval(&MockedScope::default())); // FIXME
 				}
 			}
-			Some(weights)
+			Ok(weights)
 		},
-		_ => None,
+		_ => Err("No weight trait impl found".into()),
 	}
 }
 
@@ -128,7 +128,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term, String> {
 			if p.path.segments.len() != 1 {
 				return Err("Unexpected path as weight constant".into())
 			}
-			let ident = p.path.segments.first().unwrap().ident.to_string();
+			let ident = p.path.segments.first().ok_or("Empty path")?.ident.to_string();
 			Ok(Term::Var(ident))
 		},
 		_ => Err("Unexpected expression".into()),
@@ -201,13 +201,13 @@ fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term, String> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}
-	let args = args.first().unwrap();
+	let args = args.first().ok_or("Empty args")?;
 	parse_expression(args)
 }
 
 pub(crate) fn lit_to_value(lit: &Lit) -> u128 {
 	match lit {
-		Lit::Int(i) => i.base10_digits().parse().unwrap(),
+		Lit::Int(i) => i.base10_digits().parse().expect("Lit must be a valid int; qed"),
 		_ => unreachable!(),
 	}
 }
