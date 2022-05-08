@@ -11,14 +11,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust:
-    name: "Rust"
+  basic:
+    name: "Basic"
     runs-on: self-hosted
 
     steps:
       - name: Skip if draft
         if: github.event.pull_request.draft == true
-        run: exit 0
+        run: exit 1
 
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -60,14 +60,14 @@ jobs:
           args: --no-run --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
-        name: Static Tests
+        name: Test
         with:
           command: test
           args: --release --all-targets
 
   #substrate_version_locked:
   #  name: "Substrate (version locked)"
-  #  needs: rust
+  #  needs: basic
   #  runs-on: self-hosted
 #
   #  steps:
@@ -92,7 +92,7 @@ jobs:
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
-    needs: rust
+    needs: basic
     runs-on: self-hosted
 
     steps:
