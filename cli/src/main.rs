@@ -101,8 +101,8 @@ fn main() -> Result<(), String> {
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
-			let parsed = files.iter().filter_map(|f| parse_file(f).ok()).collect::<Vec<_>>();
-			println!("Parsed {} files successfully", parsed.len());
+			let parsed = files.iter().filter_map(|f| parse_file(f).ok());
+			println!("Parsed {} files successfully", parsed.count());
 		},
 	}
 
