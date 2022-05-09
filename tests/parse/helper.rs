@@ -180,7 +180,7 @@ macro_rules! integration_test {
 			}
 
 			/// Format all files that are not pallet files and all pallet files that are not files.
-			fn fmt_diff(files: &Vec<PathBuf>, weights: &Vec<PathBuf>) -> String {
+			fn fmt_diff(files: &[PathBuf], weights: &[PathBuf]) -> String {
 				let mut output = String::new();
 				for weight in weights.iter() {
 					if !files.contains(weight) {
