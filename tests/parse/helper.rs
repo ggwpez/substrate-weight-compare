@@ -18,10 +18,7 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::PathBuf;
 
-			use swc::{
-				checkout,
-				parse::pallet::parse_file,
-			};
+			use swc::{checkout, parse::pallet::parse_file};
 
 			/// These tests only work on Moonbeam master and are therefore not run by default.
 			/// They must possibly be updated on every Moonbeam update.
@@ -144,19 +141,30 @@ macro_rules! integration_test {
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
 			fn pallet_files() -> Vec<PathBuf> {
-				$pallet_patterns.iter().map(|pattern| {
-					let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
-					glob(&pattern).unwrap().map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs"))
-				}).flatten().collect()
+				$pallet_patterns
+					.iter()
+					.map(|pattern| {
+						let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
+						glob(&pattern)
+							.unwrap()
+							.map(|f| f.unwrap())
+							.filter(|f| !f.ends_with("mod.rs"))
+					})
+					.flatten()
+					.collect()
 			}
 
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
 			fn db_files() -> Vec<PathBuf> {
-				$db_patterns.iter().map(|pattern| {
-					let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
-					glob(&pattern).unwrap().map(|f| f.unwrap())
-				}).flatten().collect()
+				$db_patterns
+					.iter()
+					.map(|pattern| {
+						let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
+						glob(&pattern).unwrap().map(|f| f.unwrap())
+					})
+					.flatten()
+					.collect()
 			}
 
 			/// Returns the number of rust files in the Moonbeam repository.

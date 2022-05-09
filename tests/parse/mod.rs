@@ -8,7 +8,12 @@ integration_test!(
 	804,
 	138,
 	10,
-	vec!["runtime/*/src/weights/**/*.rs", "bridges/modules/*/src/weights.rs", "bridges/primitives/messages/src/source_chain.rs", "xcm/xcm-executor/src/traits/drop_assets.rs"],
+	vec![
+		"runtime/*/src/weights/**/*.rs",
+		"bridges/modules/*/src/weights.rs",
+		"bridges/primitives/messages/src/source_chain.rs",
+		"xcm/xcm-executor/src/traits/drop_assets.rs"
+	],
 	vec!["runtime/*/constants/src/weights/**/*db_weights.rs"]
 );
 
