@@ -9,8 +9,8 @@ macro_rules! integration_test {
 		$num_pallet_files:expr,
 		$num_db_files:expr,
 
-		$pallet_pattern:expr,
-		$db_pattern:expr
+		$pallet_patterns:expr,
+		$db_patterns:expr
 	) => {
 		mod $mod_name {
 			use glob::glob;
@@ -18,7 +18,10 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::PathBuf;
 
-			use swc::{checkout, parse::pallet::parse_file};
+			use swc::{
+				checkout,
+				parse::pallet::parse_file,
+			};
 
 			/// These tests only work on Moonbeam master and are therefore not run by default.
 			/// They must possibly be updated on every Moonbeam update.
@@ -91,9 +94,20 @@ macro_rules! integration_test {
 				rust_files: Vec<PathBuf>,
 				pallet_files: Vec<PathBuf>,
 			) {
-				let weights = rust_files.iter().map(|p| parse_file(p)).filter_map(|r| r.ok());
+				let weights = rust_files
+					.iter()
+					.filter(|p| parse_file(p).is_ok())
+					.cloned()
+					.collect::<Vec<_>>();
 
-				assert_eq!(weights.count(), pallet_files.len());
+				if pallet_files.len() != weights.len() {
+					panic!(
+						"Expected {} weights, found {}:\n{}",
+						pallet_files.len(),
+						weights.len(),
+						fmt_diff(&pallet_files, &weights)
+					);
+				}
 			}
 
 			#[rstest]
@@ -111,10 +125,18 @@ macro_rules! integration_test {
 			fn parses_exactly_db_weight_files(rust_files: Vec<PathBuf>, db_files: Vec<PathBuf>) {
 				let weights = rust_files
 					.iter()
-					.map(|p| swc::parse::storage::parse_file(p))
-					.filter_map(|r| r.ok());
+					.filter(|p| swc::parse::storage::parse_file(p).is_ok())
+					.cloned()
+					.collect::<Vec<_>>();
 
-				assert_eq!(weights.count(), db_files.len());
+				if db_files.len() != weights.len() {
+					panic!(
+						"Expected {} weights, found {}:\n{}",
+						db_files.len(),
+						weights.len(),
+						fmt_diff(&rust_files, &weights)
+					);
+				}
 			}
 
 			// Setup code
@@ -122,19 +144,19 @@ macro_rules! integration_test {
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
 			fn pallet_files() -> Vec<PathBuf> {
-				let root = format!("{}/{}", root().to_string_lossy(), $pallet_pattern);
-				glob(&root)
-					.unwrap()
-					.map(|f| f.unwrap())
-					.filter(|f| !f.ends_with("mod.rs"))
-					.collect()
+				$pallet_patterns.iter().map(|pattern| {
+					let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
+					glob(&pattern).unwrap().map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs"))
+				}).flatten().collect()
 			}
 
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
 			fn db_files() -> Vec<PathBuf> {
-				let root = format!("{}/{}", root().to_string_lossy(), $db_pattern);
-				glob(&root).unwrap().map(|f| f.unwrap()).collect()
+				$db_patterns.iter().map(|pattern| {
+					let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
+					glob(&pattern).unwrap().map(|f| f.unwrap())
+				}).flatten().collect()
 			}
 
 			/// Returns the number of rust files in the Moonbeam repository.
@@ -147,6 +169,20 @@ macro_rules! integration_test {
 			/// Returns the root directory to the Moonbeam git repository.
 			fn root() -> PathBuf {
 				PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("repos").join($repo)
+			}
+
+			/// Format all files that are not pallet files and all pallet files that are not files.
+			fn fmt_diff(files: &Vec<PathBuf>, weights: &Vec<PathBuf>) -> String {
+				let mut output = String::new();
+				for weight in weights.iter() {
+					if !files.contains(weight) {
+						output.push_str(&format!(
+							"File could unexpectedly be parsed: {}\n",
+							weight.display()
+						));
+					}
+				}
+				output
 			}
 		}
 	};

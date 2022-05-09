@@ -4,7 +4,7 @@ use syn::*;
 
 use crate::{
 	add, mul,
-	parse::pallet::{parse_expression, parse_file},
+	parse::pallet::{parse_content, parse_expression, parse_file, ParsedExtrinsic},
 	reads,
 	scope::MockedScope,
 	term::Term,
@@ -17,6 +17,28 @@ use crate::{
 #[case("test_data/old/pallet_staking.rs.txt")]
 fn parses_weight_files(#[case] path: PathBuf) {
 	assert!(parse_file(&path).is_ok());
+}
+
+#[rstest]
+#[case(
+	"impl WeightInfo for () { \
+	fn ext() -> Weight { \
+    	5 \
+	} \
+}"
+)]
+#[case(
+	"impl<T: frame_system::Config> my_pallet::WeightInfo for WeightInfo<T> { \
+	fn ext() -> Weight { \
+    	5 as Weight \
+	} \
+}"
+)]
+fn parse_content_works(#[case] input: String) {
+	let got = parse_content(input).unwrap();
+
+	let want = ParsedExtrinsic::from([("ext".into(), 5)]);
+	assert_eq!(want, got);
 }
 
 #[rstest]

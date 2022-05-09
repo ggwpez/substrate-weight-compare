@@ -5,8 +5,8 @@ use std::{
 	path::{Path, PathBuf},
 };
 use syn::{
-	punctuated::Punctuated, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit, Stmt, Token,
-	Type,
+	punctuated::Punctuated, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit, ReturnType,
+	Stmt, Token, Type,
 };
 
 use crate::{mul, scope::MockedScope, term::Term, WeightNs};
@@ -50,42 +50,39 @@ pub fn parse_content(content: String) -> Result<ParsedExtrinsic, String> {
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
-fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> {
+pub(crate) fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> {
 	match item {
 		Item::Impl(imp) => {
 			match imp.self_ty.as_ref() {
-				Type::Tuple(t) if t.elems.is_empty() => {
-					debug!(target: LOG, "Skipped fn: impl tuple type empty");
-					// The substrate template contains the weight info twice.
-					// By skipping the not `impl ()` we ensure to parse it only once.
-					return Err("Skipped".to_string())
+				// TODO handle both () and non () since ComposableFI uses ().
+				Type::Tuple(t) => {
+					if !t.elems.is_empty() {
+						debug!(target: LOG, "Skipped fn: impl tuple type empty");
+						// The substrate template contains the weight info twice.
+						// By skipping the not `impl ()` we ensure to parse it only once.
+						return Err("Skipped ()".into())
+					}
 				},
 				Type::Path(p) => {
 					if p.path.leading_colon.is_some() {
-						debug!(target: LOG, "Skipped fn: impl leading color");
-						return Err("Skipped".to_string())
+						return Err("Skipped fn: impl leading color".into())
 					}
 					if p.path.segments.len() != 1 {
-						debug!(target: LOG, "Skipped fn: impl path segment len");
-						return Err("Skipped".to_string())
+						return Err("Skipped fn: impl path segment len".into())
 					}
 					if let Some(last) = p.path.segments.last() {
 						let name = last.ident.to_string();
 						if name != "WeightInfo" && name != "SubstrateWeight" {
-							debug!(target: LOG, "Skipped fn: impl name last: {}", name);
-							return Err("Skipped".to_string())
+							return Err("Skipped fn: impl name last".into())
 						}
-						debug!(target: LOG, "Using fn: impl name: {}", name);
 					} else {
 						debug!(target: LOG, "Skipped fn: impl name segments");
-						return Err("Skipped".to_string())
+						return Err("Skipped fn: impl name segments".into())
 					}
 				},
-				_ => {
-					debug!(target: LOG, "Skipped fn: impl type");
-					return Err("Skipped".to_string())
-				},
+				_ => return Err("Skipped fn: impl type".into()),
 			}
+			// TODO validate the trait type.
 			let mut weights = Map::new();
 			for f in &imp.items {
 				if let ImplItem::Method(m) = f {
@@ -102,12 +99,23 @@ fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> {
 fn handle_method(m: &ImplItemMethod) -> Result<(String, Term), String> {
 	let name = m.sig.ident.to_string();
 	debug!(target: LOG, "Enter function {}", name);
-	assert_eq!(
-		m.block.stmts.len(),
-		1,
-		"There must be only one statement per weight function: {}",
-		name
-	);
+
+	// Check the return type to end with `Weight`.
+	if let ReturnType::Type(_, i) = &m.sig.output {
+		if let Type::Path(p) = i.as_ref() {
+			let n = p.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
+			if !n.ends_with("Weight") {
+				return Err(format!("Skipped fn: {} not a weight", name))
+			}
+		} else {
+			return Err(format!("Skipped fn: {} not a weight", name))
+		}
+	} else {
+		return Err("Skipped fn: method return type".into())
+	}
+	if m.block.stmts.len() != 1 {
+		return Err("There must be only one statement per weight function".into())
+	}
 	let stmt = m.block.stmts.first().unwrap();
 
 	let weight = match stmt {

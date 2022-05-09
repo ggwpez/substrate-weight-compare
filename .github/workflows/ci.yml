@@ -60,31 +60,6 @@ jobs:
           command: test
           args: --no-run --release --all-targets # no --all-features
 
-  composable_version_locked:
-    name: "ComposableFI (version locked)"
-    needs: basic
-    runs-on: self-hosted
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-
-      - name: Checkout ComposableFI
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-          repository: ComposableFi/composable
-          path: repos/composable
-          ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
-
-      - uses: actions-rs/cargo@v1
-        name: ComposableFI Tests (version locked)
-        with:
-          command: test
-          args: --release --all-targets --features version-locked-tests,composable "composable::"
-
   polkadot_version_locked:
     name: "Polkadot (version locked)"
     needs: basic
@@ -165,3 +140,28 @@ jobs:
         with:
           command: test
           args: --release --all-targets --features version-locked-tests,moonbeam "moonbeam::"
+
+  composable_version_locked:
+      name: "ComposableFI (version locked)"
+      needs: basic
+      runs-on: self-hosted
+
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions-rs/toolchain@v1
+          with:
+            toolchain: nightly
+
+        - name: Checkout ComposableFI
+          uses: actions/checkout@v3
+          with:
+            fetch-depth: 1
+            repository: ComposableFi/composable
+            path: repos/composable
+            ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+
+        - uses: actions-rs/cargo@v1
+          name: ComposableFI Tests (version locked)
+          with:
+            command: test
+            args: --release --all-targets --features version-locked-tests,composable "composable::"
