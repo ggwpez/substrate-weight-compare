@@ -1,22 +1,22 @@
 use semver::Version;
 use std::{
 	ops::{Deref, DerefMut},
-	process::Child,
 	path::PathBuf,
+	process::Child,
 };
 
-pub fn ROOT_DIR() -> PathBuf {
+pub fn root_dir() -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..")
 }
 
-pub fn assert_version(raw: &str, want: &str) {
+pub fn assert_version(raw: &str, name: &str) {
 	let split = raw.split(' ').collect::<Vec<_>>();
 	assert_eq!(split.len(), 2);
 	let version = split[1];
 
-	assert_eq!(split[0], "swc");
+	assert_eq!(split[0], name);
 	assert!(Version::parse(version).is_ok(), "Version should be a valid Semver");
-	assert_eq!(version, want, "Wrong version string");
+	assert_eq!(version, &*crate::VERSION, "Wrong version string");
 }
 
 /// Asserts that the command output is successful.

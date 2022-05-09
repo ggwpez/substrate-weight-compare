@@ -4,6 +4,13 @@ version = "0.3.0"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
+[[bin]]
+name = "swc-web"
+path = "src/main.rs"
+
+[features]
+polkadot = []
+
 [dependencies]
 swc_core = { path = "../core" }
 

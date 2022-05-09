@@ -1,8 +1,8 @@
 use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
-use std::{path::{PathBuf, Path}, process::Command};
+use std::process::Command;
 
-use swc_core::{VERSION, testing::{ROOT_DIR, assert_version, succeeds}};
+use swc_core::testing::{assert_version, root_dir, succeeds};
 
 #[test]
 fn swc_version_works() {
@@ -10,7 +10,7 @@ fn swc_version_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_version(&out, &*VERSION);
+	assert_version(&out, "swc");
 }
 
 #[test]
@@ -30,6 +30,7 @@ fn swc_compare_commits_works() {
 		.unwrap()
 		.args(["compare", "commits"])
 		.args(["v0.9.19", "v0.9.20"])
+		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
 		.unwrap();
 	succeeds(&output);
@@ -46,6 +47,7 @@ fn swc_compare_commits_same_no_changes() {
 		.unwrap()
 		.args(["compare", "commits"])
 		.args(["v0.9.19", "v0.9.19"])
+		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
 		.unwrap();
 	succeeds(&output);
@@ -62,6 +64,7 @@ fn swc_compare_commits_errors() {
 		.unwrap()
 		.args(["compare", "commits"])
 		.args(["vWrong"])
+		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
 		.unwrap();
 	assert!(!output.status.success());
@@ -77,15 +80,9 @@ fn swc_compare_files_works() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			ROOT_DIR()
-				.join("test_data/old/pallet_staking.rs.txt")
-				.to_str()
-				.unwrap(),
+			root_dir().join("test_data/old/pallet_staking.rs.txt").to_str().unwrap(),
 			"--new",
-			ROOT_DIR()
-				.join("test_data/new/pallet_staking.rs.txt")
-				.to_str()
-				.unwrap(),
+			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--threshold",
 			"0",
 		])
@@ -104,15 +101,9 @@ fn swc_compare_files_same_no_changes() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			ROOT_DIR()
-				.join("test_data/new/pallet_staking.rs.txt")
-				.to_str()
-				.unwrap(),
+			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--new",
-			ROOT_DIR()
-				.join("test_data/new/pallet_staking.rs.txt")
-				.to_str()
-				.unwrap(),
+			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--threshold",
 			"0",
 		])
@@ -131,15 +122,12 @@ fn swc_compare_files_errors() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			ROOT_DIR()
+			root_dir()
 				.join("cli/src/main.rs") // Pass in a wrong file.
 				.to_str()
 				.unwrap(),
 			"--new",
-			ROOT_DIR()
-				.join("test_data/new/pallet_staking.rs.txt")
-				.to_str()
-				.unwrap(),
+			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--threshold",
 			"0",
 		])
