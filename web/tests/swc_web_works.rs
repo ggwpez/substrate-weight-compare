@@ -1,10 +1,10 @@
+#![cfg(test)]
+
 use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-mod common;
-
-use common::{succeeds, KillChildOnDrop};
+use swc_core::{VERSION, testing::{assert_version, succeeds, KillChildOnDrop}};
 
 #[test]
 fn swc_web_version_works() {
@@ -12,7 +12,7 @@ fn swc_web_version_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	common::valid_version(&out);
+	assert_version(&out, &*VERSION);
 }
 
 #[test]

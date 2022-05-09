@@ -1,8 +1,9 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use swc::{
-	compare_commits, compare_files, extract_changes, fmt_changes, parse::pallet::parse_files,
+use swc_core::{
+	compare_commits, compare_files, extract_changes, fmt_changes,
+	parse::pallet::{parse_file, parse_files},
 	CompareParams, ExtrinsicDiff, VERSION,
 };
 
@@ -20,12 +21,20 @@ struct MainCmd {
 enum SubCommand {
 	#[clap(subcommand)]
 	Compare(CompareCmd),
+	#[clap(subcommand)]
+	Parse(ParseCmd),
 }
 
 #[derive(Debug, clap::Subcommand)]
 enum CompareCmd {
 	Files(CompareFilesCmd),
 	Commits(CompareCommitsCmd),
+}
+
+/// Tries to parse all files in the given file list or folder.
+#[derive(Debug, clap::Subcommand)]
+enum ParseCmd {
+	Files(ParseFilesCmd),
 }
 
 #[derive(Debug, Parser)]
@@ -41,6 +50,13 @@ struct CompareFilesCmd {
 	/// The new weight files.
 	#[clap(long, required(true), multiple_values(true))]
 	pub new: Vec<PathBuf>,
+}
+
+#[derive(Debug, Parser)]
+struct ParseFilesCmd {
+	/// The files to parse.
+	#[clap(long, index = 1, required(true), multiple_values(true))]
+	pub files: Vec<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -82,6 +98,11 @@ fn main() -> Result<(), String> {
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo })) => {
 			let per_extrinsic = compare_commits(&repo, &old, &new, params.threshold)?;
 			print_changes(per_extrinsic, cmd.verbose);
+		},
+		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
+			println!("Trying to parse {} files...", files.len());
+			let parsed = files.iter().filter_map(|f| parse_file(f).ok()).collect::<Vec<_>>();
+			println!("Parsed {} files successfully", parsed.len());
 		},
 	}
 

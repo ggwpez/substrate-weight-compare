@@ -967,9 +967,9 @@ dependencies = [
 
 [[package]]
 name = "libz-sys"
-version = "1.1.5"
+version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f35facd4a5673cb5a48822be2be1d4236c1c99cb4113cab7061ac720d5bf859"
+checksum = "92e7e15d7610cce1d9752e137625f14e61a28cd45929b6e12e47b50fe154ee2e"
 dependencies = [
  "cc",
  "libc",
@@ -1455,15 +1455,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73b4b750c782965c211b42f022f59af1fbceabdd026623714f104152f1ec149f"
 
 [[package]]
-name = "same-file"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
-dependencies = [
- "winapi-util",
-]
-
-[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1580,7 +1571,19 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 name = "swc"
 version = "0.3.0"
 dependencies = [
- "actix-web",
+ "assert_cmd",
+ "clap",
+ "env_logger",
+ "log",
+ "serial_test",
+ "swc_core",
+ "syn",
+]
+
+[[package]]
+name = "swc_core"
+version = "0.3.0"
+dependencies = [
  "ansi_term",
  "assert_cmd",
  "clap",
@@ -1592,14 +1595,26 @@ dependencies = [
  "log",
  "prettytable-rs",
  "proc-macro2",
- "reqwest",
  "rstest",
  "semver",
  "serial_test",
  "syn",
- "test-env-log",
- "unstringify",
- "walkdir",
+]
+
+[[package]]
+name = "swc_web"
+version = "0.3.0"
+dependencies = [
+ "actix-web",
+ "assert_cmd",
+ "clap",
+ "env_logger",
+ "lazy_static",
+ "log",
+ "reqwest",
+ "serial_test",
+ "swc_core",
+ "syn",
 ]
 
 [[package]]
@@ -1638,17 +1653,6 @@ name = "termtree"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507e9898683b6c43a9aa55b64259b721b52ba226e0f3779137e50ad114a4c90b"
-
-[[package]]
-name = "test-env-log"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877189d680101869f65ef94168105d6c188b3a143c13a2d42cf8a09c4c704f8a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "textwrap"
@@ -1801,12 +1805,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
-name = "unstringify"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9612d66420ead229348915b911ad9689e79dfc347fe7a876a82551c8eab36b5e"
-
-[[package]]
 name = "url"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1837,17 +1835,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "walkdir"
-version = "2.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "808cf2735cd4b6866113f648b791c6adc5714537bc222d9347bb203386ffda56"
-dependencies = [
- "same-file",
- "winapi",
- "winapi-util",
 ]
 
 [[package]]

@@ -9,8 +9,8 @@ use crate::{
 /// Parses hard-coded DB weight files correctly.
 #[rstest]
 // Modified from Substrate.
-#[case("test_data/new/rocksdb_weights.rs.txt", 25, 100, Db::Rocks, true)]
-#[case("test_data/new/paritydb_weights.rs.txt", 8, 50, Db::Parity, false)]
+#[case("../test_data/new/rocksdb_weights.rs.txt", 25, 100, Db::Rocks, true)]
+#[case("../test_data/new/paritydb_weights.rs.txt", 8, 50, Db::Parity, false)]
 fn parses_weight_files(
 	#[case] file: PathBuf,
 	#[case] read: u128,

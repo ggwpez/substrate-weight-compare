@@ -1,43 +1,7 @@
-[package]
-name = "swc"
-version = "0.3.0"
-edition = "2021"
-authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+[workspace]
 
-[[bin]]
-name = "swc"
-path = "src/cli.rs"
-
-[[bin]]
-name = "swc-web"
-path = "src/web.rs"
-
-[features]
-version-locked-tests = []
-polkadot = []
-moonbeam = []
-composable = []
-
-[dependencies]
-actix-web = "4.0.1"
-ansi_term = "0.12.1"
-clap = { version = "3.1.12", features = ["derive"] }
-env_logger = "0.9.0"
-git-version = "0.3.5"
-git2 = "0.14.2"
-glob = "0.3.0"
-lazy_static = "1.4.0"
-log = "0.4.16"
-prettytable-rs = "0.8.0"
-proc-macro2 = "1.0.38"
-syn = { version = "1.0.91", features = ["parsing", "full"] }
-unstringify = "0.1.4"
-
-[dev-dependencies]
-assert_cmd = "2.0.4"
-reqwest = { version = "0.11.10", default_features = false, features = ["blocking"] }
-rstest = "0.12.0"
-semver = "1.0.9"
-serial_test = "*"
-test-env-log = "0.2.8"
-walkdir = "2.3.2"
+members = [
+	"core",
+	"cli",
+	"web"
+]

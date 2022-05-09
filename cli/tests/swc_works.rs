@@ -1,12 +1,8 @@
 use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
-use std::{path::Path, process::Command};
+use std::{path::{PathBuf, Path}, process::Command};
 
-mod common;
-
-use common::succeeds;
-
-const ROOT_DIR: &str = env!("CARGO_MANIFEST_DIR");
+use swc_core::{VERSION, testing::{ROOT_DIR, assert_version, succeeds}};
 
 #[test]
 fn swc_version_works() {
@@ -14,7 +10,7 @@ fn swc_version_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	common::valid_version(&out);
+	assert_version(&out, &*VERSION);
 }
 
 #[test]
@@ -81,12 +77,12 @@ fn swc_compare_files_works() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			Path::new(ROOT_DIR)
+			ROOT_DIR()
 				.join("test_data/old/pallet_staking.rs.txt")
 				.to_str()
 				.unwrap(),
 			"--new",
-			Path::new(ROOT_DIR)
+			ROOT_DIR()
 				.join("test_data/new/pallet_staking.rs.txt")
 				.to_str()
 				.unwrap(),
@@ -108,12 +104,12 @@ fn swc_compare_files_same_no_changes() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			Path::new(ROOT_DIR)
+			ROOT_DIR()
 				.join("test_data/new/pallet_staking.rs.txt")
 				.to_str()
 				.unwrap(),
 			"--new",
-			Path::new(ROOT_DIR)
+			ROOT_DIR()
 				.join("test_data/new/pallet_staking.rs.txt")
 				.to_str()
 				.unwrap(),
@@ -135,12 +131,12 @@ fn swc_compare_files_errors() {
 		.args(["compare", "files"])
 		.args([
 			"--old",
-			Path::new(ROOT_DIR)
-				.join("src/lib.rs") // Pass in a wrong file.
+			ROOT_DIR()
+				.join("cli/src/main.rs") // Pass in a wrong file.
 				.to_str()
 				.unwrap(),
 			"--new",
-			Path::new(ROOT_DIR)
+			ROOT_DIR()
 				.join("test_data/new/pallet_staking.rs.txt")
 				.to_str()
 				.unwrap(),

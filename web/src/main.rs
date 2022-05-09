@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use log::info;
 use std::{path::PathBuf, str::FromStr, sync::Mutex};
 
-use swc::{compare_commits, VERSION};
+use swc_core::{compare_commits, VERSION};
 
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]

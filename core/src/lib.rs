@@ -14,6 +14,8 @@ use syn::{Expr, Item, Type};
 pub mod parse;
 pub mod scope;
 pub mod term;
+pub mod testing;
+
 #[cfg(test)]
 mod test;
 

@@ -18,7 +18,7 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::PathBuf;
 
-			use swc::{checkout, parse::pallet::parse_file};
+			use crate::{checkout, parse::pallet::parse_file};
 
 			/// These tests only work on Moonbeam master and are therefore not run by default.
 			/// They must possibly be updated on every Moonbeam update.
@@ -112,7 +112,7 @@ macro_rules! integration_test {
 			#[cfg_attr(not(feature = $repo), ignore)]
 			fn parses_db_weight_files(db_files: Vec<PathBuf>) {
 				for file in db_files {
-					swc::parse::storage::parse_file(&file).unwrap();
+					crate::parse::storage::parse_file(&file).unwrap();
 				}
 			}
 
@@ -122,7 +122,7 @@ macro_rules! integration_test {
 			fn parses_exactly_db_weight_files(rust_files: Vec<PathBuf>, db_files: Vec<PathBuf>) {
 				let weights = rust_files
 					.iter()
-					.filter(|p| swc::parse::storage::parse_file(p).is_ok())
+					.filter(|p| crate::parse::storage::parse_file(p).is_ok())
 					.cloned()
 					.collect::<Vec<_>>();
 
@@ -176,7 +176,7 @@ macro_rules! integration_test {
 
 			/// Returns the root directory to the Moonbeam git repository.
 			fn root() -> PathBuf {
-				PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("repos").join($repo)
+				PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("repos").join($repo)
 			}
 
 			/// Format all files that are not pallet files and all pallet files that are not files.
