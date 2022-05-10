@@ -2,7 +2,7 @@ use rstest::*;
 use std::path::PathBuf;
 
 use crate::{
-	parse::storage::{parse_file, Db, DbWeights, RWs},
+	parse::storage::{parse_file, Db, RWs, Weights},
 	term::Term,
 };
 
@@ -24,7 +24,7 @@ fn parses_weight_files(
 	assert_eq!(want, got);
 }
 
-fn make_weights(read: u128, write: u128, db: Db, per_nanos: bool) -> DbWeights {
+fn make_weights(read: u128, write: u128, db: Db, per_nanos: bool) -> Weights {
 	let mut read = Term::Value(read);
 	let mut write = Term::Value(write);
 
@@ -32,5 +32,5 @@ fn make_weights(read: u128, write: u128, db: Db, per_nanos: bool) -> DbWeights {
 		read = Term::Mul(read.into(), Term::Var("constants::WEIGHT_PER_NANOS".into()).into());
 		write = Term::Mul(write.into(), Term::Var("constants::WEIGHT_PER_NANOS".into()).into());
 	}
-	DbWeights { weights: RWs { read, write }, db }
+	Weights { weights: RWs { read, write }, db }
 }

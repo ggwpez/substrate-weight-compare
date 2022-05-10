@@ -14,9 +14,27 @@ pub mod storage;
 
 use std::{io::Read, path::Path};
 
-pub enum ParseResult {
+pub enum ParsedFile {
 	Pallet(pallet::ParsedExtrinsic),
-	Db(storage::DbWeights),
+	Storage(storage::Weights),
+	Overhead(overhead::Weight),
+}
+
+/// Tries to guess the type of weight file and parses it.
+///
+/// Does not return an error since it just *tires* to do so, not guarantee.
+pub fn try_parse_file(file: &Path) -> Option<ParsedFile> {
+	if let Ok(parsed) = pallet::parse_file(file) {
+		return Some(ParsedFile::Pallet(parsed))
+	}
+	if let Ok(parsed) = storage::parse_file(file) {
+		return Some(ParsedFile::Storage(parsed))
+	}
+	if let Ok(parsed) = overhead::parse_file(file) {
+		return Some(ParsedFile::Overhead(parsed))
+	}
+
+	None
 }
 
 pub fn read_file(file: &Path) -> Result<String, String> {

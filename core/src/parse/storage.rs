@@ -19,36 +19,36 @@ pub struct RWs {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct DbWeights {
+pub struct Weights {
 	pub db: Db,
 	pub weights: RWs,
 }
 
-/// Multiplies a [`Term`] with the [`Term::Read`] constant.
+/// Multiplies a [`Term`] with the [`Term::StorageRead`] constant.
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::Read.into())
+		Term::Mul($a.into(), Term::StorageRead.into())
 	};
 }
 
-/// Multiplies a [`Term`] with the [`Term::Write`] constant.
+/// Multiplies a [`Term`] with the [`Term::StorageWrite`] constant.
 #[macro_export]
 macro_rules! writes {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::Write.into())
+		Term::Mul($a.into(), Term::StorageWrite.into())
 	};
 }
 
 /// Parses a storage weight file.
 ///
 /// These files are often named: `paritydb_weights.rs.txt` or `rocksdb_weights.rs.txt`.
-pub fn parse_file(file: &Path) -> Result<DbWeights, String> {
+pub fn parse_file(file: &Path) -> Result<Weights, String> {
 	let content = super::read_file(file)?;
 	parse_content(content)
 }
 
-pub fn parse_content(content: String) -> Result<DbWeights, String> {
+pub fn parse_content(content: String) -> Result<Weights, String> {
 	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
 	for item in ast.items {
 		if let Ok(res) = handle_item(&item) {
@@ -58,7 +58,7 @@ pub fn parse_content(content: String) -> Result<DbWeights, String> {
 	Err("No DB weights found".to_string())
 }
 
-fn handle_item(item: &Item) -> Result<DbWeights, String> {
+fn handle_item(item: &Item) -> Result<Weights, String> {
 	debug!(target: LOG, "Entering item");
 	match item {
 		// The current Substrate template has a useless `constants` mod.
@@ -99,7 +99,7 @@ fn handle_item(item: &Item) -> Result<DbWeights, String> {
 ///     write: 100_000 * constants::WEIGHT_PER_NANOS,
 /// };
 /// ```
-fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<DbWeights, String> {
+fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weights, String> {
 	let def: ItemConst = syn::parse2(tokens).map_err(|e| e.to_string())?;
 	let name = def.ident.to_string();
 
@@ -115,7 +115,7 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<DbWeights, String> {
 	match def.expr.as_ref() {
 		Expr::Struct(s) => {
 			let weights = parse_runtime_db_weight(s)?;
-			Ok(DbWeights { db, weights })
+			Ok(Weights { db, weights })
 		},
 		_ => Err("Unexpected const value".into()),
 	}

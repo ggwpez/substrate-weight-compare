@@ -7,10 +7,12 @@ macro_rules! integration_test {
 
 		$num_rust_files:expr,
 		$num_pallet_files:expr,
-		$num_db_files:expr,
+		$num_storage_files:expr,
+		$num_overhead_files:expr,
 
 		$pallet_patterns:expr,
-		$db_patterns:expr
+		$db_patterns:expr,
+		$overhead_patterns:expr
 	) => {
 		mod $mod_name {
 			use glob::glob;
@@ -18,7 +20,10 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::PathBuf;
 
-			use crate::{checkout, parse::pallet::parse_file};
+			use crate::{
+				checkout,
+				parse::{pallet::parse_file, ParsedFile},
+			};
 
 			/// These tests only work on Moonbeam master and are therefore not run by default.
 			/// They must possibly be updated on every Moonbeam update.
@@ -32,7 +37,10 @@ macro_rules! integration_test {
 				const NUM_PALLET_WEIGHT_FILES: usize = $num_pallet_files;
 
 				/// The number of database weight files in the repo.
-				const NUM_DB_WEIGHT_FILES: usize = $num_db_files;
+				const NUM_STORAGE_WEIGHT_FILES: usize = $num_storage_files;
+
+				/// The number of database weight files in the repo.
+				const NUM_OVERHEAD_WEIGHT_FILES: usize = $num_overhead_files;
 
 				/// Ensure that Moonbeam master is checked out.
 				///
@@ -65,9 +73,18 @@ macro_rules! integration_test {
 				#[test]
 				#[serial]
 				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
-				fn num_db_weight_files() {
+				fn num_storage_weight_files() {
 					init();
-					assert_eq!(db_files().len(), NUM_DB_WEIGHT_FILES);
+					assert_eq!(storage_files().len(), NUM_STORAGE_WEIGHT_FILES);
+				}
+
+				/// Asserts that the correct number of weight files is found.
+				#[test]
+				#[serial]
+				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
+				fn num_overhead_weight_files() {
+					init();
+					assert_eq!(overhead_files().len(), NUM_OVERHEAD_WEIGHT_FILES);
 				}
 			}
 
@@ -110,8 +127,8 @@ macro_rules! integration_test {
 			#[rstest]
 			#[serial]
 			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_db_weight_files(db_files: Vec<PathBuf>) {
-				for file in db_files {
+			fn parses_db_weight_files(storage_files: Vec<PathBuf>) {
+				for file in storage_files {
 					crate::parse::storage::parse_file(&file).unwrap();
 				}
 			}
@@ -119,19 +136,77 @@ macro_rules! integration_test {
 			#[rstest]
 			#[serial]
 			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_exactly_db_weight_files(rust_files: Vec<PathBuf>, db_files: Vec<PathBuf>) {
+			fn parses_exactly_db_weight_files(
+				rust_files: Vec<PathBuf>,
+				storage_files: Vec<PathBuf>,
+			) {
 				let weights = rust_files
 					.iter()
 					.filter(|p| crate::parse::storage::parse_file(p).is_ok())
 					.cloned()
 					.collect::<Vec<_>>();
 
-				if db_files.len() != weights.len() {
+				if storage_files.len() != weights.len() {
 					panic!(
 						"Expected {} weights, found {}:\n{}",
-						db_files.len(),
+						storage_files.len(),
 						weights.len(),
 						fmt_diff(&rust_files, &weights)
+					);
+				}
+			}
+
+			/// Test that [`crate::parse::try_parse_file`] detects the correct file type.
+			#[rstest]
+			#[serial]
+			#[cfg_attr(not(feature = $repo), ignore)]
+			fn try_parse_detects_correct_files(
+				rust_files: Vec<PathBuf>,
+				storage_files: Vec<PathBuf>,
+				pallet_files: Vec<PathBuf>,
+				overhead_files: Vec<PathBuf>,
+			) {
+				let detected = rust_files
+					.iter()
+					.filter_map(|f| crate::parse::try_parse_file(f))
+					.collect::<Vec<_>>();
+
+				let detected_pallets = detected
+					.iter()
+					.filter(|d| matches!(d, ParsedFile::Pallet(_)))
+					.collect::<Vec<_>>();
+
+				if pallet_files.len() != detected_pallets.len() {
+					panic!(
+						"Expected {} pallet weights files, found {}",
+						pallet_files.len(),
+						detected_pallets.len(),
+					);
+				}
+
+				let detected_storage = detected
+					.iter()
+					.filter(|d| matches!(d, ParsedFile::Storage(_)))
+					.collect::<Vec<_>>();
+
+				if storage_files.len() != detected_storage.len() {
+					panic!(
+						"Expected {} storage weights files, found {}",
+						storage_files.len(),
+						detected_storage.len(),
+					);
+				}
+
+				let detected_overhead = detected
+					.iter()
+					.filter(|d| matches!(d, ParsedFile::Storage(_)))
+					.collect::<Vec<_>>();
+
+				if overhead_files.len() != detected_overhead.len() {
+					panic!(
+						"Expected {} overhead weights files, found {}",
+						overhead_files.len(),
+						detected_overhead.len(),
 					);
 				}
 			}
@@ -141,7 +216,8 @@ macro_rules! integration_test {
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
 			fn pallet_files() -> Vec<PathBuf> {
-				$pallet_patterns
+				let pattern: Vec<&str> = $pallet_patterns;
+				pattern
 					.iter()
 					.map(|pattern| {
 						let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
@@ -156,8 +232,25 @@ macro_rules! integration_test {
 
 			/// Returns all weight files from a moonbeam repository.
 			#[fixture]
-			fn db_files() -> Vec<PathBuf> {
-				$db_patterns
+			fn storage_files() -> Vec<PathBuf> {
+				let pattern: Vec<&str> = $db_patterns;
+				pattern
+					.iter()
+					.map(|pattern| {
+						let pattern = format!("{}/{}", root().to_string_lossy(), pattern);
+						glob(&pattern).unwrap().map(|f| f.unwrap())
+					})
+					.flatten()
+					.collect()
+			}
+
+			// FIXME remove moonbeam
+
+			/// Returns all weight files from a moonbeam repository.
+			#[fixture]
+			fn overhead_files() -> Vec<PathBuf> {
+				let pattern: Vec<&str> = $overhead_patterns;
+				pattern
 					.iter()
 					.map(|pattern| {
 						let pattern = format!("{}/{}", root().to_string_lossy(), pattern);

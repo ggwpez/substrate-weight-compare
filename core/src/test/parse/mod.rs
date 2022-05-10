@@ -8,13 +8,16 @@ integration_test!(
 	804,
 	138,
 	10,
+	10,
 	vec![
 		"runtime/*/src/weights/**/*.rs",
 		"bridges/modules/*/src/weights.rs",
 		"bridges/primitives/messages/src/source_chain.rs",
 		"xcm/xcm-executor/src/traits/drop_assets.rs"
 	],
-	vec!["runtime/*/constants/src/weights/**/*db_weights.rs"]
+	// Keep the patterns in the most general way to catch new files.
+	vec!["**/*db_weights.rs"],
+	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]
 );
 
 integration_test!(
@@ -24,8 +27,10 @@ integration_test!(
 	195,
 	6,
 	0,
-	vec!["pallets/*/src/weights.rs", "pallets/parachain-staking/src/traits.rs"],
-	vec!["^$"]
+	0,
+	vec!["**/weights.rs", "pallets/parachain-staking/src/traits.rs"],
+	vec![],
+	vec![]
 );
 
 integration_test!(
@@ -35,6 +40,8 @@ integration_test!(
 	344,
 	79,
 	0,
-	vec!["frame/*/src/weights.rs", "runtime/*/src/weights/*.rs"],
-	vec!["^$"]
+	0,
+	vec!["**/weights.rs", "**/weights/*.rs"],
+	vec![],
+	vec![]
 );

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use swc_core::{
 	compare_commits, compare_files, extract_changes, fmt_changes,
-	parse::pallet::{parse_file, parse_files},
+	parse::{pallet::parse_files, try_parse_file},
 	CompareParams, ExtrinsicDiff, VERSION,
 };
 
@@ -101,7 +101,7 @@ fn main() -> Result<(), String> {
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
-			let parsed = files.iter().filter_map(|f| parse_file(f).ok());
+			let parsed = files.iter().filter_map(|f| try_parse_file(f));
 			println!("Parsed {} files successfully", parsed.count());
 		},
 	}

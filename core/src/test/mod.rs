@@ -1,3 +1,4 @@
 pub mod pallet;
-mod parse;
+pub mod parse;
 pub mod storage;
+pub mod term;

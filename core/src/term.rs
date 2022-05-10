@@ -2,6 +2,8 @@
 
 use syn::{BinOp, ExprBinary};
 
+use crate::scope::Scope;
+
 /// A symbolic term that can be used to express simple arithmetic.
 ///
 /// Can only be evaluated to a concrete value within a [`crate::scope::Scope`].
@@ -17,8 +19,8 @@ use syn::{BinOp, ExprBinary};
 pub enum Term {
 	Value(u128),
 	Var(String),
-	Read,
-	Write,
+	StorageRead,
+	StorageWrite,
 
 	Add(Box<Term>, Box<Term>),
 	Mul(Box<Term>, Box<Term>),
@@ -31,13 +33,25 @@ impl Term {
 			Self::Value(x) => x,
 			Self::Add(x, y) => x.eval(ctx) + y.eval(ctx),
 			Self::Mul(x, y) => x.eval(ctx) * y.eval(ctx),
-			Self::Read => ctx.read(),
-			Self::Write => ctx.write(),
+			Self::StorageRead => ctx.read(),
+			Self::StorageWrite => ctx.write(),
 			Self::Var(x) => {
 				// TODO change to result
 				let var = ctx.get(&x).unwrap_or_else(|| panic!("Variable '{}' not found", x));
 				var.eval(ctx)
 			},
+		}
+	}
+
+	/// Returns the variables of the term that are not part of [`crate::scope::Scope`].
+	pub fn unbound_vars(&self, scope: &impl Scope) -> Vec<String> {
+		match self {
+			Self::Var(var) if scope.get(var).is_some() => vec![],
+			Self::Var(var) => vec![var.into()],
+
+			Self::Value(_) | Self::StorageRead | Self::StorageWrite => vec![],
+			Self::Mul(l, r) | Self::Add(l, r) =>
+				[l.unbound_vars(scope), r.unbound_vars(scope)].concat(),
 		}
 	}
 }
