@@ -1,19 +1,18 @@
 //! Provides a scope for evaluating [`Term`]s.
 
-use crate::{term::Term, val};
+use crate::{term::Term, val, WEIGHT_PER_NANOS};
 use std::collections::BTreeMap as Map;
 
-/// Hardcoded to avoid frame_support as dependency…
-const WEIGHT_PER_NANOS: u128 = 1_000;
+pub const STORAGE_READ_VAR: &'static str = "READ";
+pub const STORAGE_WRITE_VAR: &'static str = "WRITE";
 
 /// A scope maps the constants to their values for [`Term::eval`].
 pub trait Scope {
 	fn get(&self, name: &str) -> Option<Term>;
-
-	fn read(&self) -> u128;
-	fn write(&self) -> u128;
+	fn put_var(&mut self, name: &str, value: Term);
 }
 
+#[derive(Clone)]
 pub struct BasicScope {
 	vars: Map<String, Term>,
 }
@@ -29,33 +28,28 @@ impl BasicScope {
 			.with_var("constants::WEIGHT_PER_NANOS", val!(WEIGHT_PER_NANOS))
 	}
 
-	pub fn with_var(mut self, name: &str, value: Term) -> Self {
-		assert!(!self.vars.contains_key(&name.to_string()), "Overwriting variable: {}", name);
-
+	pub fn put_var(&mut self, name: &str, value: Term) {
 		self.vars.insert(name.into(), value);
-		self
+	}
+
+	pub fn with_var(&self, name: &str, value: Term) -> Self {
+		let mut ret = self.clone();
+		ret.vars.insert(name.into(), value);
+		ret
+	}
+
+	pub fn with_storage_weights(self, read: Term, write: Term) -> Self {
+		self.with_var(STORAGE_READ_VAR, read).with_var(STORAGE_WRITE_VAR, write)
 	}
 }
 
 impl Scope for BasicScope {
 	fn get(&self, name: &str) -> Option<Term> {
-		self.vars.get(name.into()).cloned()
+		self.vars.get(&name.to_string()).cloned()
 	}
 
-	fn read(&self) -> u128 {
-		if let Some(Term::Value(read)) = self.get("T::DbWeights::get().read()") {
-			read
-		} else {
-			panic!("Unknown storage read")
-		}
-	}
-
-	fn write(&self) -> u128 {
-		if let Some(Term::Value(write)) = self.get("T::DbWeights::get().write()") {
-			write
-		} else {
-			panic!("Unknown storage write")
-		}
+	fn put_var(&mut self, name: &str, value: Term) {
+		self.vars.insert(name.to_string(), value);
 	}
 }
 
@@ -69,13 +63,6 @@ impl Scope for MockedScope {
 		Some(Term::Value(7))
 	}
 
-	/// Returns 50.
-	fn read(&self) -> u128 {
-		50
-	}
-
-	/// Returns 100.
-	fn write(&self) -> u128 {
-		100
-	}
+	/// Does nothing.
+	fn put_var(&mut self, name: &str, value: Term) {}
 }

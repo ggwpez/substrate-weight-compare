@@ -9,6 +9,7 @@ use std::{
 	collections::{BTreeMap as Map, BTreeSet as Set},
 	path::{Path, PathBuf},
 };
+use prettytable::{Table,table,cell, row};
 use syn::{Expr, Item, Type};
 
 pub mod parse;
@@ -20,28 +21,27 @@ pub mod testing;
 mod test;
 
 use parse::pallet::*;
+use term::{multivariadic_eval, Term};
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
 	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!());
 }
 
-// 1000 weight TODO remove
-type WeightNs = u128;
 type Percent = f64;
 
 pub enum ExtrinsicChange {
 	Same,
 	Added,
 	Removed,
-	Change(WeightNs, WeightNs, Percent),
+	Change(u128, u128, Percent),
 }
 
 pub struct ExtrinsicDiff {
 	pub name: String,
 	pub file: String,
-	pub old: WeightNs,
-	pub new: WeightNs,
+	pub old: u128,
+	pub new: u128,
 	pub change: Percent,
 }
 
@@ -98,6 +98,23 @@ fn list_files(regex: String) -> Vec<PathBuf> {
 	files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect()
 }
 
+pub fn compare_extrinsic(old: &Term, new: &Term) -> ExtrinsicChange {
+	// Default Substrate scope to KISS.
+	let scope = scope::BasicScope::empty().with_storage_weights(val!(8_000), val!(50_000));
+	// Use 100 until <https://github.com/paritytech/substrate/issues/11397> is done.
+	let max = 100;
+
+	let worst_old = multivariadic_eval(old, scope.clone(), max);
+	let worst_new = multivariadic_eval(new, scope.clone(), max);
+	let p = percent(worst_old, worst_new);
+
+	if p == 0.0 {
+		ExtrinsicChange::Same
+	} else {
+		ExtrinsicChange::Change(worst_old, worst_new, p)
+	}
+}
+
 pub fn compare_files(olds: ParsedFiles, news: ParsedFiles) -> TotalDiff {
 	let files = Set::from_iter(olds.keys().cloned().chain(news.keys().cloned()));
 	let mut diff = TotalDiff::new();
@@ -137,17 +154,11 @@ pub fn compare_files(olds: ParsedFiles, news: ParsedFiles) -> TotalDiff {
 				continue
 			}
 
-			let old_w = olds[&extrinsic];
-			let new_w = news[&extrinsic];
-			let p = percent(old_w, new_w);
+			let old_w = &olds[&extrinsic];
+			let new_w = &news[&extrinsic];
+			let change = compare_extrinsic(old_w, new_w);
 
-			if p == 0.0 {
-				diff.get_mut(&file).unwrap().insert(extrinsic.clone(), ExtrinsicChange::Same);
-			} else {
-				diff.get_mut(&file)
-					.unwrap()
-					.insert(extrinsic.clone(), ExtrinsicChange::Change(old_w, new_w, p));
-			}
+			diff.get_mut(&file).unwrap().insert(extrinsic.clone(), change);
 		}
 	}
 
@@ -175,22 +186,22 @@ pub fn extract_changes(diff: TotalDiff, threshold: Percent) -> Vec<ExtrinsicDiff
 	changed
 }
 
-pub fn fmt_changes(changes: &[ExtrinsicDiff]) -> Vec<String> {
-	let mut out = Vec::new();
+pub fn fmt_changes(changes: &[ExtrinsicDiff]) -> String {
+	let mut table = table!(["Pallet", "Extrinsic", "Old", "New", "Change [%]"]);
+
 	for diff in changes {
-		out.push(format!(
-			"{:>40}::{:<40} {:>12} -> {:<12} ns ({:<12} %)",
+		table.add_row(row![
 			diff.file,
 			diff.name,
-			diff.old,
-			diff.new,
+			fmt_value(diff.old),
+			fmt_value(diff.new),
 			color_percent(diff.change),
-		));
+		]);
 	}
-	out
+	table.to_string()
 }
 
-fn percent(old: WeightNs, new: WeightNs) -> f64 {
+pub fn percent(old: u128, new: u128) -> f64 {
 	if old == 0 && new != 0 {
 		100.0
 	} else if old != 0 && new == 0 {
@@ -202,7 +213,7 @@ fn percent(old: WeightNs, new: WeightNs) -> f64 {
 	}
 }
 
-fn color_percent(p: f64) -> String {
+pub fn color_percent(p: f64) -> String {
 	use ansi_term::Colour;
 
 	let s = format!("{:+5.2}", p);
@@ -212,4 +223,42 @@ fn color_percent(p: f64) -> String {
 		_ => Colour::White.paint(s),
 	}
 	.to_string()
+}
+
+/// Hardcoded to avoid frame_support as dependency…
+pub const WEIGHT_PER_PICOS: u128 = 1;
+pub const WEIGHT_PER_NANOS: u128 = 1_000 * WEIGHT_PER_PICOS;
+pub const WEIGHT_PER_MICROS: u128 = 1_000 * WEIGHT_PER_NANOS;
+pub const WEIGHT_PER_MILLIS: u128 = 1_000 * WEIGHT_PER_MICROS;
+pub const WEIGHT_PER_SECS: u128 = 1_000 * WEIGHT_PER_MILLIS;
+
+pub fn fmt_value(w: u128) -> String {
+	if w >= WEIGHT_PER_SECS {
+		format!("{:.2}s", w as f64 / WEIGHT_PER_SECS as f64)
+	} else if w >= WEIGHT_PER_MILLIS {
+		format!("{:.2}ms", w as f64 / WEIGHT_PER_MILLIS as f64)
+	} else if w >= WEIGHT_PER_MICROS {
+		format!("{:.2}μs", w as f64 / WEIGHT_PER_MICROS as f64)
+	} else if w >= WEIGHT_PER_NANOS {
+		format!("{:.2}ns", w as f64 / WEIGHT_PER_NANOS as f64)
+	} else {
+		// Best effort approach: Just assume its actually not a weight
+		// since the substrate benchmarking resolution is [`WEIGHT_PER_NANOS`].
+		// Works fine in 99% of cases.
+		format!("{}", w)
+	}
+}
+
+/// Put an underscore after each third digit. 1000 -> 1_000
+pub fn fmt_with_underscore(val: u128) -> String {
+	let mut res = String::new();
+	let s = val.to_string();
+
+	for (i, char) in s.chars().rev().enumerate() {
+		if i % 3 == 0 && i != 0 {
+			res.insert(0, '_');
+		}
+		res.insert(0, char);
+	}
+	res
 }

@@ -1,10 +1,17 @@
 use clap::Parser;
-use std::path::PathBuf;
+use log::*;
+use std::{collections::BTreeSet as Set, ops::Range, path::PathBuf};
 
 use swc_core::{
-	compare_commits, compare_files, extract_changes, fmt_changes,
-	parse::{pallet::parse_files, try_parse_file},
-	CompareParams, ExtrinsicDiff, VERSION,
+	color_percent, compare_commits, compare_files, extract_changes, fmt_changes, fmt_value,
+	parse::{
+		pallet::{parse_files, ParsedFiles},
+		try_parse_file,
+	},
+	percent,
+	scope::{BasicScope, Scope},
+	term::Term,
+	val, CompareParams, ExtrinsicDiff, VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -91,6 +98,8 @@ fn main() -> Result<(), String> {
 		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
 			let olds = parse_files(&old)?;
 			let news = parse_files(&new)?;
+
+			//compare(olds, news);
 			let diff = compare_files(olds, news);
 			let per_extrinsic = extract_changes(diff, params.threshold);
 			print_changes(per_extrinsic, cmd.verbose);
@@ -115,9 +124,7 @@ fn print_changes(per_extrinsic: Vec<ExtrinsicDiff>, verbose: bool) {
 		return
 	}
 
-	for line in fmt_changes(&per_extrinsic) {
-		print(line, verbose);
-	}
+	print(format!("\n{}", fmt_changes(&per_extrinsic)), verbose);
 }
 
 fn print(msg: String, verbose: bool) {

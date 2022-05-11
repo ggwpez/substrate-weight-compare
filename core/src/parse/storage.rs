@@ -28,7 +28,7 @@ pub struct Weights {
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::StorageRead.into())
+		Term::Mul($a.into(), Term::Var(crate::scope::STORAGE_READ_VAR.into()).into())
 	};
 }
 
@@ -36,7 +36,7 @@ macro_rules! reads {
 #[macro_export]
 macro_rules! writes {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::StorageWrite.into())
+		Term::Mul($a.into(), Term::Var(crate::scope::STORAGE_WRITE_VAR.into()).into())
 	};
 }
 

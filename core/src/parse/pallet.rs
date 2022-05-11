@@ -9,7 +9,7 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, scope::MockedScope, term::Term, WeightNs};
+use crate::{mul, scope::MockedScope, term::Term};
 
 pub type PalletName = String;
 pub type ExtrinsicName = String;
@@ -17,8 +17,8 @@ pub type ExtrinsicName = String;
 /// Maps an Extrinsic in the form of (PalletName, ExtrinsicName) to its Weight.
 ///
 /// NOTE: Uses a 2D map for prefix matching.
-pub type ParsedFiles = Map<PalletName, Map<ExtrinsicName, WeightNs>>;
-pub type ParsedExtrinsic = Map<ExtrinsicName, WeightNs>;
+pub type ParsedFiles = Map<PalletName, Map<ExtrinsicName, Term>>;
+pub type ParsedExtrinsic = Map<ExtrinsicName, Term>;
 
 const LOG: &str = "ext-parser";
 
@@ -50,7 +50,7 @@ pub fn parse_content(content: String) -> Result<ParsedExtrinsic, String> {
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
-pub(crate) fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> {
+pub(crate) fn handle_item(item: &Item) -> Result<Map<String, Term>, String> {
 	match item {
 		Item::Impl(imp) => {
 			match imp.self_ty.as_ref() {
@@ -87,7 +87,7 @@ pub(crate) fn handle_item(item: &Item) -> Result<Map<String, WeightNs>, String> 
 			for f in &imp.items {
 				if let ImplItem::Method(m) = f {
 					let (name, weight) = handle_method(m)?;
-					weights.insert(name, weight.eval(&MockedScope::default())); // FIXME
+					weights.insert(name, weight); // FIXME
 				}
 			}
 			Ok(weights)
