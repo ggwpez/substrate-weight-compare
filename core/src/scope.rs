@@ -64,5 +64,5 @@ impl Scope for MockedScope {
 	}
 
 	/// Does nothing.
-	fn put_var(&mut self, name: &str, value: Term) {}
+	fn put_var(&mut self, _name: &str, _value: Term) {}
 }

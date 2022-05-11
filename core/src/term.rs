@@ -96,7 +96,7 @@ impl Term {
 	pub fn bound_vars(&self, scope: &impl Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::from([var.into()]),
-			Self::Var(var) => Set::default(),
+			Self::Var(_var) => Set::default(),
 
 			Self::Value(_) => Set::default(),
 			Self::Mul(l, r) | Self::Add(l, r) =>

@@ -5,11 +5,11 @@ use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 use log::*;
+use prettytable::{cell, row, table};
 use std::{
 	collections::{BTreeMap as Map, BTreeSet as Set},
 	path::{Path, PathBuf},
 };
-use prettytable::{Table,table,cell, row};
 use syn::{Expr, Item, Type};
 
 pub mod parse;

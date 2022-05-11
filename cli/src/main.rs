@@ -1,17 +1,11 @@
 use clap::Parser;
-use log::*;
-use std::{collections::BTreeSet as Set, ops::Range, path::PathBuf};
+
+use std::path::PathBuf;
 
 use swc_core::{
-	color_percent, compare_commits, compare_files, extract_changes, fmt_changes, fmt_value,
-	parse::{
-		pallet::{parse_files, ParsedFiles},
-		try_parse_file,
-	},
-	percent,
-	scope::{BasicScope, Scope},
-	term::Term,
-	val, CompareParams, ExtrinsicDiff, VERSION,
+	compare_commits, compare_files, extract_changes, fmt_changes,
+	parse::{pallet::parse_files, try_parse_file},
+	CompareParams, ExtrinsicDiff, VERSION,
 };
 
 #[derive(Debug, Parser)]

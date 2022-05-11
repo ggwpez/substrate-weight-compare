@@ -4,7 +4,7 @@ use syn::*;
 
 use crate::{
 	add, mul,
-	parse::pallet::{parse_content, parse_expression, parse_file, ParsedExtrinsic},
+	parse::pallet::{parse_content, parse_expression, parse_file},
 	reads,
 	scope::MockedScope,
 	term::Term,
@@ -35,10 +35,10 @@ fn parses_weight_files(#[case] path: PathBuf) {
 }"
 )]
 fn parse_content_works(#[case] input: String) {
-	/*FIXME let got = parse_content(input).unwrap();
+	let _got = parse_content(input).unwrap();
 
-	let want = ParsedExtrinsic::from([("ext".into(), 5)]);
-	assert_eq!(want, got);*/
+	//FIXME let want = ParsedExtrinsic::from([("ext".into(), 5)]);
+	//assert_eq!(want, got);
 }
 
 #[rstest]

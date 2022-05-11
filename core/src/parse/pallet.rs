@@ -9,7 +9,7 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, scope::MockedScope, term::Term};
+use crate::{mul, term::Term};
 
 pub type PalletName = String;
 pub type ExtrinsicName = String;

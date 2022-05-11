@@ -1,12 +1,7 @@
 use rstest::*;
 use std::collections::BTreeSet as Set;
 
-use crate::{
-	add, mul, reads,
-	scope::{BasicScope, Scope},
-	term::Term,
-	val, var, writes,
-};
+use crate::{add, mul, scope::BasicScope, term::Term, val, var};
 
 #[rstest]
 #[case(val!(123), vec![], vec![])]
