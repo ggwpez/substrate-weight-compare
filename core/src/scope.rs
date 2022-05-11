@@ -3,8 +3,8 @@
 use crate::{term::Term, val, WEIGHT_PER_NANOS};
 use std::collections::BTreeMap as Map;
 
-pub const STORAGE_READ_VAR: &'static str = "READ";
-pub const STORAGE_WRITE_VAR: &'static str = "WRITE";
+pub const STORAGE_READ_VAR: &str = "READ";
+pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
 /// A scope maps the constants to their values for [`Term::eval`].
 pub trait Scope {

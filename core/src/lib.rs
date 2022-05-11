@@ -105,7 +105,7 @@ pub fn compare_extrinsic(old: &Term, new: &Term) -> ExtrinsicChange {
 	let max = 100;
 
 	let worst_old = multivariadic_eval(old, scope.clone(), max);
-	let worst_new = multivariadic_eval(new, scope.clone(), max);
+	let worst_new = multivariadic_eval(new, scope, max);
 	let p = percent(worst_old, worst_new);
 
 	if p == 0.0 {

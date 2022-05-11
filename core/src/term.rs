@@ -114,7 +114,7 @@ impl Term {
 			equation.push(format!("{}={}", var, v));
 		}
 		for var in frees.iter() {
-			equation.push(format!("{}", var));
+			equation.push(var.clone());
 		}
 		equation.join(", ")
 	}
@@ -144,8 +144,8 @@ impl Term {
 				}
 			},
 
-			Self::Var(var) => format!("{}", var),
-			Self::Value(val) => format!("{}", fmt_value(*val)),
+			Self::Var(var) => var.clone(),
+			Self::Value(val) => fmt_value(*val),
 		}
 	}
 }
