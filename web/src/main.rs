@@ -41,6 +41,7 @@ async fn main() -> std::io::Result<()> {
 			.service(compare_index)
 			.service(root)
 	})
+	.workers(1) // Serial
 	.bind(endpoint)?
 	.run()
 	.await

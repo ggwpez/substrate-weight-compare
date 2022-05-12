@@ -143,9 +143,8 @@ impl Term {
 					format!("({} + {})", l.fmt_with_bracket(true), r.fmt_with_bracket(true))
 				}
 			},
-
-			Self::Var(var) => var.clone(),
 			Self::Value(val) => fmt_value(*val),
+			Self::Var(var) => var.clone(),
 		}
 	}
 }

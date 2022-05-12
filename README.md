@@ -6,49 +6,47 @@ It currently only analyzes the constant factor of the weight. Parsing the linear
 ## Install
 
 ```sh
-cargo install --git https://github.com/ggwpez/substrate-weight-compare
+cargo install --git https://github.com/ggwpez/substrate-weight-compare swc swc_web
 ```
 
-2 binaries are now available:
+Two binaries are now available:
 - swc
 - swc-web
 
 ## Example: Web Interface
 
+Assuming you have a Substrate compatible repository checked out, for example `Polkadot`:
+
 ```sh
-# Clone the polkadot repo if you don't already have it.
-git clone https://github.com/paritytech/polkadot/ repos/polkadot
-swc-web --repo repos/polkadot
+swc-web --repo ../polkadot
 ```
 
 then open your browser and try the following:
 - [http://localhost:8080/compare](http://localhost:8080/compare)
 - [http://localhost:8080/compare/v0.9.18/v0.9.19/10](http://localhost:8080/compare/v0.9.18/v0.9.19/10)
 
-## Example: Weight files
+## Example: Compare weight files
 
 Suppose you have some weight files in:
 - `OLD=repos/polkadot/` and
-- `NEW=my_other_repos/polkadot`. 
+- `NEW=my_other_repos/polkadot`   
 Compare them with:
 
 ```sh
 swc compare files --old $OLD/* --new $NEW/*
 ```
 
-## Example: Polkadot Commits
+## Example: Compare Polkadot Commits
 
-Compare arbitrary Polkadot commits with:
+Compare arbitrary Polkadot commits assuming that you have checked the repo out:
 
 ```sh
 FROM=20467ccea1ae
 TO=ef922a7110eb
 THRESHOLD=30
 
-# Clone the polkadot repo
-git clone https://github.com/paritytech/polkadot/ repos/polkadot
 # Compare the commits
-swc compare commits $FROM $TO --threshold $THRESHOLD --repo repos/polkadot
+swc compare commits $FROM $TO --threshold $THRESHOLD --repo ../polkadot
 
 pallet_scheduler.rs::on_initialize_named_aborted 4957 -> 3406 ns (-31.29 %)
 pallet_election_provider_multi_phase.rs::finalize_signed_phase_reject_solution 33389 -> 19348 ns (-42.05 %)
@@ -68,6 +66,10 @@ runtime_common_crowdloan.rs::on_initialize 0 -> 4293 ns (+100.00 %)
 It prints first the ones that decreased (good) and then the ones that increased (bad) sorted by ascending absolute value.
 
 ## Running the Tests
+
+
+
+### Integration tests
 
 The test use the Polkadot repo in `repo/Polkadot`.
 

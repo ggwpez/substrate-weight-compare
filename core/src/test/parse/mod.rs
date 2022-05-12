@@ -1,47 +1,25 @@
 pub mod helper;
-use crate::integration_test;
+mod pallet;
+mod storage;
 
-integration_test!(
-	polkadot,
-	"polkadot",
-	"568169b41aea59a54ab8cfa23c31e84a26708280",
-	804,
-	138,
-	10,
-	10,
-	vec![
-		"runtime/*/src/weights/**/*.rs",
-		"bridges/modules/*/src/weights.rs",
-		"bridges/primitives/messages/src/source_chain.rs",
-		"xcm/xcm-executor/src/traits/drop_assets.rs"
-	],
-	// Keep the patterns in the most general way to catch new files.
-	vec!["**/*db_weights.rs"],
-	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]
-);
+use rstest::*;
+use std::path::PathBuf;
 
-integration_test!(
-	moonbeam,
-	"moonbeam",
-	"9665bd46a19ef4cc4ad1327f360150d7743dfd76",
-	195,
-	6,
-	0,
-	0,
-	vec!["**/weights.rs", "pallets/parachain-staking/src/traits.rs"],
-	vec![],
-	vec![]
-);
+use crate::{fmt_changes, extract_changes,compare_files};
+use crate::parse::pallet::parse_files;
 
-integration_test!(
-	composable,
-	"composable",
-	"b3492f26dd4fde7aca272bae8460682babbdbdd3",
-	344,
-	79,
-	0,
-	0,
-	vec!["**/weights.rs", "**/weights/*.rs"],
-	vec![],
-	vec![]
-);
+/// Compares hard-coded weight files.
+#[rstest]
+#[case("../test_data/old/pallet_staking.rs.txt", "../test_data/new/pallet_staking.rs.txt", vec!["+74.26", "+6.01", "-7.21"])]
+fn compares_weight_files(#[case] old: PathBuf, #[case] new: PathBuf, #[case] expected: Vec<&str>) {
+	let old = parse_files(&vec![old]).unwrap();
+	let new = parse_files(&vec![new]).unwrap();
+
+	let diff = compare_files(old, new);
+	let interesting_diff = extract_changes(diff, 5.0);
+	let got = fmt_changes(&interesting_diff);
+
+	for exp in expected {
+		assert!(got.contains(exp));
+	}
+}
