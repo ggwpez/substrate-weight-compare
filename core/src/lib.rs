@@ -55,17 +55,25 @@ pub struct CompareParams {
 // File -> Extrinsic -> Diff
 pub type TotalDiff = Map<String, Map<String, ExtrinsicChange>>;
 
+/// Hardcoded to prevent using ../ and stuff.
+const RUNTIMES: [&str; 4] = ["polkadot", "kusama", "westend", "rococo"];
+
 pub fn compare_commits(
 	repo: &Path,
 	old: &str,
 	new: &str,
 	thresh: Percent,
+	runtime: &str,
 ) -> Result<Vec<ExtrinsicDiff>, String> {
+	if !RUNTIMES.contains(&runtime) {
+		return Err(format!("Runtime {} not supported", runtime));
+	}
 	// Parse the old files.
 	if let Err(err) = checkout(repo, old) {
 		return Err(format!("{:?}", err))
 	}
-	let paths = list_files(format!("{}/runtime/polkadot/src/weights/*.rs", repo.display()));
+	let pattern = format!("{}/runtime/{}/src/weights/*.rs", repo.display(), runtime);
+	let paths = list_files(pattern);
 	let olds = parse_files(&paths).unwrap();
 
 	// Parse the new files.

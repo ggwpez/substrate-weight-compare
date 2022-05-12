@@ -47,15 +47,15 @@ async fn main() -> std::io::Result<()> {
 	.await
 }
 
-#[get("/compare/{old}/{new}/{thresh}")]
-async fn compare(commits: web::Path<(String, String, Option<String>)>) -> impl Responder {
-	let repo_guard = REPO.lock().unwrap();
+#[get("/compare/{runtime}/{old}/{new}/{thresh}")]
+async fn compare(commits: web::Path<(String, String, Option<String>, Option<String>)>) -> impl Responder {
+	let repo_guard = REPO.lock().expect("Operation in progress");
 	let repo_path: PathBuf = repo_guard.as_ref().unwrap().clone();
 
-	let (old, new, thresh) =
-		(commits.0.trim(), commits.1.trim(), commits.2.clone().unwrap_or_else(|| "30".into()));
+	let (old, new, thresh, runtime) =
+		(commits.0.trim(), commits.1.trim(), commits.2.clone().unwrap_or_else(|| "30".into()), commits.3.clone().unwrap_or("polkadot".into()));
 
-	let per_extrinsic = compare_commits(&repo_path, old, new, thresh.parse().unwrap()).unwrap();
+	let per_extrinsic = compare_commits(&repo_path, old, new, thresh.parse().unwrap(), &runtime).unwrap();
 
 	let mut output = String::from_str(
 		"<table><tr><th>Extrinsic</th><th>Old [ns]</th><th>New [ns]</th><th>Diff [%]</th></tr>",
@@ -74,7 +74,7 @@ async fn compare(commits: web::Path<(String, String, Option<String>)>) -> impl R
 	output.push_str("</table>");
 
 	HttpResponse::Ok().content_type("text/html; charset=utf-8").body(format!(
-		"Compared Polkadot {old} (old) to {new} (new) with {thresh}% threshold:</br>{output}"
+		"Compared {runtime} {old} (old) to {new} (new) with {thresh}% threshold:</br>{output}"
 	))
 }
 
@@ -96,10 +96,10 @@ async fn compare_index() -> HttpResponse {
     <h1>Examples:</h1>
     <ul>
         <li>
-            <a href='/compare/20467ccea1ae3bc89362d3980fde9383ce334789/master/30'>Example #1</a>
+            <a href='/compare/20467ccea1ae3bc89362d3980fde9383ce334789/master/30/polkadot'>Example #1</a>
         </li>
         <li>
-            <a href='/compare/v0.9.18/v0.9.19/10'>Example #2</a>
+            <a href='/compare/v0.9.18/v0.9.19/10/kusama'>Example #2</a>
         </li>
     </ul>
     "#;
