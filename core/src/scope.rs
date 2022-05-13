@@ -6,18 +6,12 @@ use std::collections::BTreeMap as Map;
 pub const STORAGE_READ_VAR: &str = "READ";
 pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
-/// A scope maps the constants to their values for [`Term::eval`].
-pub trait Scope {
-	fn get(&self, name: &str) -> Option<Term>;
-	fn put_var(&mut self, name: &str, value: Term);
-}
-
 #[derive(Clone)]
-pub struct BasicScope {
+pub struct Scope {
 	vars: Map<String, Term>,
 }
 
-impl BasicScope {
+impl Scope {
 	pub fn empty() -> Self {
 		Self { vars: Map::default() }
 	}
@@ -41,28 +35,25 @@ impl BasicScope {
 	pub fn with_storage_weights(self, read: Term, write: Term) -> Self {
 		self.with_var(STORAGE_READ_VAR, read).with_var(STORAGE_WRITE_VAR, write)
 	}
-}
 
-impl Scope for BasicScope {
-	fn get(&self, name: &str) -> Option<Term> {
+	pub fn get(&self, name: &str) -> Option<Term> {
 		self.vars.get(&name.to_string()).cloned()
 	}
 
-	fn put_var(&mut self, name: &str, value: Term) {
-		self.vars.insert(name.to_string(), value);
+	pub fn merge(self, other: Self) -> Self {
+		Self { vars: self.vars.into_iter().chain(other.vars).collect() }
 	}
 }
 
-/// A mocked scope for testing that returns some hardcoded values.
-#[derive(Default)]
-pub struct MockedScope {}
-
-impl Scope for MockedScope {
-	/// Returns 7 for all variables.
-	fn get(&self, _: &str) -> Option<Term> {
-		Some(Term::Value(7))
+use std::fmt::Debug;
+impl Debug for Scope {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let s = self
+			.vars
+			.iter()
+			.map(|(k, v)| format!("{} = {}", k, v))
+			.collect::<Vec<_>>()
+			.join(", ");
+		write!(f, "{}", s)
 	}
-
-	/// Does nothing.
-	fn put_var(&mut self, _name: &str, _value: Term) {}
 }

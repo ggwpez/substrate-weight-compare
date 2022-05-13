@@ -5,3 +5,8 @@ members = [
 	"cli",
 	"web"
 ]
+
+[profile.production]
+inherits = "release"
+lto = "fat"
+codegen-units = 1

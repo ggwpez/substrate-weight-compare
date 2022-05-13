@@ -5,8 +5,9 @@ mod storage;
 use rstest::*;
 use std::path::PathBuf;
 
-use crate::{fmt_changes, extract_changes,compare_files};
-use crate::parse::pallet::parse_files;
+use crate::{
+	compare_files, filter_changes, fmt_changes, parse::pallet::parse_files, CompareMethod,
+};
 
 /// Compares hard-coded weight files.
 #[rstest]
@@ -15,8 +16,8 @@ fn compares_weight_files(#[case] old: PathBuf, #[case] new: PathBuf, #[case] exp
 	let old = parse_files(&vec![old]).unwrap();
 	let new = parse_files(&vec![new]).unwrap();
 
-	let diff = compare_files(old, new);
-	let interesting_diff = extract_changes(diff, 5.0);
+	let diff = compare_files(old, new, 10.0, CompareMethod::Worst);
+	let interesting_diff = filter_changes(diff, 5.0);
 	let got = fmt_changes(&interesting_diff);
 
 	for exp in expected {

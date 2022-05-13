@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>SWC-Web</title>
+		<style>
+			td {
+				white-space: nowrap;
+			}
+			table, th, td {
+				border: 1px solid black;
+			}
+			:target {
+				background-color: rgb(196, 196, 196);
+			}
+		</style>
+	</head>
+	<body>
+	<h1>
+		⚠️ This software is in development. Please reports bugs to <code>@oliver.tale-yazdi:matrix.parity.io</code> or <a href='https://github.com/ggwpez/substrate-weight-compare/issues/new' target='_blank'>here</a>.
+	</h1>
+	</br>
+	<table>
+		<tr>
+			<th>Config</th>
+			<th>Value</th>
+		</tr>
+		<tbody>
+			<tr>
+				<td>Version</td>
+				<td>swc-web <%= swc_core::VERSION.clone() %></td>
+			</tr>
+			<tr>
+				<td>Old Commit</td>
+				<td><%= args.old %></td>
+			</tr>
+			<tr>
+				<td>New Commit</td>
+				<td><%= args.new %></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Path Pattern") %></td>
+				<td><%= args.path_pattern %></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Threshold") %></td>
+				<td><%= args.threshold %>%</td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Evaluation Method") %></td>
+				<td><%= match args.method {
+					CompareMethod::Base => "Base - All components set to zero.",
+					CompareMethod::Worst => "Worst - All components set to 100.",
+				} %></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Ignore Errors") %></td>
+				<td><%= args.ignore_errors %></td>
+			</tr>
+		</tbody>
+	</table>
+	</br>
+		Listing <%= diff.len() %> extrinsic results:
+	</br>
+	</br>
+	<table>
+		<tr>
+			<th>File</th>
+			<th>Extrinsic</th>
+			<th>Old Weight</th>
+			<th>New Weight</th>
+			<th>Diff [%]</th>
+			<th>Old Weight Equation</th>
+			<th>New Weight Equation</th>
+			<th>Used Variables</th>
+		</tr>
+	<tbody>
+		<% for change in diff.iter() { %>
+
+			<tr id=<%- format!("\"{}.{}\"", &change.file, &change.name) %>>
+				<td>
+					<%= change.file %>
+				</td>
+				<td>
+					<%= change.name %>
+					<sup><a href=<%- format!("\"#{}.{}\"", &change.file, &change.name) %>>🔗</a></sup>
+				</td>
+				<td>
+					<%= change.change.old_v.map(fmt_weight).unwrap_or("-".into()) %>
+				</td>
+				<td>
+					<%= change.change.new_v.map(fmt_weight).unwrap_or("-".into()) %>
+				</td>
+				<td>
+					<%- html_color_percent(change.change.percent, change.change.change) %>
+				</td>
+				<td>
+					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or("-".into()) %>
+					<%- code_link(&change.name, &change.file, &args.old) %>
+				</td>
+				<td>
+					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or("-".into()) %>
+					<%- code_link(&change.name, &change.file, &args.new) %>
+				</td>
+				<td>
+					<%= format!("{:?}", &change.change.scope) %>
+				</td>
+			</tr>
+		<% } %>
+	</tbody>
+	</body>
+</html>

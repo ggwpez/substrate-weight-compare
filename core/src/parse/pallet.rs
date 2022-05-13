@@ -1,9 +1,6 @@
-use crate::{reads, writes};
-use log::debug;
-use std::{
-	collections::BTreeMap as Map,
-	path::{Path, PathBuf},
-};
+use crate::{reads, writes, ExtrinsicName, PalletName};
+
+use std::path::{Path, PathBuf};
 use syn::{
 	punctuated::Punctuated, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit, ReturnType,
 	Stmt, Token, Type,
@@ -11,53 +8,58 @@ use syn::{
 
 use crate::{mul, term::Term};
 
-pub type PalletName = String;
-pub type ExtrinsicName = String;
+pub type Result<T> = std::result::Result<T, String>;
 
-/// Maps an Extrinsic in the form of (PalletName, ExtrinsicName) to its Weight.
-///
-/// NOTE: Uses a 2D map for prefix matching.
-pub type ParsedFiles = Map<PalletName, Map<ExtrinsicName, Term>>;
-pub type ParsedExtrinsic = Map<ExtrinsicName, Term>;
+#[derive(Clone)]
+pub struct Extrinsic {
+	pub name: ExtrinsicName,
+	pub pallet: PalletName,
 
-const LOG: &str = "ext-parser";
-
-/// Strips the path and only returns the file name.
-fn file_of(path: &Path) -> String {
-	path.file_name().unwrap().to_str().unwrap().to_string()
+	pub term: Term,
 }
 
-pub fn parse_file(file: &Path) -> Result<ParsedExtrinsic, String> {
-	let content = super::read_file(file)?;
-	parse_content(content)
+pub fn parse_file(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
+	let content = super::read_file(&repo.join(file))?;
+	let name = file.strip_prefix(repo).unwrap_or(&file);
+	parse_content(name.display().to_string(), content)
+		.map_err(|e| format!("{}: {}", file.display(), e))
 }
 
-pub fn parse_files(paths: &[PathBuf]) -> Result<ParsedFiles, String> {
-	let mut map = Map::new();
+pub fn parse_files(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+	let mut map = Vec::new();
 	for path in paths {
-		map.insert(file_of(path), parse_file(path)?);
+		map.extend(parse_file(repo, path)?);
 	}
 	Ok(map)
 }
 
-pub fn parse_content(content: String) -> Result<ParsedExtrinsic, String> {
+pub fn try_parse_files(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
+	let mut map = Vec::new();
+	for path in paths {
+		if let Ok(res) = parse_file(repo, path) {
+			map.extend(res);
+		}
+	}
+	map
+}
+
+pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsic>> {
 	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
 	for item in ast.items {
-		if let Ok(weights) = handle_item(&item) {
+		if let Ok(weights) = handle_item(pallet.clone(), &item) {
 			return Ok(weights)
 		}
 	}
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
-pub(crate) fn handle_item(item: &Item) -> Result<Map<String, Term>, String> {
+pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrinsic>> {
 	match item {
 		Item::Impl(imp) => {
 			match imp.self_ty.as_ref() {
 				// TODO handle both () and non () since ComposableFI uses ().
 				Type::Tuple(t) => {
 					if !t.elems.is_empty() {
-						debug!(target: LOG, "Skipped fn: impl tuple type empty");
 						// The substrate template contains the weight info twice.
 						// By skipping the not `impl ()` we ensure to parse it only once.
 						return Err("Skipped ()".into())
@@ -76,18 +78,17 @@ pub(crate) fn handle_item(item: &Item) -> Result<Map<String, Term>, String> {
 							return Err("Skipped fn: impl name last".into())
 						}
 					} else {
-						debug!(target: LOG, "Skipped fn: impl name segments");
 						return Err("Skipped fn: impl name segments".into())
 					}
 				},
 				_ => return Err("Skipped fn: impl type".into()),
 			}
 			// TODO validate the trait type.
-			let mut weights = Map::new();
+			let mut weights = Vec::new();
 			for f in &imp.items {
 				if let ImplItem::Method(m) = f {
-					let (name, weight) = handle_method(m)?;
-					weights.insert(name, weight); // FIXME
+					let (ext_name, term) = handle_method(m)?;
+					weights.push(Extrinsic { name: ext_name, pallet: pallet.clone(), term });
 				}
 			}
 			Ok(weights)
@@ -96,10 +97,8 @@ pub(crate) fn handle_item(item: &Item) -> Result<Map<String, Term>, String> {
 	}
 }
 
-fn handle_method(m: &ImplItemMethod) -> Result<(String, Term), String> {
+fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term)> {
 	let name = m.sig.ident.to_string();
-	debug!(target: LOG, "Enter function {}", name);
-
 	// Check the return type to end with `Weight`.
 	if let ReturnType::Type(_, i) = &m.sig.output {
 		if let Type::Path(p) = i.as_ref() {
@@ -125,7 +124,7 @@ fn handle_method(m: &ImplItemMethod) -> Result<(String, Term), String> {
 	Ok((name, weight))
 }
 
-pub(crate) fn parse_expression(expr: &Expr) -> Result<Term, String> {
+pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 	match expr {
 		Expr::Paren(expr) => parse_expression(&expr.expr),
 		// TODO check cast
@@ -144,7 +143,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term, String> {
 }
 
 // Example: T::DbWeight::get()
-fn validate_db_call(call: &Expr) -> Result<(), String> {
+fn validate_db_call(call: &Expr) -> Result<()> {
 	match call {
 		Expr::Call(call) => {
 			let _ = validate_db_func(&call.func)?;
@@ -159,7 +158,7 @@ fn validate_db_call(call: &Expr) -> Result<(), String> {
 }
 
 // example: T::DbWeight::get
-fn validate_db_func(func: &Expr) -> Result<(), String> {
+fn validate_db_func(func: &Expr) -> Result<()> {
 	match &func {
 		Expr::Path(p) => {
 			let path = p
@@ -183,7 +182,7 @@ fn validate_db_func(func: &Expr) -> Result<(), String> {
 }
 
 // Example: receiver.saturating_mul(5 as Weight)
-fn parse_method_call(call: &ExprMethodCall) -> Result<Term, String> {
+fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
 	let name: &str = &call.method.to_string();
 	match name {
 		"reads" => {
@@ -205,7 +204,7 @@ fn parse_method_call(call: &ExprMethodCall) -> Result<Term, String> {
 	}
 }
 
-fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term, String> {
+fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}

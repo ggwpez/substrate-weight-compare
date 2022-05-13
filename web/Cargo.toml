@@ -20,6 +20,8 @@ lazy_static = "1.4.0"
 log = "0.4.16"
 clap = { version = "3.1.12", features = ["derive"] }
 syn = { version = "1.0.91", features = ["parsing", "full"] }
+serde = { version = "1.0.137", features = [ "derive" ] }
+sailfish = "0.4.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"

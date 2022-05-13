@@ -3,9 +3,9 @@ use clap::Parser;
 use std::path::PathBuf;
 
 use swc_core::{
-	compare_commits, compare_files, extract_changes, fmt_changes,
+	compare_commits, compare_files, fmt_changes,
 	parse::{pallet::parse_files, try_parse_file},
-	CompareParams, ExtrinsicDiff, VERSION,
+	CompareParams, TotalDiff, VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -93,13 +93,20 @@ fn main() -> Result<(), String> {
 			let olds = parse_files(&old)?;
 			let news = parse_files(&new)?;
 
-			//compare(olds, news);
-			let diff = compare_files(olds, news);
-			let per_extrinsic = extract_changes(diff, params.threshold);
-			print_changes(per_extrinsic, cmd.verbose);
+			let diff = compare_files(olds, news, params.threshold, params.method);
+			print_changes(diff, cmd.verbose);
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo })) => {
-			let per_extrinsic = compare_commits(&repo, &old, &new, params.threshold)?;
+			let per_extrinsic = compare_commits(
+				&repo,
+				&old,
+				&new,
+				params.threshold,
+				params.method,
+				&params.path_pattern,
+				params.ignore_errors,
+				usize::MAX,
+			)?;
 			print_changes(per_extrinsic, cmd.verbose);
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
@@ -112,7 +119,7 @@ fn main() -> Result<(), String> {
 	Ok(())
 }
 
-fn print_changes(per_extrinsic: Vec<ExtrinsicDiff>, verbose: bool) {
+fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
 		return

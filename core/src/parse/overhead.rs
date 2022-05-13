@@ -1,9 +1,6 @@
-use log::debug;
 use syn::ItemConst;
 
 use crate::{term::Term, *};
-
-const LOG: &str = "block-parser";
 
 pub type BlockExecutionWeight = Term;
 
@@ -29,7 +26,6 @@ pub fn parse_content(content: String) -> Result<Weight, String> {
 }
 
 fn handle_item(item: &Item) -> Result<Weight, String> {
-	debug!(target: LOG, "Entering item");
 	match item {
 		Item::Macro(m) => {
 			let name = m.mac.path.segments.last();

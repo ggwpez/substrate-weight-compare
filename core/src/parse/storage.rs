@@ -1,10 +1,7 @@
-use log::debug;
 use std::path::Path;
 use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
 use crate::term::Term;
-
-const LOG: &str = "db-parser";
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Db {
@@ -59,11 +56,9 @@ pub fn parse_content(content: String) -> Result<Weights, String> {
 }
 
 fn handle_item(item: &Item) -> Result<Weights, String> {
-	debug!(target: LOG, "Entering item");
 	match item {
 		// The current Substrate template has a useless `constants` mod.
 		Item::Mod(m) => {
-			debug!(target: LOG, "Entering module");
 			if m.ident == "constants" {
 				if let Some((_, content)) = m.content.as_ref() {
 					for item in content {

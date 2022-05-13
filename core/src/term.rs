@@ -1,10 +1,9 @@
 //! Contains the [`Term`] which is used to express weight equations.
 
-use log::*;
 use std::{collections::BTreeSet as Set, fmt};
 use syn::{BinOp, ExprBinary};
 
-use crate::{fmt_value, scope::Scope};
+use crate::{fmt_weight, scope::Scope};
 
 /// A symbolic term that can be used to express simple arithmetic.
 ///
@@ -60,7 +59,7 @@ macro_rules! mul {
 
 impl Term {
 	/// Evaluates the term within the given scope to a concrete value.
-	pub fn eval(self, ctx: &impl crate::scope::Scope) -> Result<u128, String> {
+	pub fn eval(self, ctx: &crate::scope::Scope) -> Result<u128, String> {
 		match self {
 			Self::Value(x) => Ok(x),
 			Self::Add(x, y) => Ok(x.eval(ctx)? + y.eval(ctx)?),
@@ -78,7 +77,7 @@ impl Term {
 	///
 	/// Lambda calculus calls such a variable *free*.
 	/// This is the inverse of [`bound_vars`].
-	pub fn free_vars(&self, scope: &impl Scope) -> Set<String> {
+	pub fn free_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::default(),
 			Self::Var(var) => Set::from([var.into()]),
@@ -93,7 +92,7 @@ impl Term {
 	///
 	/// Lambda calculus calls such a variable *bound*.
 	/// This is the inverse of [`free_vars`].
-	pub fn bound_vars(&self, scope: &impl Scope) -> Set<String> {
+	pub fn bound_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::from([var.into()]),
 			Self::Var(_var) => Set::default(),
@@ -104,7 +103,7 @@ impl Term {
 		}
 	}
 
-	pub fn fmt_equation(&self, scope: &impl Scope) -> String {
+	pub fn fmt_equation(&self, scope: &Scope) -> String {
 		let bounds = self.bound_vars(scope);
 		let frees = self.free_vars(scope);
 
@@ -143,7 +142,7 @@ impl Term {
 					format!("({} + {})", l.fmt_with_bracket(true), r.fmt_with_bracket(true))
 				}
 			},
-			Self::Value(val) => fmt_value(*val),
+			Self::Value(val) => fmt_weight(*val),
 			Self::Var(var) => var.clone(),
 		}
 	}
@@ -156,17 +155,14 @@ impl Term {
 /// by setting all variables to `MIN` and `MAX`.
 /// Calculating along the whole plane should not be needed since we assume linear equations.
 /// TODO a check could be added to ensure that we are indeed dealing with linear equations.
-pub fn multivariadic_eval(f: &Term, mut scope: impl Scope, value: u128) -> u128 {
+pub fn multivariadic_eval(f: &Term, scope: &mut Scope, value: u128) -> u128 {
 	let free_vars: Set<_> = f.free_vars(&scope);
 	for var in free_vars {
 		scope.put_var(&var, val!(value));
 	}
 
-	let eq = f.fmt_equation(&scope);
-	let y = f.clone().eval(&scope).expect("Set all variables; qed");
-
-	debug!(target: "eval", "F({})[{}] = {}", &f, eq, fmt_value(y));
-	y
+	let _eq = f.fmt_equation(&scope);
+	f.clone().eval(&scope).expect("Set all variables; qed")
 }
 
 impl fmt::Display for Term {

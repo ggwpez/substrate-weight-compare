@@ -6,7 +6,7 @@ use crate::{
 	add, mul,
 	parse::pallet::{parse_content, parse_expression, parse_file},
 	reads,
-	scope::MockedScope,
+	scope::Scope,
 	term::Term,
 	val, var, writes,
 };
@@ -35,7 +35,7 @@ fn parses_weight_files(#[case] path: PathBuf) {
 }"
 )]
 fn parse_content_works(#[case] input: String) {
-	let _got = parse_content(input).unwrap();
+	let _got = parse_content("".into(), input).unwrap();
 
 	//FIXME let want = ParsedExtrinsic::from([("ext".into(), 5)]);
 	//assert_eq!(want, got);
@@ -91,5 +91,5 @@ fn parse_expression_works(#[case] input: &str, #[case] want: Term) {
 	assert_eq!(want, got);
 
 	// Eval does not panic
-	let _ = got.eval(&MockedScope::default());
+	let _ = got.eval(&Scope::empty());
 }

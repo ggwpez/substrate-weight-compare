@@ -4,12 +4,9 @@ use clap::Args;
 use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
-use log::*;
+
 use prettytable::{cell, row, table};
-use std::{
-	collections::{BTreeMap as Map, BTreeSet as Set},
-	path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use syn::{Expr, Item, Type};
 
 pub mod parse;
@@ -20,70 +17,110 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::*;
+use parse::pallet::{parse_files, try_parse_files, Extrinsic};
+use scope::Scope;
 use term::{multivariadic_eval, Term};
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
-	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!());
+	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--dirty", "--always"], fallback = "unknown"));
+	pub static ref VERSION_DIRTY: bool = {
+		VERSION.clone().contains("dirty")
+	};
 }
 
-type Percent = f64;
+pub type PalletName = String;
+pub type ExtrinsicName = String;
+pub type TotalDiff = Vec<ExtrinsicDiff>;
 
-pub enum ExtrinsicChange {
-	Same,
+pub type Percent = f64;
+pub const WEIGHT_PER_NANOS: u128 = 1_000;
+
+#[derive(Clone)]
+pub struct ExtrinsicDiff {
+	pub name: ExtrinsicName,
+	pub file: String,
+
+	pub change: TermChange,
+}
+
+#[derive(Clone)]
+// Uses options since extrinsics can be added or removed and any time.
+pub struct TermChange {
+	pub old: Option<Term>,
+	pub old_v: Option<u128>,
+
+	pub new: Option<Term>,
+	pub new_v: Option<u128>,
+
+	pub scope: Scope,
+	pub percent: Percent,
+	pub change: RelativeChange,
+	pub method: CompareMethod,
+}
+
+#[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+pub enum RelativeChange {
+	Unchanged,
 	Added,
 	Removed,
-	Change(u128, u128, Percent),
-}
-
-pub struct ExtrinsicDiff {
-	pub name: String,
-	pub file: String,
-	pub old: u128,
-	pub new: u128,
-	pub change: Percent,
+	Change,
 }
 
 /// Parameters for modifying the benchmark behaviour.
-#[derive(Debug, Default, Clone, PartialEq, Args)]
+#[derive(Debug, Clone, PartialEq, Args)]
 pub struct CompareParams {
 	#[clap(long, value_name = "PERCENT", default_value = "5")]
 	pub threshold: Percent,
+
+	#[clap(
+		long,
+		short,
+		value_name = "METHOD",
+		ignore_case = true,
+		possible_values = CompareMethod::variants(),
+	)]
+	pub method: CompareMethod,
+
+	#[clap(long)]
+	pub path_pattern: String,
+
+	#[clap(long)]
+	pub ignore_errors: bool,
 }
-
-// File -> Extrinsic -> Diff
-pub type TotalDiff = Map<String, Map<String, ExtrinsicChange>>;
-
-/// Hardcoded to prevent using ../ and stuff.
-const RUNTIMES: [&str; 4] = ["polkadot", "kusama", "westend", "rococo"];
 
 pub fn compare_commits(
 	repo: &Path,
 	old: &str,
 	new: &str,
 	thresh: Percent,
-	runtime: &str,
-) -> Result<Vec<ExtrinsicDiff>, String> {
-	if !RUNTIMES.contains(&runtime) {
-		return Err(format!("Runtime {} not supported", runtime));
+	method: CompareMethod,
+	path_pattern: &str,
+	ignore_errors: bool,
+	max_files: usize,
+) -> Result<TotalDiff, String> {
+	if path_pattern.contains("..") {
+		return Err(format!("Path pattern cannot contain '..'"))
 	}
 	// Parse the old files.
 	if let Err(err) = checkout(repo, old) {
 		return Err(format!("{:?}", err))
 	}
-	let pattern = format!("{}/runtime/{}/src/weights/*.rs", repo.display(), runtime);
-	let paths = list_files(pattern);
-	let olds = parse_files(&paths).unwrap();
+	let pattern = format!("{}/{}", repo.display(), path_pattern);
+	let paths = list_files(pattern.clone(), max_files)?;
+	// Ignore any parsing errors.
+	let olds = if ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
 
 	// Parse the new files.
 	if let Err(err) = checkout(repo, new) {
 		return Err(format!("{:?}", err))
 	}
-	let news = parse_files(&paths).unwrap();
-	let diff = compare_files(olds, news);
+	let paths = list_files(pattern, max_files)?;
+	// Ignore any parsing errors.
+	let news = if ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
 
-	Ok(extract_changes(diff, thresh))
+	let diff = compare_files(olds, news, thresh, method);
+	Ok(filter_changes(diff, thresh))
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.
@@ -101,115 +138,162 @@ pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 	}
 }
 
-fn list_files(regex: String) -> Vec<PathBuf> {
+fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 	let files = glob::glob(&regex).unwrap();
-	files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect()
-}
-
-pub fn compare_extrinsic(old: &Term, new: &Term) -> ExtrinsicChange {
-	// Default Substrate scope to KISS.
-	let scope = scope::BasicScope::empty().with_storage_weights(val!(8_000), val!(50_000));
-	// Use 100 until <https://github.com/paritytech/substrate/issues/11397> is done.
-	let max = 100;
-
-	let worst_old = multivariadic_eval(old, scope.clone(), max);
-	let worst_new = multivariadic_eval(new, scope, max);
-	let p = percent(worst_old, worst_new);
-
-	if p == 0.0 {
-		ExtrinsicChange::Same
+	let files: Vec<_> = files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect();
+	if files.len() > max_files {
+		return Err(
+			format!("Too many files found. Found: {}, Max: {}", files.len(), max_files).into()
+		)
 	} else {
-		ExtrinsicChange::Change(worst_old, worst_new, p)
+		Ok(files)
 	}
 }
 
-pub fn compare_files(olds: ParsedFiles, news: ParsedFiles) -> TotalDiff {
-	let files = Set::from_iter(olds.keys().cloned().chain(news.keys().cloned()));
+#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Clone, Copy, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum CompareMethod {
+	/// The constant base weight of the extrinsic.
+	Base,
+	/// The worst case weight by setting all variables to 100.
+	///
+	/// Assumes
+	Worst,
+}
+
+impl std::str::FromStr for CompareMethod {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, String> {
+		match s {
+			"base" => Ok(CompareMethod::Base),
+			"worst" => Ok(CompareMethod::Worst),
+			_ => Err(format!("Unknown method: {}", s)),
+		}
+	}
+}
+
+impl CompareMethod {
+	pub fn variants() -> Vec<&'static str> {
+		vec!["base", "worst"]
+	}
+}
+
+pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMethod) -> TermChange {
+	let mut max = 0;
+	// Default substrate storage weights
+	let scope = scope::Scope::empty().with_storage_weights(val!(25_000), val!(100_000));
+
+	if method == CompareMethod::Worst {
+		// Use 100 until <https://github.com/paritytech/substrate/issues/11397> is done.
+		max = 100;
+	}
+
+	let mut old_scope = scope.clone();
+	let old_v = old.map(|t| multivariadic_eval(t, &mut old_scope, max));
+	let mut new_scope = scope.clone();
+	let new_v = new.map(|t| multivariadic_eval(t, &mut new_scope, max));
+	let change = RelativeChange::new(old_v, new_v);
+	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
+
+	let merged = old_scope.merge(new_scope);
+	TermChange {
+		old: old.cloned(),
+		old_v,
+		new: new.cloned(),
+		new_v,
+		change,
+		percent: p,
+		method,
+		scope: merged,
+	}
+}
+
+pub fn compare_files(
+	olds: Vec<Extrinsic>,
+	news: Vec<Extrinsic>,
+	thresh: Percent,
+	method: CompareMethod,
+) -> TotalDiff {
 	let mut diff = TotalDiff::new();
+	let old_names = olds.iter().cloned().map(|e| (e.pallet, e.name));
+	let new_names = news.iter().cloned().map(|e| (e.pallet, e.name));
+	let names = old_names.chain(new_names).collect::<std::collections::BTreeSet<_>>();
 
-	// per file
-	for file in files {
-		diff.insert(file.clone(), Map::new());
+	for (pallet, extrinsic) in names {
+		let new = news
+			.iter()
+			.find(|&n| n.name == extrinsic && n.pallet == pallet)
+			.map(|e| &e.term);
+		let old = olds
+			.iter()
+			.find(|&n| n.name == extrinsic && n.pallet == pallet)
+			.map(|e| &e.term);
 
-		if !news.contains_key(&file) {
-			warn!("{} got deleted", file);
-			for extrinsic in olds.get(&file).unwrap() {
-				diff.get_mut(&file)
-					.unwrap()
-					.insert(extrinsic.0.clone(), ExtrinsicChange::Removed);
-			}
-			continue
-		} else if !olds.contains_key(&file) {
-			debug!("{} got added", file);
-			for extrinsic in news.get(&file).unwrap() {
-				diff.get_mut(&file).unwrap().insert(extrinsic.0.clone(), ExtrinsicChange::Added);
-			}
-			continue
-		}
+		let change = compare_terms(old, new, method);
+		let change = ExtrinsicDiff { name: extrinsic.clone(), file: pallet.clone(), change };
 
-		let olds = &olds[&file];
-		let news = &news[&file];
-		let extrinsics = Set::from_iter(olds.keys().cloned().chain(news.keys().cloned()));
-		// per extrinsic
-		for extrinsic in extrinsics {
-			if !news.contains_key(&extrinsic) {
-				debug!("{} got deleted", extrinsic);
-				diff.get_mut(&file).unwrap().insert(extrinsic.clone(), ExtrinsicChange::Removed);
-				continue
-			} else if !olds.contains_key(&extrinsic) {
-				debug!("{} got added", extrinsic);
-				diff.get_mut(&file).unwrap().insert(extrinsic.clone(), ExtrinsicChange::Added);
-				continue
-			}
-
-			let old_w = &olds[&extrinsic];
-			let new_w = &news[&extrinsic];
-			let change = compare_extrinsic(old_w, new_w);
-
-			diff.get_mut(&file).unwrap().insert(extrinsic.clone(), change);
-		}
+		diff.push(change);
 	}
 
-	diff
+	filter_changes(diff, thresh)
 }
 
-pub fn extract_changes(diff: TotalDiff, threshold: Percent) -> Vec<ExtrinsicDiff> {
+pub fn filter_changes(diff: TotalDiff, threshold: Percent) -> TotalDiff {
+	diff.iter()
+		.filter(|extrinsic| match extrinsic.change.change {
+			RelativeChange::Change if extrinsic.change.percent.abs() < threshold => false,
+			RelativeChange::Unchanged if threshold >= 0.001 => false,
+
+			_ => true,
+		})
+		.cloned()
+		.collect()
+}
+
+pub fn fmt_changes(changes: &TotalDiff) -> String {
+	// Collect the extrinsics by category into a vector each.
 	let mut changed = Vec::new();
-	for (file, diff) in diff.iter() {
-		for (extrinsic, diff) in diff {
-			if let ExtrinsicChange::Change(old, new, p) = diff {
-				if p.abs() >= threshold {
-					changed.push(ExtrinsicDiff {
-						name: extrinsic.clone(),
-						file: file.clone(),
-						old: *old,
-						new: *new,
-						change: *p,
-					});
-				}
-			}
+	let mut unchanged = Vec::new();
+	let mut added = Vec::new();
+	let mut removed = Vec::new();
+
+	for extrinsic in changes.iter() {
+		match extrinsic.change.change {
+			RelativeChange::Change => changed.push(extrinsic),
+			RelativeChange::Unchanged => unchanged.push(extrinsic),
+			RelativeChange::Added => added.push(extrinsic),
+			RelativeChange::Removed => removed.push(extrinsic),
 		}
 	}
-	changed.sort_by(|b, a| a.change.partial_cmp(&b.change).unwrap());
-	changed
-}
 
-pub fn fmt_changes(changes: &[ExtrinsicDiff]) -> String {
 	let mut table = table!(["Pallet", "Extrinsic", "Old", "New", "Change [%]"]);
 
-	for diff in changes {
+	for diff in changed {
 		table.add_row(row![
 			diff.file,
 			diff.name,
-			fmt_value(diff.old),
-			fmt_value(diff.new),
-			color_percent(diff.change),
+			diff.change.old_v.map(fmt_weight).unwrap_or_default(),
+			diff.change.new_v.map(fmt_weight).unwrap_or_default(),
+			color_percent(diff.change.percent, &diff.change.change),
 		]);
 	}
 	table.to_string()
 }
 
-pub fn percent(old: u128, new: u128) -> f64 {
+impl RelativeChange {
+	pub fn new(old: Option<u128>, new: Option<u128>) -> RelativeChange {
+		match (old, new) {
+			(old, new) if old == new => RelativeChange::Unchanged,
+			(Some(_), Some(_)) => RelativeChange::Change,
+			(None, Some(_)) => RelativeChange::Added,
+			(Some(_), None) => RelativeChange::Removed,
+			(None, None) => unreachable!("Either old or new must be set"),
+		}
+	}
+}
+
+pub fn percent(old: u128, new: u128) -> Percent {
 	if old == 0 && new != 0 {
 		100.0
 	} else if old != 0 && new == 0 {
@@ -221,39 +305,37 @@ pub fn percent(old: u128, new: u128) -> f64 {
 	}
 }
 
-pub fn color_percent(p: f64) -> String {
+// TODO remove
+pub fn color_percent(p: Percent, change: &RelativeChange) -> String {
 	use ansi_term::Colour;
 
-	let s = format!("{:+5.2}", p);
-	match p {
-		x if x < 0.0 => Colour::Green.paint(s),
-		x if x > 0.0 => Colour::Red.paint(s),
-		_ => Colour::White.paint(s),
+	match change {
+		RelativeChange::Unchanged => "0.00% (No change)".to_string(),
+		RelativeChange::Added => Colour::Red.paint("100.00% (Added)").to_string(),
+		RelativeChange::Removed => Colour::Green.paint("-100.00% (Removed)").to_string(),
+		RelativeChange::Change => {
+			let s = format!("{:+5.2}", p);
+			match p {
+				x if x < 0.0 => Colour::Green.paint(s),
+				x if x > 0.0 => Colour::Red.paint(s),
+				_ => Colour::White.paint(s),
+			}
+			.to_string()
+		},
 	}
-	.to_string()
 }
 
-/// Hardcoded to avoid frame_support as dependency…
-pub const WEIGHT_PER_PICOS: u128 = 1;
-pub const WEIGHT_PER_NANOS: u128 = 1_000 * WEIGHT_PER_PICOS;
-pub const WEIGHT_PER_MICROS: u128 = 1_000 * WEIGHT_PER_NANOS;
-pub const WEIGHT_PER_MILLIS: u128 = 1_000 * WEIGHT_PER_MICROS;
-pub const WEIGHT_PER_SECS: u128 = 1_000 * WEIGHT_PER_MILLIS;
-
-pub fn fmt_value(w: u128) -> String {
-	if w >= WEIGHT_PER_SECS {
-		format!("{:.2}s", w as f64 / WEIGHT_PER_SECS as f64)
-	} else if w >= WEIGHT_PER_MILLIS {
-		format!("{:.2}ms", w as f64 / WEIGHT_PER_MILLIS as f64)
-	} else if w >= WEIGHT_PER_MICROS {
-		format!("{:.2}μs", w as f64 / WEIGHT_PER_MICROS as f64)
-	} else if w >= WEIGHT_PER_NANOS {
-		format!("{:.2}ns", w as f64 / WEIGHT_PER_NANOS as f64)
+pub fn fmt_weight(w: u128) -> String {
+	if w >= 1_000_000_000_000 {
+		format!("{:.2}T", w as f64 / 1_000_000_000_000f64)
+	} else if w >= 1_000_000_000 {
+		format!("{:.2}G", w as f64 / 1_000_000_000f64)
+	} else if w >= 1_000_000 {
+		format!("{:.2}M", w as f64 / 1_000_000f64)
+	} else if w >= 1_000 {
+		format!("{:.2}K", w as f64 / 1_000f64)
 	} else {
-		// Best effort approach: Just assume its actually not a weight
-		// since the substrate benchmarking resolution is [`WEIGHT_PER_NANOS`].
-		// Works fine in 99% of cases.
-		format!("{}", w)
+		w.to_string()
 	}
 }
 
