@@ -1,5 +1,5 @@
 use rstest::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use syn::*;
 
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
 #[case("../test_data/new/pallet_staking.rs.txt")]
 #[case("../test_data/old/pallet_staking.rs.txt")]
 fn parses_weight_files(#[case] path: PathBuf) {
-	assert!(parse_file(&path).is_ok());
+	assert!(parse_file(&Path::new("."), &path).is_ok());
 }
 
 #[rstest]
