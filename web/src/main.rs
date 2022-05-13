@@ -73,9 +73,7 @@ async fn main() -> std::io::Result<()> {
 		server.bind(endpoint)
 	};
 
-	bound_server?
-	.run()
-	.await
+	bound_server?.run().await
 }
 
 #[derive(Debug, serde::Deserialize)]
