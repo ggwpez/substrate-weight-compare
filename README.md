@@ -22,8 +22,7 @@ swc-web --repo ../polkadot
 ```
 
 then open your browser and try the following:
-- [http://localhost:8080/compare](http://localhost:8080/compare)
-- [http://localhost:8080/compare/v0.9.18/v0.9.19/10](http://localhost:8080/compare/v0.9.18/v0.9.19/10)
+- [http://localhost:8080/compare/...](http://localhost:8080/compare?old=768bd6655577dbfda140b40fdd4ca16700fcf589&new=b6770460668a7c3ef8df0ac0f3376e1f917a17e8&threshold=10&path_pattern=runtime/**/src/weights/*.rs&method=base&ignore_errors=true#runtime/kusama/src/weights/pallet_election_provider_multi_phase.rs.feasibility_check)
 
 # Example: Compare weight files
 
