@@ -18,7 +18,7 @@ macro_rules! integration_test {
 			use glob::glob;
 			use rstest::*;
 			use serial_test::serial;
-			use std::path::PathBuf;
+			use std::path::{Path, PathBuf};
 
 			use crate::{
 				checkout,
@@ -94,7 +94,9 @@ macro_rules! integration_test {
 			#[cfg_attr(not(feature = $repo), ignore)]
 			fn parses_pallet_weight_files(pallet_files: Vec<PathBuf>) {
 				for file in pallet_files {
-					parse_file(&file).map_err(|e| format!("File {:?}: {:?}", file, e)).unwrap();
+					parse_file(Path::new("."), &file)
+						.map_err(|e| format!("File {:?}: {:?}", file, e))
+						.unwrap();
 				}
 			}
 
@@ -110,7 +112,7 @@ macro_rules! integration_test {
 			) {
 				let weights = rust_files
 					.iter()
-					.filter(|p| parse_file(p).is_ok())
+					.filter(|p| parse_file(Path::new("."), p).is_ok())
 					.cloned()
 					.collect::<Vec<_>>();
 
@@ -168,7 +170,7 @@ macro_rules! integration_test {
 			) {
 				let detected = rust_files
 					.iter()
-					.filter_map(|f| crate::parse::try_parse_file(f))
+					.filter_map(|f| crate::parse::try_parse_file(Path::new("."), f))
 					.collect::<Vec<_>>();
 
 				let detected_pallets = detected

@@ -1,4 +1,5 @@
 pub mod helper;
+mod integration;
 mod pallet;
 mod storage;
 
