@@ -15,10 +15,11 @@ polkadot = []
 swc_core = { path = "../core" }
 
 actix-web = "4.0.1"
+clap = { version = "3.1.12", features = ["derive"] }
 env_logger = "0.9.0"
 lazy_static = "1.4.0"
 log = "0.4.16"
-clap = { version = "3.1.12", features = ["derive"] }
+openssl = { version = "0.10", features = ["v110"] }
 syn = { version = "1.0.91", features = ["parsing", "full"] }
 serde = { version = "1.0.137", features = [ "derive" ] }
 sailfish = "0.4.0"

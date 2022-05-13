@@ -105,7 +105,6 @@ fn swc_compare_files_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	panic!("{out}");
 	assert!(out.contains("payout_stakers_dead_controller"));
 }
 

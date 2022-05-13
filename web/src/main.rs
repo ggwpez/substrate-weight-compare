@@ -113,11 +113,6 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		}
 	});
 
-	/*
-	let version = swc_core::VERSION.clone();
-	Ok(format!(
-		"swc {}</br>Compared files in <b>{path_pattern}</b> <b>{old}</b> (old) to <b>{new}</b> (new) with <b>{thresh}%</b> threshold and method <b>{:?}</b>:</br></br>{output}", version, method
-	))*/
 	let ctx = CompareTemplate { diff, args };
 	ctx.render_once().map_err(|e| format!("Could not render template: {}", e))
 }
