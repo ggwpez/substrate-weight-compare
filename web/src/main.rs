@@ -90,7 +90,7 @@ pub struct CompareArgs {
 fn readme_link(name: &str) -> String {
 	// Convert the name to a github markdown anchor.
 	let anchor = name.to_lowercase().replace(' ', "-");
-	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/README.md#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
+	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
 }
 
 fn code_link(name: &str, file: &str, rev: &str) -> String {
