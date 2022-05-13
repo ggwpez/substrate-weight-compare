@@ -1,7 +1,12 @@
 use clap::Parser;
-use std::path::PathBuf;
 
-use swc::{parse::*, *};
+use std::path::{Path, PathBuf};
+
+use swc_core::{
+	compare_commits, compare_files, fmt_changes,
+	parse::{pallet::parse_files, try_parse_file},
+	CompareParams, TotalDiff, VERSION,
+};
 
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]
@@ -17,12 +22,20 @@ struct MainCmd {
 enum SubCommand {
 	#[clap(subcommand)]
 	Compare(CompareCmd),
+	#[clap(subcommand)]
+	Parse(ParseCmd),
 }
 
 #[derive(Debug, clap::Subcommand)]
 enum CompareCmd {
 	Files(CompareFilesCmd),
 	Commits(CompareCommitsCmd),
+}
+
+/// Tries to parse all files in the given file list or folder.
+#[derive(Debug, clap::Subcommand)]
+enum ParseCmd {
+	Files(ParseFilesCmd),
 }
 
 #[derive(Debug, Parser)]
@@ -41,6 +54,13 @@ struct CompareFilesCmd {
 }
 
 #[derive(Debug, Parser)]
+struct ParseFilesCmd {
+	/// The files to parse.
+	#[clap(long, index = 1, required(true), multiple_values(true))]
+	pub files: Vec<PathBuf>,
+}
+
+#[derive(Debug, Parser)]
 struct CompareCommitsCmd {
 	#[allow(missing_docs)]
 	#[clap(flatten)]
@@ -56,6 +76,9 @@ struct CompareCommitsCmd {
 
 	#[clap(long, default_value = "repos/polkadot")]
 	pub repo: PathBuf,
+
+	#[clap(long)]
+	pub path_pattern: String,
 }
 
 fn main() -> Result<(), String> {
@@ -70,31 +93,40 @@ fn main() -> Result<(), String> {
 
 	match cmd.subcommand {
 		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
-			let olds = parse_files(&old, &params.blacklist_file)?;
-			let news = parse_files(&new, &params.blacklist_file)?;
-			let diff = compare_files(olds, news);
-			let per_extrinsic = extract_changes(diff, params.threshold);
+			let olds = parse_files(Path::new("."), &old)?;
+			let news = parse_files(Path::new("."), &new)?;
+
+			let diff = compare_files(olds, news, params.threshold, params.method);
+			print_changes(diff, cmd.verbose);
+		},
+		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
+			old,
+			new,
+			params,
+			repo,
+			path_pattern,
+		})) => {
+			let per_extrinsic =
+				compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
 			print_changes(per_extrinsic, cmd.verbose);
 		},
-		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo })) => {
-			let per_extrinsic =
-				compare_commits(&repo, &old, &new, params.threshold, params.blacklist_file)?;
-			print_changes(per_extrinsic, cmd.verbose);
+		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
+			println!("Trying to parse {} files...", files.len());
+			let parsed = files.iter().filter_map(|f| try_parse_file(Path::new("."), f));
+			println!("Parsed {} files successfully", parsed.count());
 		},
 	}
 
 	Ok(())
 }
 
-fn print_changes(per_extrinsic: Vec<ExtrinsicDiff>, verbose: bool) {
+fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
 		return
 	}
 
-	for line in fmt_changes(&per_extrinsic) {
-		print(line, verbose);
-	}
+	print(format!("\n{}", fmt_changes(&per_extrinsic)), verbose);
 }
 
 fn print(msg: String, verbose: bool) {

@@ -1,0 +1,6 @@
+target
+Dockerfile
+.dockerignore
+# .git is needed for the version
+.gitignore
+repos

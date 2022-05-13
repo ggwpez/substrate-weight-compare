@@ -4,15 +4,16 @@ on:
   push:
     branches: [master, dev]
   pull_request:
-    branches: [master]
+    types: [review_requested, ready_for_review]
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
-  rust:
+  basic:
     name: "Rust"
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -21,11 +22,6 @@ jobs:
           toolchain: nightly
           components: rustfmt
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
       - name: Format
         run: cargo +nightly fmt --all -- --check
 
@@ -33,25 +29,25 @@ jobs:
         name: Check
         with:
           command: check
-          args: --all-targets --all-features
+          args: --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Style
         with:
           command: clippy
-          args: --all-features
+          args: --release --all-targets --all-features -- -D warnings
 
       - uses: actions-rs/cargo@v1
         name: Documentation
         with:
           command: doc
-          args: --no-deps --all-features
+          args: --release --no-deps --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build
         with:
           command: build
-          args: --all-targets --all-features
+          args: --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build (Tests)
@@ -60,15 +56,15 @@ jobs:
           args: --no-run --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
-        name: Static Tests
+        name: Test
         with:
           command: test
-          args: --release --all-targets
+          args: --release --all-targets # no --all-features
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
-    needs: rust
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    needs: basic
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -76,30 +72,27 @@ jobs:
         with:
           toolchain: nightly
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
-      - name: Checkout Polkadot (version locked)
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: paritytech/polkadot
-          path: repos/polkadot
-          # CHANGE HERE and in `polkadot_parse.rs``.
-          ref: 190515004445a60a54711547765baf7e5bcb5e6d
+      - name: Checkout Polkadot
+        run: |
+          mkdir -p repos/polkadot
+          cd repos/polkadot
+          git init
+          git remote add origin https://github.com/paritytech/polkadot
+          git fetch origin 190515004445a60a54711547765baf7e5bcb5e6d
+          git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
+          git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
+          git checkout 190515004445a60a54711547765baf7e5bcb5e6d
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (version locked)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests,polkadot-tests
+          args: --release --all-targets --features version-locked-tests,polkadot "polkadot::"
   
   polkadot_master:
     name: "Polkadot (master)"
-    needs: rust
-    runs-on: buildjet-4vcpu-ubuntu-2004
+    needs: polkadot_version_locked
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -107,21 +100,69 @@ jobs:
         with:
           toolchain: nightly
 
-      - uses: Swatinem/rust-cache@v1
-        name: Rust Cache
-        with:
-          cache-on-failure: true
-
-      - name: Checkout Polkadot (master)
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: paritytech/polkadot
-          path: repos/polkadot
-          ref: master
+      - name: Checkout Polkadot
+        run: |
+          mkdir -p repos/polkadot
+          cd repos/polkadot
+          git init
+          git remote add origin https://github.com/paritytech/polkadot
+          git fetch origin master
+          git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
+          git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
+          git checkout master
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (master)
         with:
           command: test
-          args: --release --all-targets --features version-locked-tests,polkadot-tests
+          args: --release --all-targets --features version-locked-tests,polkadot "polkadot::"
+
+  moonbeam_version_locked:
+    name: "Moonbeam (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Checkout Moonbeam
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: PureStake/moonbeam
+          path: repos/moonbeam
+          ref: 9665bd46a19ef4cc4ad1327f360150d7743dfd76
+
+      - uses: actions-rs/cargo@v1
+        name: Moonbeam Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,moonbeam "moonbeam::"
+
+  composable_version_locked:
+      name: "ComposableFI (version locked)"
+      needs: basic
+      runs-on: self-hosted
+
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions-rs/toolchain@v1
+          with:
+            toolchain: nightly
+
+        - name: Checkout ComposableFI
+          uses: actions/checkout@v3
+          with:
+            fetch-depth: 1
+            repository: ComposableFi/composable
+            path: repos/composable
+            ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+
+        - uses: actions-rs/cargo@v1
+          name: ComposableFI Tests (version locked)
+          with:
+            command: test
+            args: --release --all-targets --features version-locked-tests,composable "composable::"
