@@ -90,10 +90,8 @@ pub fn compare_commits(
 	repo: &Path,
 	old: &str,
 	new: &str,
-	thresh: Percent,
-	method: CompareMethod,
+	params: &CompareParams,
 	path_pattern: &str,
-	ignore_errors: bool,
 	max_files: usize,
 ) -> Result<TotalDiff, String> {
 	if path_pattern.contains("..") {
@@ -107,7 +105,7 @@ pub fn compare_commits(
 	let paths = list_files(pattern.clone(), max_files)?;
 	// Ignore any parsing errors.
 	let olds =
-		if ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
+		if params.ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
 
 	// Parse the new files.
 	if let Err(err) = checkout(repo, new) {
@@ -116,10 +114,10 @@ pub fn compare_commits(
 	let paths = list_files(pattern, max_files)?;
 	// Ignore any parsing errors.
 	let news =
-		if ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
+		if params.ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
 
-	let diff = compare_files(olds, news, thresh, method);
-	Ok(filter_changes(diff, thresh))
+	let diff = compare_files(olds, news, params.threshold, params.method);
+	Ok(filter_changes(diff, params.threshold))
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.

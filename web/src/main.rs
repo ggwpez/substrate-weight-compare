@@ -6,6 +6,7 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{cmp::Ordering, path::PathBuf, sync::Mutex};
 
 use swc_core::{
+	CompareParams,
 	compare_commits, fmt_weight, CompareMethod, Percent, RelativeChange, TotalDiff, VERSION,
 };
 
@@ -101,20 +102,23 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		Ok(guard) => guard,
 		Err(poisoned) => poisoned.into_inner(),
 	};
-	let repo_path: PathBuf = repo_guard.as_ref().ok_or("Could not lock mutex".to_string())?.clone();
+	let repo_path: PathBuf = repo_guard.as_ref().ok_or_else(||"Could not lock mutex".to_string())?.clone();
 
 	let (new, old) = (args.new.trim(), args.old.trim());
 	let (thresh, method, path_pattern, ignore_errors) =
 		(args.threshold.clone(), args.method, args.path_pattern.trim(), args.ignore_errors);
 
+	let params = CompareParams {
+		threshold: thresh.parse().map_err(|e| format!("could not parse threshold: {:?}", e))?,
+		method,
+		ignore_errors,
+	};
 	let mut diff = compare_commits(
 		&repo_path,
 		old,
 		new,
-		thresh.parse().map_err(|e| format!("could not parse threshold: {:?}", e))?,
-		method,
+		&params,
 		path_pattern,
-		ignore_errors,
 		200,
 	)?;
 	diff.sort_by(|a, b| {

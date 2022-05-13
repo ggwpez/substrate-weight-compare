@@ -110,10 +110,8 @@ fn main() -> Result<(), String> {
 				&repo,
 				&old,
 				&new,
-				params.threshold,
-				params.method,
+				&params,
 				&path_pattern,
-				params.ignore_errors,
 				usize::MAX,
 			)?;
 			print_changes(per_extrinsic, cmd.verbose);

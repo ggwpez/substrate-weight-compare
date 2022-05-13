@@ -86,20 +86,20 @@
 					<sup><a href=<%- format!("\"#{}.{}\"", &change.file, &change.name) %>>🔗</a></sup>
 				</td>
 				<td>
-					<%= change.change.old_v.map(fmt_weight).unwrap_or("-".into()) %>
+					<%= change.change.old_v.map(fmt_weight).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= change.change.new_v.map(fmt_weight).unwrap_or("-".into()) %>
+					<%= change.change.new_v.map(fmt_weight).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%- html_color_percent(change.change.percent, change.change.change) %>
 				</td>
 				<td>
-					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or("-".into()) %>
+					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
 					<%- code_link(&change.name, &change.file, &args.old) %>
 				</td>
 				<td>
-					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or("-".into()) %>
+					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
 					<%- code_link(&change.name, &change.file, &args.new) %>
 				</td>
 				<td>
