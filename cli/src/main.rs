@@ -106,14 +106,8 @@ fn main() -> Result<(), String> {
 			repo,
 			path_pattern,
 		})) => {
-			let per_extrinsic = compare_commits(
-				&repo,
-				&old,
-				&new,
-				&params,
-				&path_pattern,
-				usize::MAX,
-			)?;
+			let per_extrinsic =
+				compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
 			print_changes(per_extrinsic, cmd.verbose);
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {

@@ -104,8 +104,11 @@ pub fn compare_commits(
 	let pattern = format!("{}/{}", repo.display(), path_pattern);
 	let paths = list_files(pattern.clone(), max_files)?;
 	// Ignore any parsing errors.
-	let olds =
-		if params.ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
+	let olds = if params.ignore_errors {
+		try_parse_files(repo, &paths)
+	} else {
+		parse_files(repo, &paths)?
+	};
 
 	// Parse the new files.
 	if let Err(err) = checkout(repo, new) {
@@ -113,8 +116,11 @@ pub fn compare_commits(
 	}
 	let paths = list_files(pattern, max_files)?;
 	// Ignore any parsing errors.
-	let news =
-		if params.ignore_errors { try_parse_files(repo, &paths) } else { parse_files(repo, &paths)? };
+	let news = if params.ignore_errors {
+		try_parse_files(repo, &paths)
+	} else {
+		parse_files(repo, &paths)?
+	};
 
 	let diff = compare_files(olds, news, params.threshold, params.method);
 	Ok(filter_changes(diff, params.threshold))
