@@ -2,6 +2,7 @@ use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, Htt
 use clap::Parser;
 use lazy_static::lazy_static;
 use log::info;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{cmp::Ordering, path::PathBuf, sync::Mutex};
 
 use swc_core::{
@@ -17,8 +18,16 @@ pub(crate) struct MainCmd {
 	#[clap(long, short, default_value = "localhost")]
 	pub endpoint: String,
 
-	#[clap(long, short, default_value = "80")]
+	#[clap(long, short, default_value = "8080")]
 	pub port: u16,
+
+	/// PEM format cert.
+	#[clap(long, requires("key"))]
+	pub cert: Option<String>,
+
+	/// PEM format key.
+	#[clap(long, requires("cert"))]
+	pub key: Option<String>,
 }
 
 lazy_static! {
@@ -43,7 +52,7 @@ async fn main() -> std::io::Result<()> {
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
 	info!("Listening to http://{}", endpoint);
 
-	HttpServer::new(|| {
+	let server = HttpServer::new(|| {
 		App::new()
 			.wrap(middleware::Compress::default())
 			.wrap(Logger::new("%a %r %s %b %{Referer}i %Ts"))
@@ -51,8 +60,20 @@ async fn main() -> std::io::Result<()> {
 			.service(compare_index)
 			.service(root)
 	})
-	.workers(1) // Comparing commits cannot be parallelized.
-	.bind(endpoint)?
+	.workers(1); // Comparing commits cannot be parallelized.
+
+	let bound_server = if let Some(cert) = cmd.cert {
+		let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+		builder
+			.set_private_key_file(cmd.key.expect("Checked by clap"), SslFiletype::PEM)
+			.unwrap();
+		builder.set_certificate_chain_file(cert).unwrap();
+		server.bind_openssl(endpoint, builder)
+	} else {
+		server.bind(endpoint)
+	};
+
+	bound_server?
 	.run()
 	.await
 }
