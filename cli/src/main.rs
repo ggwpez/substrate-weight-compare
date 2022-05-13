@@ -93,8 +93,8 @@ fn main() -> Result<(), String> {
 
 	match cmd.subcommand {
 		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
-			let olds = parse_files(&Path::new("."), &old)?;
-			let news = parse_files(&Path::new("."), &new)?;
+			let olds = parse_files(Path::new("."), &old)?;
+			let news = parse_files(Path::new("."), &new)?;
 
 			let diff = compare_files(olds, news, params.threshold, params.method);
 			print_changes(diff, cmd.verbose);
@@ -120,7 +120,7 @@ fn main() -> Result<(), String> {
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
-			let parsed = files.iter().filter_map(|f| try_parse_file(&Path::new("."), f));
+			let parsed = files.iter().filter_map(|f| try_parse_file(Path::new("."), f));
 			println!("Parsed {} files successfully", parsed.count());
 		},
 	}

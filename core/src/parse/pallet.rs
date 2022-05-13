@@ -20,7 +20,7 @@ pub struct Extrinsic {
 
 pub fn parse_file(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
 	let content = super::read_file(&repo.join(file))?;
-	let name = file.strip_prefix(repo).unwrap_or(&file);
+	let name = file.strip_prefix(repo).unwrap_or(file);
 	parse_content(name.display().to_string(), content)
 		.map_err(|e| format!("{}: {}", file.display(), e))
 }

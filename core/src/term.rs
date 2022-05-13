@@ -156,13 +156,13 @@ impl Term {
 /// Calculating along the whole plane should not be needed since we assume linear equations.
 /// TODO a check could be added to ensure that we are indeed dealing with linear equations.
 pub fn multivariadic_eval(f: &Term, scope: &mut Scope, value: u128) -> u128 {
-	let free_vars: Set<_> = f.free_vars(&scope);
+	let free_vars: Set<_> = f.free_vars(scope);
 	for var in free_vars {
 		scope.put_var(&var, val!(value));
 	}
 
-	let _eq = f.fmt_equation(&scope);
-	f.clone().eval(&scope).expect("Set all variables; qed")
+	let _eq = f.fmt_equation(scope);
+	f.clone().eval(scope).expect("Set all variables; qed")
 }
 
 impl fmt::Display for Term {

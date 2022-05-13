@@ -88,7 +88,7 @@ pub struct CompareArgs {
 
 fn readme_link(name: &str) -> String {
 	// Convert the name to a github markdown anchor.
-	let anchor = name.to_lowercase().replace(" ", "-");
+	let anchor = name.to_lowercase().replace(' ', "-");
 	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/README.md#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
 }
 
@@ -101,7 +101,7 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		Ok(guard) => guard,
 		Err(poisoned) => poisoned.into_inner(),
 	};
-	let repo_path: PathBuf = repo_guard.as_ref().ok_or(format!("Could not lock mutex"))?.clone();
+	let repo_path: PathBuf = repo_guard.as_ref().ok_or("Could not lock mutex".to_string())?.clone();
 
 	let (new, old) = (args.new.trim(), args.old.trim());
 	let (thresh, method, path_pattern, ignore_errors) =
@@ -113,7 +113,7 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		new,
 		thresh.parse().map_err(|e| format!("could not parse threshold: {:?}", e))?,
 		method,
-		&path_pattern,
+		path_pattern,
 		ignore_errors,
 		200,
 	)?;

@@ -97,7 +97,7 @@ pub fn compare_commits(
 	max_files: usize,
 ) -> Result<TotalDiff, String> {
 	if path_pattern.contains("..") {
-		return Err(format!("Path pattern cannot contain '..'"))
+		return Err("Path pattern cannot contain '..'".to_string())
 	}
 	// Parse the old files.
 	if let Err(err) = checkout(repo, old) {
@@ -141,9 +141,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 	let files = glob::glob(&regex).unwrap();
 	let files: Vec<_> = files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(
-			format!("Too many files found. Found: {}, Max: {}", files.len(), max_files).into()
-		)
+		return Err(format!("Too many files found. Found: {}, Max: {}", files.len(), max_files))
 	} else {
 		Ok(files)
 	}
@@ -190,7 +188,7 @@ pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMeth
 
 	let mut old_scope = scope.clone();
 	let old_v = old.map(|t| multivariadic_eval(t, &mut old_scope, max));
-	let mut new_scope = scope.clone();
+	let mut new_scope = scope;
 	let new_v = new.map(|t| multivariadic_eval(t, &mut new_scope, max));
 	let change = RelativeChange::new(old_v, new_v);
 	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
