@@ -83,9 +83,6 @@ pub struct CompareParams {
 	pub method: CompareMethod,
 
 	#[clap(long)]
-	pub path_pattern: String,
-
-	#[clap(long)]
 	pub ignore_errors: bool,
 }
 

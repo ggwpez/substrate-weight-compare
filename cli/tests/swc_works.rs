@@ -28,7 +28,7 @@ fn swc_help_works() {
 fn swc_compare_commits_works() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits"])
+		.args(["compare", "commits", "--method", "base", "--path-pattern", "runtime/polkadot/src/weights/*.rs"])
 		.args(["v0.9.19", "v0.9.20"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
@@ -45,7 +45,7 @@ fn swc_compare_commits_works() {
 fn swc_compare_commits_same_no_changes() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits"])
+		.args(["compare", "commits", "--method", "base", "--path-pattern", "runtime/polkadot/src/weights/*.rs"])
 		.args(["v0.9.19", "v0.9.19"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
@@ -62,7 +62,7 @@ fn swc_compare_commits_same_no_changes() {
 fn swc_compare_commits_errors() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits"])
+		.args(["compare", "commits", "--method", "base", "--path-pattern", "**/*.rs"])
 		.args(["vWrong"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
@@ -77,7 +77,7 @@ fn swc_compare_commits_errors() {
 fn swc_compare_files_works() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "files"])
+		.args(["compare", "files", "--method", "base"])
 		.args([
 			"--old",
 			root_dir().join("test_data/old/pallet_staking.rs.txt").to_str().unwrap(),
@@ -91,6 +91,7 @@ fn swc_compare_files_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+	panic!("{out}");
 	assert!(out.contains("payout_stakers_dead_controller"));
 }
 
@@ -98,7 +99,7 @@ fn swc_compare_files_works() {
 fn swc_compare_files_same_no_changes() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "files"])
+		.args(["compare", "files", "--method", "base"])
 		.args([
 			"--old",
 			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
@@ -119,7 +120,7 @@ fn swc_compare_files_same_no_changes() {
 fn swc_compare_files_errors() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "files"])
+		.args(["compare", "files", "--method", "base"])
 		.args([
 			"--old",
 			root_dir()

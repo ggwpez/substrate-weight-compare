@@ -76,6 +76,9 @@ struct CompareCommitsCmd {
 
 	#[clap(long, default_value = "repos/polkadot")]
 	pub repo: PathBuf,
+
+	#[clap(long)]
+	pub path_pattern: String,
 }
 
 fn main() -> Result<(), String> {
@@ -96,14 +99,14 @@ fn main() -> Result<(), String> {
 			let diff = compare_files(olds, news, params.threshold, params.method);
 			print_changes(diff, cmd.verbose);
 		},
-		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo })) => {
+		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo, path_pattern })) => {
 			let per_extrinsic = compare_commits(
 				&repo,
 				&old,
 				&new,
 				params.threshold,
 				params.method,
-				&params.path_pattern,
+				&path_pattern,
 				params.ignore_errors,
 				usize::MAX,
 			)?;
