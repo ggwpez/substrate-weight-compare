@@ -28,7 +28,14 @@ fn swc_help_works() {
 fn swc_compare_commits_works() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits", "--method", "base", "--path-pattern", "runtime/polkadot/src/weights/*.rs"])
+		.args([
+			"compare",
+			"commits",
+			"--method",
+			"base",
+			"--path-pattern",
+			"runtime/polkadot/src/weights/*.rs",
+		])
 		.args(["v0.9.19", "v0.9.20"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()
@@ -45,7 +52,14 @@ fn swc_compare_commits_works() {
 fn swc_compare_commits_same_no_changes() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits", "--method", "base", "--path-pattern", "runtime/polkadot/src/weights/*.rs"])
+		.args([
+			"compare",
+			"commits",
+			"--method",
+			"base",
+			"--path-pattern",
+			"runtime/polkadot/src/weights/*.rs",
+		])
 		.args(["v0.9.19", "v0.9.19"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()

@@ -99,7 +99,13 @@ fn main() -> Result<(), String> {
 			let diff = compare_files(olds, news, params.threshold, params.method);
 			print_changes(diff, cmd.verbose);
 		},
-		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd { old, new, params, repo, path_pattern })) => {
+		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
+			old,
+			new,
+			params,
+			repo,
+			path_pattern,
+		})) => {
 			let per_extrinsic = compare_commits(
 				&repo,
 				&old,
