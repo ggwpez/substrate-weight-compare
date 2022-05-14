@@ -23,6 +23,7 @@ openssl = { version = "0.10", features = ["v110"] }
 syn = { version = "1.0.91", features = ["parsing", "full"] }
 serde = { version = "1.0.137", features = [ "derive" ] }
 sailfish = "0.4.0"
+badge-maker = "0.2.1"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"

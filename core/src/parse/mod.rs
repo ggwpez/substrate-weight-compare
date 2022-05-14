@@ -38,7 +38,11 @@ pub fn try_parse_file(repo: &Path, file: &Path) -> Option<ParsedFile> {
 }
 
 pub fn read_file(file: &Path) -> Result<String, String> {
-	let mut raw = std::fs::File::open(file).map_err(|e| format!("{}: {:?}", file.display(), e))?;
+	let mut raw = std::fs::File::options()
+		.read(true)
+		.write(false)
+		.open(file)
+		.map_err(|e| format!("{}: {:?}", file.display(), e))?;
 	let mut content = String::new();
 	raw.read_to_string(&mut content)
 		.map_err(|e| format!("{}: {:?}", file.display(), e))?;

@@ -1,4 +1,8 @@
-use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::{
+	get, http::header::ContentType, middleware, middleware::Logger, web, App, HttpResponse,
+	HttpServer,
+};
+use badge_maker::BadgeBuilder;
 use clap::Parser;
 use lazy_static::lazy_static;
 use log::info;
@@ -9,6 +13,9 @@ use swc_core::{
 	compare_commits, fmt_weight, CompareMethod, CompareParams, Percent, RelativeChange, TotalDiff,
 	VERSION,
 };
+
+mod html;
+use html::*;
 
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]
@@ -31,17 +38,26 @@ pub(crate) struct MainCmd {
 	pub key: Option<String>,
 }
 
-lazy_static! {
-	static ref REPO: Mutex<Option<PathBuf>> = Mutex::new(None);
+#[derive(Debug, serde::Deserialize)]
+pub struct CompareArgs {
+	old: String,
+	new: String,
+	path_pattern: String,
+	ignore_errors: bool,
+	threshold: String,
+	method: CompareMethod,
 }
 
-use sailfish::TemplateOnce;
+#[derive(Debug, serde::Deserialize)]
+pub struct VersionArgs {
+	is: Option<String>,
+}
 
-#[derive(TemplateOnce)]
-#[template(path = "compare.stpl")]
-struct CompareTemplate {
-	diff: TotalDiff,
-	args: CompareArgs,
+lazy_static! {
+	/// Singleton mutex to protect the git repo from concurrent access.
+	///
+	/// Contains the path to the repo.
+	static ref REPO: Mutex<Option<PathBuf>> = Mutex::new(None);
 }
 
 #[actix_web::main]
@@ -58,10 +74,11 @@ async fn main() -> std::io::Result<()> {
 			.wrap(middleware::Compress::default())
 			.wrap(Logger::new("%a %r %s %b %{Referer}i %Ts"))
 			.service(compare)
-			.service(compare_index)
+			.service(version_badge)
+			.service(version)
 			.service(root)
 	})
-	.workers(1); // Comparing commits cannot be parallelized.
+	.workers(4);
 
 	let bound_server = if let Some(cert) = cmd.cert {
 		let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
@@ -77,24 +94,58 @@ async fn main() -> std::io::Result<()> {
 	bound_server?.run().await
 }
 
-#[derive(Debug, serde::Deserialize)]
-pub struct CompareArgs {
-	old: String,
-	new: String,
-	path_pattern: String,
-	ignore_errors: bool,
-	threshold: String,
-	method: CompareMethod,
+#[get("/")]
+async fn root() -> HttpResponse {
+	http_200(templates::Root::render())
 }
 
-fn readme_link(name: &str) -> String {
-	// Convert the name to a github markdown anchor.
-	let anchor = name.to_lowercase().replace(' ', "-");
-	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
+#[get("/compare")]
+async fn compare(args: Option<web::Query<CompareArgs>>) -> HttpResponse {
+	let args = if let Some(args) = args {
+		args
+	} else {
+		return http_500(templates::Error500::render("Missing query arguments"))
+	};
+
+	match do_compare(args.into_inner()) {
+		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
+		Err(e) => http_500(e),
+	}
 }
 
-fn code_link(name: &str, file: &str, rev: &str) -> String {
-	format!("<a href=\"https://github.com/paritytech/polkadot/tree/{}/{}#:~:text=fn {}\" target=\"_blank\"><sup><small>CODE</small></sup></a>", rev, file, name)
+/// Exposes version information for automatic deployments.
+///
+/// Has two modi operandi:
+/// - `/version` returns the current version.
+/// - `/version?is=1.2` can be used to check if the server runs a specific version.
+/// Returns codes 200 or 500.
+#[get("/version")]
+async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
+	let current = swc_core::VERSION.clone();
+
+	if let Some(version) = args.is {
+		// Hack: + becomes a space in query params, so just replace it…
+		if current == version || current.replace("+", " ") == version {
+			http_200("Version check passed")
+		} else {
+			http_500(format!("Version check failed: '{}' vs '{}'", current, version))
+		}
+	} else {
+		http_200(swc_core::VERSION.clone())
+	}
+}
+
+#[get("/version/badge")]
+async fn version_badge() -> HttpResponse {
+	let svg = BadgeBuilder::new()
+		.label("Deployed")
+		.message(&*swc_core::VERSION)
+		.color_parse("#33B5E5")
+		.build()
+		.expect("Must build svg")
+		.svg();
+
+	HttpResponse::Ok().content_type("image/svg+xml").body(svg)
 }
 
 fn do_compare(args: CompareArgs) -> Result<String, String> {
@@ -130,56 +181,5 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		}
 	});
 
-	let ctx = CompareTemplate { diff, args };
-	ctx.render_once().map_err(|e| format!("Could not render template: {}", e))
-}
-
-#[get("/compare")]
-async fn compare(args: web::Query<CompareArgs>) -> HttpResponse {
-	match do_compare(args.into_inner()) {
-		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
-		Err(e) => HttpResponse::InternalServerError()
-			.content_type("text/html; charset=utf-8")
-			.body(format!("<pre>Error: {:?}</pre>", e)),
-	}
-}
-
-// Use html colors
-fn html_color_percent(p: Percent, change: RelativeChange) -> String {
-	match change {
-		RelativeChange::Change =>
-			if p < 0.0 {
-				format!("<p style='color:green'>-{:.2?}</p>", p.abs())
-			} else if p > 0.0 {
-				format!("<p style='color:red'>+{:.2?}</p>", p.abs())
-			} else {
-				// 0 or NaN
-				format!("{:.0?}", p)
-			},
-		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),
-		RelativeChange::Added => "<p style='color:orange'>Added</p>".into(),
-		RelativeChange::Removed => "<p style='color:orange'>Removed</p>".into(),
-	}
-}
-
-#[get("/")]
-async fn compare_index() -> HttpResponse {
-	let index = r#"
-    <h1>Examples:</h1>
-    <ul>
-        <li>:?
-            <a href='/compare/20467ccea1ae3bc89362d3980fde9383ce334789/master/30/polkadot'>Example #1</a>
-        </li>
-        <li>
-            <a href='/compare/v0.9.18/v0.9.19/10/kusama'>Example #2</a>
-        </li>
-    </ul>
-    "#;
-
-	HttpResponse::Ok().content_type("text/html; charset=utf-8").body(index)
-}
-
-#[get("/")]
-async fn root() -> HttpResponse {
-	HttpResponse::Found().append_header(("Location", "/compare")).finish()
+	Ok(templates::Compare::render(&diff, &args))
 }

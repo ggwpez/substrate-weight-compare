@@ -1,0 +1,14 @@
+<html>
+<head>
+	<title>
+		SWC-Web
+	</title>
+</head>
+<body>
+	<h1>Substrate Weight Compare</h1>
+	This web endpoint is exposed by <a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank">SWC</a>.</br>
+	It allows to compare weight files of substrate compatible projects.</br>
+	</br>
+	The only exposed endpoint is currently: <a href="/compare">/compare</a>.
+</body>
+</html>

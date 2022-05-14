@@ -4,3 +4,5 @@ Dockerfile
 # .git is needed for the version
 .gitignore
 repos
+docker-compose.yml
+README.md
