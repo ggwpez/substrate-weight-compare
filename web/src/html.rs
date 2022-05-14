@@ -1,12 +1,12 @@
-use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::HttpResponse;
 
-use swc_core::{Percent, RelativeChange, TotalDiff};
+use swc_core::{Percent, RelativeChange};
 
 pub mod templates {
 	use super::*;
 	use crate::CompareArgs;
 	use sailfish::TemplateOnce;
-	use swc_core::{fmt_weight, CompareMethod, Percent, RelativeChange, TotalDiff};
+	use swc_core::{fmt_weight, CompareMethod, TotalDiff};
 
 	#[derive(TemplateOnce)]
 	#[template(path = "root.stpl")]

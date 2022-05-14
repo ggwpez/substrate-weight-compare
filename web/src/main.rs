@@ -1,7 +1,4 @@
-use actix_web::{
-	get, http::header::ContentType, middleware, middleware::Logger, web, App, HttpResponse,
-	HttpServer,
-};
+use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpServer};
 use badge_maker::BadgeBuilder;
 use clap::Parser;
 use lazy_static::lazy_static;
@@ -9,10 +6,7 @@ use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{cmp::Ordering, path::PathBuf, sync::Mutex};
 
-use swc_core::{
-	compare_commits, fmt_weight, CompareMethod, CompareParams, Percent, RelativeChange, TotalDiff,
-	VERSION,
-};
+use swc_core::{compare_commits, CompareMethod, CompareParams, VERSION};
 
 mod html;
 use html::*;
@@ -125,7 +119,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 
 	if let Some(version) = args.is {
 		// Hack: + becomes a space in query params, so just replace it…
-		if current == version || current.replace("+", " ") == version {
+		if current == version || current.replace('+', " ") == version {
 			http_200("Version check passed")
 		} else {
 			http_500(format!("Version check failed: '{}' vs '{}'", current, version))
