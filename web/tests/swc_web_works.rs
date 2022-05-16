@@ -68,10 +68,13 @@ fn swc_web_compare_works() {
 	for _ in 0..20 {
 		std::thread::sleep(std::time::Duration::from_millis(100));
 
-		let url = "http://localhost:8080/compare/v0.9.19/v0.9.20/30";
+		let url = "http://localhost:8080/compare?old=v0.9.19&new=v0.9.20&threshold=10&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false";
 		let resp = reqwest::blocking::get(url).expect("Request error").text().unwrap();
 
-		if resp.contains("pallet_election_provider_multi_phase.rs") {
+		// Some magic numbers
+		if !resp.contains("-99.46") || !resp.contains("33.00K") {
+			panic!("Unexpected response: {}", resp);
+		} else {
 			return
 		}
 	}

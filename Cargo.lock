@@ -1750,12 +1750,14 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "swc"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
+ "ansi_term",
  "assert_cmd",
  "clap",
  "env_logger",
  "log",
+ "prettytable-rs",
  "serial_test",
  "swc_core",
  "syn",
@@ -1763,9 +1765,8 @@ dependencies = [
 
 [[package]]
 name = "swc_core"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
- "ansi_term",
  "assert_cmd",
  "clap",
  "env_logger",
@@ -1775,7 +1776,6 @@ dependencies = [
  "glob",
  "lazy_static",
  "log",
- "prettytable-rs",
  "proc-macro2",
  "rstest",
  "semver",
@@ -1786,7 +1786,7 @@ dependencies = [
 
 [[package]]
 name = "swc_web"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "actix-web",
  "assert_cmd",

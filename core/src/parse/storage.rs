@@ -1,7 +1,7 @@
 use std::path::Path;
 use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
-use crate::term::Term;
+use crate::{parse::path_to_string, term::Term};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Db {
@@ -25,7 +25,7 @@ pub struct Weights {
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::Var(crate::scope::STORAGE_READ_VAR.into()).into())
+		Term::Mul($a.into(), Term::Var($crate::scope::STORAGE_READ_VAR.into()).into())
 	};
 }
 
@@ -33,7 +33,7 @@ macro_rules! reads {
 #[macro_export]
 macro_rules! writes {
 	($a:expr) => {
-		Term::Mul($a.into(), Term::Var(crate::scope::STORAGE_WRITE_VAR.into()).into())
+		Term::Mul($a.into(), Term::Var($crate::scope::STORAGE_WRITE_VAR.into()).into())
 	};
 }
 
@@ -166,14 +166,6 @@ fn type_to_string(p: &syn::Type, delimiter: Option<&str>) -> Result<String, Stri
 	} else {
 		Err("Unexpected type".into())
 	}
-}
-
-fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
-	p.segments
-		.iter()
-		.map(|s| s.ident.to_string())
-		.collect::<Vec<_>>()
-		.join(delimiter.unwrap_or_default())
 }
 
 fn member_to_string(m: &syn::Member) -> String {

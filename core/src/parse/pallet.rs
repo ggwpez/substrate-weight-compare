@@ -6,7 +6,11 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, term::Term};
+use crate::{
+	mul,
+	parse::{path_to_string, PathStripping},
+	term::Term,
+};
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -18,29 +22,42 @@ pub struct Extrinsic {
 	pub term: Term,
 }
 
-pub fn parse_file(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
-	let content = super::read_file(&repo.join(file))?;
-	let name = file.strip_prefix(repo).unwrap_or(file);
-	parse_content(name.display().to_string(), content)
-		.map_err(|e| format!("{}: {}", file.display(), e))
+pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
+	let content = super::read_file(file)?;
+	let name = PathStripping::RepoRelative.strip(repo, file);
+	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
 }
 
-pub fn parse_files(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
-	let mut map = Vec::new();
+pub fn parse_file(file: &Path) -> Result<Vec<Extrinsic>> {
+	let content = super::read_file(file)?;
+	let name = PathStripping::FileName.strip(Path::new("."), file);
+	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
+}
+
+pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+	let mut res = Vec::new();
 	for path in paths {
-		map.extend(parse_file(repo, path)?);
+		res.extend(parse_file_in_repo(repo, path)?);
 	}
-	Ok(map)
+	Ok(res)
+}
+
+pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+	let mut res = Vec::new();
+	for path in paths {
+		res.extend(parse_file(path)?);
+	}
+	Ok(res)
 }
 
 pub fn try_parse_files(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
-	let mut map = Vec::new();
+	let mut res = Vec::new();
 	for path in paths {
-		if let Ok(res) = parse_file(repo, path) {
-			map.extend(res);
+		if let Ok(parsed) = parse_file_in_repo(repo, path) {
+			res.extend(parsed);
 		}
 	}
-	map
+	res
 }
 
 pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsic>> {
@@ -91,7 +108,11 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrins
 					weights.push(Extrinsic { name: ext_name, pallet: pallet.clone(), term });
 				}
 			}
-			Ok(weights)
+			if weights.is_empty() {
+				Err("No weight functions found in trait impl".into())
+			} else {
+				Ok(weights)
+			}
 		},
 		_ => Err("No weight trait impl found".into()),
 	}
@@ -132,10 +153,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 		Expr::MethodCall(call) => parse_method_call(call),
 		Expr::Lit(lit) => Ok(Term::Value(lit_to_value(&lit.lit))),
 		Expr::Path(p) => {
-			if p.path.segments.len() != 1 {
-				return Err("Unexpected path as weight constant".into())
-			}
-			let ident = p.path.segments.first().ok_or("Empty path")?.ident.to_string();
+			let ident = path_to_string(&p.path, Some("::"));
 			Ok(Term::Var(ident))
 		},
 		_ => Err("Unexpected expression".into()),
@@ -146,7 +164,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 fn validate_db_call(call: &Expr) -> Result<()> {
 	match call {
 		Expr::Call(call) => {
-			let _ = validate_db_func(&call.func)?;
+			validate_db_func(&call.func)?;
 			if !call.args.is_empty() {
 				Err("Unexpected arguments".into())
 			} else {

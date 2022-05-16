@@ -5,8 +5,10 @@ use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
-use prettytable::{cell, row, table};
-use std::path::{Path, PathBuf};
+use std::{
+	cmp::Ordering,
+	path::{Path, PathBuf},
+};
 use syn::{Expr, Item, Type};
 
 pub mod parse;
@@ -17,12 +19,12 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files, try_parse_files, Extrinsic};
+use parse::pallet::{parse_files_in_repo, try_parse_files, Extrinsic};
 use scope::Scope;
 use term::{multivariadic_eval, Term};
 
 lazy_static! {
-	/// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
+	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
 	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--dirty", "--always"], fallback = "unknown"));
 	pub static ref VERSION_DIRTY: bool = {
 		VERSION.clone().contains("dirty")
@@ -107,7 +109,7 @@ pub fn compare_commits(
 	let olds = if params.ignore_errors {
 		try_parse_files(repo, &paths)
 	} else {
-		parse_files(repo, &paths)?
+		parse_files_in_repo(repo, &paths)?
 	};
 
 	// Parse the new files.
@@ -119,11 +121,11 @@ pub fn compare_commits(
 	let news = if params.ignore_errors {
 		try_parse_files(repo, &paths)
 	} else {
-		parse_files(repo, &paths)?
+		parse_files_in_repo(repo, &paths)?
 	};
 
 	let diff = compare_files(olds, news, params.threshold, params.method);
-	Ok(filter_changes(diff, params.threshold))
+	Ok(filter_changes(diff, params.threshold)) // TODO filtered twice?
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.
@@ -152,7 +154,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 }
 
 #[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Clone, Copy, Debug)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "kebab-case")]
 pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.
 	Base,
@@ -240,6 +242,23 @@ pub fn compare_files(
 	filter_changes(diff, thresh)
 }
 
+pub fn sort_changes(diff: &mut TotalDiff) {
+	diff.sort_by(|a, b| {
+		let ord = a.change.change.cmp(&b.change.change).reverse();
+		if ord == Ordering::Equal {
+			if a.change.percent > b.change.percent {
+				Ordering::Greater
+			} else if a.change.percent == b.change.percent {
+				Ordering::Equal
+			} else {
+				Ordering::Less
+			}
+		} else {
+			ord
+		}
+	});
+}
+
 pub fn filter_changes(diff: TotalDiff, threshold: Percent) -> TotalDiff {
 	diff.iter()
 		.filter(|extrinsic| match extrinsic.change.change {
@@ -250,36 +269,6 @@ pub fn filter_changes(diff: TotalDiff, threshold: Percent) -> TotalDiff {
 		})
 		.cloned()
 		.collect()
-}
-
-pub fn fmt_changes(changes: &TotalDiff) -> String {
-	// Collect the extrinsics by category into a vector each.
-	let mut changed = Vec::new();
-	let mut unchanged = Vec::new();
-	let mut added = Vec::new();
-	let mut removed = Vec::new();
-
-	for extrinsic in changes.iter() {
-		match extrinsic.change.change {
-			RelativeChange::Change => changed.push(extrinsic),
-			RelativeChange::Unchanged => unchanged.push(extrinsic),
-			RelativeChange::Added => added.push(extrinsic),
-			RelativeChange::Removed => removed.push(extrinsic),
-		}
-	}
-
-	let mut table = table!(["Pallet", "Extrinsic", "Old", "New", "Change [%]"]);
-
-	for diff in changed {
-		table.add_row(row![
-			diff.file,
-			diff.name,
-			diff.change.old_v.map(fmt_weight).unwrap_or_default(),
-			diff.change.new_v.map(fmt_weight).unwrap_or_default(),
-			color_percent(diff.change.percent, &diff.change.change),
-		]);
-	}
-	table.to_string()
 }
 
 impl RelativeChange {
@@ -303,26 +292,6 @@ pub fn percent(old: u128, new: u128) -> Percent {
 		0.0
 	} else {
 		100.0 * (new as f64 / old as f64) - 100.0
-	}
-}
-
-// TODO remove
-pub fn color_percent(p: Percent, change: &RelativeChange) -> String {
-	use ansi_term::Colour;
-
-	match change {
-		RelativeChange::Unchanged => "0.00% (No change)".to_string(),
-		RelativeChange::Added => Colour::Red.paint("100.00% (Added)").to_string(),
-		RelativeChange::Removed => Colour::Green.paint("-100.00% (Removed)").to_string(),
-		RelativeChange::Change => {
-			let s = format!("{:+5.2}", p);
-			match p {
-				x if x < 0.0 => Colour::Green.paint(s),
-				x if x > 0.0 => Colour::Red.paint(s),
-				_ => Colour::White.paint(s),
-			}
-			.to_string()
-		},
 	}
 }
 

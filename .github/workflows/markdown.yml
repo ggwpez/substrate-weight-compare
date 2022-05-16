@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Skip if unchanged
+        id: changed-files-specific
+        uses: tj-actions/changed-files@v20
+        with:
+          files: |
+            *.md
+            *.markdown
+
       - name: Link Markdown
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:

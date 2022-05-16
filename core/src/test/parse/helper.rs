@@ -10,7 +10,7 @@ macro_rules! integration_test {
 		$num_storage_files:expr,
 		$num_overhead_files:expr,
 
-		$pallet_patterns:expr,
+		$pallet_patterns:expr; exclude=$exclude_pallet:expr,
 		$db_patterns:expr,
 		$overhead_patterns:expr
 	) => {
@@ -20,9 +20,9 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::{Path, PathBuf};
 
-			use crate::{
+			use $crate::{
 				checkout,
-				parse::{pallet::parse_file, ParsedFile},
+				parse::ParsedFile,
 			};
 
 			/// These tests only work on Moonbeam master and are therefore not run by default.
@@ -88,76 +88,6 @@ macro_rules! integration_test {
 				}
 			}
 
-			/// Parses all weight files successfully.
-			#[rstest]
-			#[serial]
-			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_pallet_weight_files(pallet_files: Vec<PathBuf>) {
-				for file in pallet_files {
-					parse_file(Path::new("."), &file)
-						.map_err(|e| format!("File {:?}: {:?}", file, e))
-						.unwrap();
-				}
-			}
-
-			/// Tries to parse all rust files and asserts that the number of successful parses is
-			/// equal to the number of weight files.
-			// TODO: Check for equality instead of just length.
-			#[rstest]
-			#[serial]
-			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_exactly_pallet_weight_files(
-				rust_files: Vec<PathBuf>,
-				pallet_files: Vec<PathBuf>,
-			) {
-				let weights = rust_files
-					.iter()
-					.filter(|p| parse_file(Path::new("."), p).is_ok())
-					.cloned()
-					.collect::<Vec<_>>();
-
-				if pallet_files.len() != weights.len() {
-					panic!(
-						"Expected {} weights, found {}:\n{}",
-						pallet_files.len(),
-						weights.len(),
-						fmt_diff(&pallet_files, &weights)
-					);
-				}
-			}
-
-			#[rstest]
-			#[serial]
-			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_db_weight_files(storage_files: Vec<PathBuf>) {
-				for file in storage_files {
-					crate::parse::storage::parse_file(&file).unwrap();
-				}
-			}
-
-			#[rstest]
-			#[serial]
-			#[cfg_attr(not(feature = $repo), ignore)]
-			fn parses_exactly_db_weight_files(
-				rust_files: Vec<PathBuf>,
-				storage_files: Vec<PathBuf>,
-			) {
-				let weights = rust_files
-					.iter()
-					.filter(|p| crate::parse::storage::parse_file(p).is_ok())
-					.cloned()
-					.collect::<Vec<_>>();
-
-				if storage_files.len() != weights.len() {
-					panic!(
-						"Expected {} weights, found {}:\n{}",
-						storage_files.len(),
-						weights.len(),
-						fmt_diff(&rust_files, &weights)
-					);
-				}
-			}
-
 			/// Test that [`crate::parse::try_parse_file`] detects the correct file type.
 			#[rstest]
 			#[serial]
@@ -168,48 +98,26 @@ macro_rules! integration_test {
 				pallet_files: Vec<PathBuf>,
 				overhead_files: Vec<PathBuf>,
 			) {
-				let detected = rust_files
-					.iter()
-					.filter_map(|f| crate::parse::try_parse_file(Path::new("."), f))
-					.collect::<Vec<_>>();
-
-				let detected_pallets = detected
-					.iter()
-					.filter(|d| matches!(d, ParsedFile::Pallet(_)))
-					.collect::<Vec<_>>();
-
-				if pallet_files.len() != detected_pallets.len() {
-					panic!(
-						"Expected {} pallet weights files, found {}",
-						pallet_files.len(),
-						detected_pallets.len(),
-					);
-				}
-
-				let detected_storage = detected
-					.iter()
-					.filter(|d| matches!(d, ParsedFile::Storage(_)))
-					.collect::<Vec<_>>();
-
-				if storage_files.len() != detected_storage.len() {
-					panic!(
-						"Expected {} storage weights files, found {}",
-						storage_files.len(),
-						detected_storage.len(),
-					);
-				}
-
-				let detected_overhead = detected
-					.iter()
-					.filter(|d| matches!(d, ParsedFile::Storage(_)))
-					.collect::<Vec<_>>();
-
-				if overhead_files.len() != detected_overhead.len() {
-					panic!(
-						"Expected {} overhead weights files, found {}",
-						overhead_files.len(),
-						detected_overhead.len(),
-					);
+				for f in &rust_files {
+					match $crate::parse::try_parse_file(Path::new("."), f){
+						None => if pallet_files.contains(f) {
+							assert!(false, "File {:?} could not be parsed as pallet", f)
+						} else if overhead_files.contains(f) {
+							let err = $crate::parse::overhead::parse_file(f).unwrap_err();
+							assert!(false, "File {:?} could not be parsed as overhead: {:?}", f, err)
+						} else if storage_files.contains(f) {
+							assert!(false, "File {:?} could not be parsed as storage", f)
+						},
+						Some(ParsedFile::Pallet(_)) => if !pallet_files.contains(f) {
+							assert!(false, "File {:?} was parsed as pallet, but it was not expected to be", f)
+						},
+						Some(ParsedFile::Overhead(_)) => if !overhead_files.contains(f) {
+							assert!(false, "File {:?} was parsed as overhead, but it was not expected to be", f)
+						},
+						Some(ParsedFile::Storage(_)) => if !storage_files.contains(f) {
+							assert!(false, "File {:?} was parsed as storage, but it was not expected to be", f)
+						},
+					}
 				}
 			}
 
@@ -219,6 +127,7 @@ macro_rules! integration_test {
 			#[fixture]
 			fn pallet_files() -> Vec<PathBuf> {
 				let pattern: Vec<&str> = $pallet_patterns;
+				let exclude: Vec<&str> = $exclude_pallet;
 				pattern
 					.iter()
 					.map(|pattern| {
@@ -227,6 +136,8 @@ macro_rules! integration_test {
 							.unwrap()
 							.map(|f| f.unwrap())
 							.filter(|f| !f.ends_with("mod.rs"))
+							.filter(|f| !exclude.iter().any(|n| f.to_string_lossy().ends_with(n))
+						)
 					})
 					.flatten()
 					.collect()
@@ -272,20 +183,6 @@ macro_rules! integration_test {
 			/// Returns the root directory to the Moonbeam git repository.
 			fn root() -> PathBuf {
 				PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("repos").join($repo)
-			}
-
-			/// Format all files that are not pallet files and all pallet files that are not files.
-			fn fmt_diff(files: &[PathBuf], weights: &[PathBuf]) -> String {
-				let mut output = String::new();
-				for weight in weights.iter() {
-					if !files.contains(weight) {
-						output.push_str(&format!(
-							"File could unexpectedly be parsed: {}\n",
-							weight.display()
-						));
-					}
-				}
-				output
 			}
 		}
 	};
