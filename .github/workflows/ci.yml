@@ -17,10 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
 
       - name: Format
         run: cargo +nightly fmt --all -- --check
@@ -31,9 +29,11 @@ jobs:
           command: check
           args: --locked --release --all-targets --all-features
 
-      - name: Style
-        run: |
-          cargo clippy --locked --release --all-targets --all-features -- -D warnings || true
+      - uses: actions-rs/cargo@v1
+        name: Clippy
+        with:
+          command: clippy
+          args: locked --release --all-targets --all-features -- -D warnings
 
       - uses: actions-rs/cargo@v1
         name: Documentation
@@ -51,7 +51,7 @@ jobs:
         name: Build (Tests)
         with:
           command: test
-          args: --locked --no-run --release --all-targets --all-features
+          args: --locked --no-run --release --all-targets
 
       - uses: actions-rs/cargo@v1
         name: Test
