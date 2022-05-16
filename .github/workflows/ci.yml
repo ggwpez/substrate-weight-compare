@@ -17,8 +17,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
 
       - name: Format
         run: cargo +nightly fmt --all -- --check
