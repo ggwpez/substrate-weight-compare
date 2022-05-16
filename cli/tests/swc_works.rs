@@ -107,7 +107,6 @@ fn swc_compare_files_works() {
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
 	assert_not_contains(&out, "Removed");
 	assert_not_contains(&out, "Added");
-
 }
 
 #[test]

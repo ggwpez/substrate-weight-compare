@@ -1,5 +1,5 @@
 use rstest::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use syn::*;
 
 use crate::{

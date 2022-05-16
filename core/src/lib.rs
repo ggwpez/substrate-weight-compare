@@ -5,9 +5,11 @@ use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
-use std::path::{Path, PathBuf};
+use std::{
+	cmp::Ordering,
+	path::{Path, PathBuf},
+};
 use syn::{Expr, Item, Type};
-use std::cmp::Ordering;
 
 pub mod parse;
 pub mod scope;
@@ -17,7 +19,7 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files, try_parse_files, Extrinsic, parse_files_in_repo};
+use parse::pallet::{parse_files_in_repo, try_parse_files, Extrinsic};
 use scope::Scope;
 use term::{multivariadic_eval, Term};
 

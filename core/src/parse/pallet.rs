@@ -6,7 +6,11 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, parse::PathStripping, parse::path_to_string, term::Term};
+use crate::{
+	mul,
+	parse::{path_to_string, PathStripping},
+	term::Term,
+};
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -19,17 +23,15 @@ pub struct Extrinsic {
 }
 
 pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
-	let content = super::read_file(&file)?;
-	let name = PathStripping::RepoRelative.strip(&repo, &file);
-	parse_content(name, content)
-		.map_err(|e| format!("{}: {}", file.display(), e))
+	let content = super::read_file(file)?;
+	let name = PathStripping::RepoRelative.strip(repo, file);
+	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
 }
 
 pub fn parse_file(file: &Path) -> Result<Vec<Extrinsic>> {
 	let content = super::read_file(file)?;
-	let name = PathStripping::FileName.strip(Path::new("."), &file);
-	parse_content(name, content)
-		.map_err(|e| format!("{}: {}", file.display(), e))
+	let name = PathStripping::FileName.strip(Path::new("."), file);
+	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
 }
 
 pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {

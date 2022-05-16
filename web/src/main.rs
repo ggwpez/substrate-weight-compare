@@ -1,12 +1,14 @@
-use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpRequest, HttpServer};
+use actix_web::{
+	get, middleware, middleware::Logger, web, App, HttpRequest, HttpResponse, HttpServer,
+};
 use badge_maker::BadgeBuilder;
 use clap::Parser;
 use lazy_static::lazy_static;
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use std::{cmp::Ordering, path::PathBuf, sync::Mutex};
+use std::{path::PathBuf, sync::Mutex};
 
-use swc_core::{sort_changes, compare_commits, CompareMethod, CompareParams, VERSION};
+use swc_core::{compare_commits, sort_changes, CompareMethod, CompareParams, VERSION};
 
 mod html;
 use html::*;
@@ -97,7 +99,7 @@ async fn root() -> HttpResponse {
 async fn compare(req: HttpRequest) -> HttpResponse {
 	let args = web::Query::<CompareArgs>::from_query(req.query_string());
 	if let Err(err) = args {
-		return http_500(templates::Error::render(&err.to_string()));
+		return http_500(templates::Error::render(&err.to_string()))
 	}
 
 	match do_compare(args.unwrap().into_inner()) {
@@ -151,13 +153,9 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 
 	let (new, old) = (args.new.trim(), args.old.trim());
 	let (thresh, method, path_pattern, ignore_errors) =
-		(args.threshold.clone(), args.method, args.path_pattern.trim(), args.ignore_errors);
+		(args.threshold, args.method, args.path_pattern.trim(), args.ignore_errors);
 
-	let params = CompareParams {
-		threshold: thresh,
-		method,
-		ignore_errors,
-	};
+	let params = CompareParams { threshold: thresh, method, ignore_errors };
 	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
 	sort_changes(&mut diff);
 

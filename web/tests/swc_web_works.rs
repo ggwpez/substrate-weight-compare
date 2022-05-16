@@ -4,7 +4,7 @@ use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-use swc_core::testing::{assert_contains, assert_version, root_dir, succeeds, KillChildOnDrop};
+use swc_core::testing::{assert_version, root_dir, succeeds, KillChildOnDrop};
 
 #[test]
 fn swc_web_version_works() {
@@ -75,7 +75,7 @@ fn swc_web_compare_works() {
 		if !resp.contains("-99.46") || !resp.contains("33.00K") {
 			panic!("Unexpected response: {}", resp);
 		} else {
-			return;
+			return
 		}
 	}
 	panic!("Failed to make request in time");

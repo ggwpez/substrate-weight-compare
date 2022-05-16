@@ -3,10 +3,9 @@ use prettytable::{cell, row, table};
 use std::path::{Path, PathBuf};
 
 use swc_core::{
-	RelativeChange, Percent, fmt_weight,
-	compare_commits, compare_files, sort_changes,
+	compare_commits, compare_files, fmt_weight,
 	parse::{pallet::parse_files, try_parse_file},
-	CompareParams, TotalDiff, VERSION,
+	sort_changes, CompareParams, Percent, RelativeChange, TotalDiff, VERSION,
 };
 
 #[derive(Debug, Parser)]
