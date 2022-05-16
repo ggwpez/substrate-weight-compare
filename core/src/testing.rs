@@ -33,6 +33,12 @@ pub fn assert_contains(output: &str, pattern: &str) {
 	}
 }
 
+pub fn assert_not_contains(output: &str, pattern: &str) {
+	if output.contains(pattern) {
+		panic!("The output:\n{:?}\nDid contain the pattern:\n{:?}", output, pattern);
+	}
+}
+
 pub struct KillChildOnDrop(pub Child);
 
 impl Drop for KillChildOnDrop {

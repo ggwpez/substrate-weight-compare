@@ -1,9 +1,10 @@
 use clap::Parser;
-
+use prettytable::{cell, row, table};
 use std::path::{Path, PathBuf};
 
 use swc_core::{
-	compare_commits, compare_files, fmt_changes,
+	RelativeChange, Percent, fmt_weight,
+	compare_commits, compare_files, sort_changes,
 	parse::{pallet::parse_files, try_parse_file},
 	CompareParams, TotalDiff, VERSION,
 };
@@ -93,10 +94,11 @@ fn main() -> Result<(), String> {
 
 	match cmd.subcommand {
 		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
-			let olds = parse_files(Path::new("."), &old)?;
-			let news = parse_files(Path::new("."), &new)?;
+			let olds = parse_files(&old)?;
+			let news = parse_files(&new)?;
 
-			let diff = compare_files(olds, news, params.threshold, params.method);
+			let mut diff = compare_files(olds, news, params.threshold, params.method);
+			sort_changes(&mut diff);
 			print_changes(diff, cmd.verbose);
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
@@ -126,7 +128,18 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
 		return
 	}
 
-	print(format!("\n{}", fmt_changes(&per_extrinsic)), verbose);
+	let mut table = table!(["File", "Extrinsic", "Old", "New", "Change [%]"]);
+
+	for change in per_extrinsic.iter() {
+		table.add_row(row![
+			change.file,
+			change.name,
+			change.change.old_v.map(fmt_weight).unwrap_or_default(),
+			change.change.new_v.map(fmt_weight).unwrap_or_default(),
+			color_percent(change.change.percent, &change.change.change),
+		]);
+	}
+	print(table.to_string(), verbose)
 }
 
 fn print(msg: String, verbose: bool) {
@@ -134,5 +147,24 @@ fn print(msg: String, verbose: bool) {
 		log::info!("{}", msg);
 	} else {
 		println!("{}", msg);
+	}
+}
+
+pub fn color_percent(p: Percent, change: &RelativeChange) -> String {
+	use ansi_term::Colour;
+
+	match change {
+		RelativeChange::Unchanged => "0.00% (No change)".to_string(),
+		RelativeChange::Added => Colour::Red.paint("100.00% (Added)").to_string(),
+		RelativeChange::Removed => Colour::Green.paint("-100.00% (Removed)").to_string(),
+		RelativeChange::Change => {
+			let s = format!("{:+5.2}", p);
+			match p {
+				x if x < 0.0 => Colour::Green.paint(s),
+				x if x > 0.0 => Colour::Red.paint(s),
+				_ => Colour::White.paint(s),
+			}
+			.to_string()
+		},
 	}
 }

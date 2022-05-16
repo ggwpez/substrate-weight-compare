@@ -56,12 +56,16 @@ integration_test!(
 integration_test!(
 	composable,
 	"composable",
-	"b3492f26dd4fde7aca272bae8460682babbdbdd3",
+	"178f6f017888cd9270c275f29c0ea22956001cdd",
 	344,
-	79,
+	79 - 2,
 	0,
 	0,
-	vec!["**/weights.rs", "**/weights/*.rs"]; exclude=vec![],
+	vec!["**/weights.rs", "**/weights/*.rs"]; exclude=vec![
+		// Implementing the weight directly on the trait is not supported.
+		"frame/liquidations/src/weights.rs",
+		// This file uses `u64` instead of `Weight`...
+		"runtime/dali/src/weights/dutch_auction.rs"],
 	vec![],
 	vec![]
 );

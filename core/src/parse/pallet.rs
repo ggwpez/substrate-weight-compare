@@ -6,7 +6,7 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, parse::path_to_string, term::Term};
+use crate::{mul, parse::PathStripping, parse::path_to_string, term::Term};
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -18,29 +18,44 @@ pub struct Extrinsic {
 	pub term: Term,
 }
 
-pub fn parse_file(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
-	let content = super::read_file(&repo.join(file))?;
-	let name = file.strip_prefix(repo).unwrap_or(file);
-	parse_content(name.display().to_string(), content)
+pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
+	let content = super::read_file(&file)?;
+	let name = PathStripping::RepoRelative.strip(&repo, &file);
+	parse_content(name, content)
 		.map_err(|e| format!("{}: {}", file.display(), e))
 }
 
-pub fn parse_files(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
-	let mut map = Vec::new();
+pub fn parse_file(file: &Path) -> Result<Vec<Extrinsic>> {
+	let content = super::read_file(file)?;
+	let name = PathStripping::FileName.strip(Path::new("."), &file);
+	parse_content(name, content)
+		.map_err(|e| format!("{}: {}", file.display(), e))
+}
+
+pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+	let mut res = Vec::new();
 	for path in paths {
-		map.extend(parse_file(repo, path)?);
+		res.extend(parse_file_in_repo(repo, path)?);
 	}
-	Ok(map)
+	Ok(res)
+}
+
+pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+	let mut res = Vec::new();
+	for path in paths {
+		res.extend(parse_file(path)?);
+	}
+	Ok(res)
 }
 
 pub fn try_parse_files(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
-	let mut map = Vec::new();
+	let mut res = Vec::new();
 	for path in paths {
-		if let Ok(res) = parse_file(repo, path) {
-			map.extend(res);
+		if let Ok(parsed) = parse_file_in_repo(repo, path) {
+			res.extend(parsed);
 		}
 	}
-	map
+	res
 }
 
 pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsic>> {

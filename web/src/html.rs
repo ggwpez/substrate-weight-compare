@@ -21,7 +21,7 @@ pub mod templates {
 
 	#[derive(TemplateOnce)]
 	#[template(path = "error.stpl")]
-	pub struct Error500<'a> {
+	pub struct Error<'a> {
 		msg: &'a str,
 	}
 
@@ -39,7 +39,7 @@ pub mod templates {
 		}
 	}
 
-	impl<'a> Error500<'a> {
+	impl<'a> Error<'a> {
 		pub fn render(msg: &'a str) -> String {
 			let ctx = Self { msg };
 			ctx.render_once().expect("Must render static template; qed")

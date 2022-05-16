@@ -2,7 +2,7 @@ use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-use swc_core::testing::{assert_contains, assert_version, root_dir, succeeds};
+use swc_core::testing::{assert_contains, assert_not_contains, assert_version, root_dir, succeeds};
 
 #[test]
 fn swc_version_works() {
@@ -105,7 +105,9 @@ fn swc_compare_files_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_contains(&out, "payout_stakers_dead_controller");
+	assert_not_contains(&out, "Removed");
+	assert_not_contains(&out, "Added");
+
 }
 
 #[test]
@@ -126,7 +128,8 @@ fn swc_compare_files_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_contains(&out, "No changes found.");
+	let newlines = out.matches("No change").count();
+	assert_eq!(newlines, 30); // There are 30 extrinsics in the file.
 }
 
 #[test]

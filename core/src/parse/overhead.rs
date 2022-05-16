@@ -77,7 +77,7 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
 
 	match name.as_str() {
 		"BlockExecutionWeight" => Ok(Weight::BlockExecution(weight)),
-		"ExtrinsicBaseWeight" => Ok(Weight::BlockExecution(weight)),
+		"ExtrinsicBaseWeight" => Ok(Weight::ExtrinsicBase(weight)),
 		_ => Err(format!("Unexpected const name: {}", name)),
 	}
 }

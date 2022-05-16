@@ -101,21 +101,21 @@ macro_rules! integration_test {
 				for f in &rust_files {
 					match $crate::parse::try_parse_file(Path::new("."), f){
 						None => if pallet_files.contains(f) {
-							panic!("File {:?} could not be parsed as pallet", f)
+							assert!(false, "File {:?} could not be parsed as pallet", f)
 						} else if overhead_files.contains(f) {
 							let err = $crate::parse::overhead::parse_file(f).unwrap_err();
-							panic!("File {:?} could not be parsed as overhead: {:?}", f, err)
+							assert!(false, "File {:?} could not be parsed as overhead: {:?}", f, err)
 						} else if storage_files.contains(f) {
-							panic!("File {:?} could not be parsed as storage", f)
+							assert!(false, "File {:?} could not be parsed as storage", f)
 						},
 						Some(ParsedFile::Pallet(_)) => if !pallet_files.contains(f) {
-							panic!("File {:?} was parsed as pallet, but it was not expected to be", f)
+							assert!(false, "File {:?} was parsed as pallet, but it was not expected to be", f)
 						},
 						Some(ParsedFile::Overhead(_)) => if !overhead_files.contains(f) {
-							panic!("File {:?} was parsed as overhead, but it was not expected to be", f)
+							assert!(false, "File {:?} was parsed as overhead, but it was not expected to be", f)
 						},
 						Some(ParsedFile::Storage(_)) => if !storage_files.contains(f) {
-							panic!("File {:?} was parsed as storage, but it was not expected to be", f)
+							assert!(false, "File {:?} was parsed as storage, but it was not expected to be", f)
 						},
 					}
 				}

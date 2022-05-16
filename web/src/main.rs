@@ -1,4 +1,4 @@
-use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::{get, middleware, middleware::Logger, web, App, HttpResponse, HttpRequest, HttpServer};
 use badge_maker::BadgeBuilder;
 use clap::Parser;
 use lazy_static::lazy_static;
@@ -6,7 +6,7 @@ use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{cmp::Ordering, path::PathBuf, sync::Mutex};
 
-use swc_core::{compare_commits, CompareMethod, CompareParams, VERSION};
+use swc_core::{sort_changes, compare_commits, CompareMethod, CompareParams, VERSION};
 
 mod html;
 use html::*;
@@ -38,7 +38,7 @@ pub struct CompareArgs {
 	new: String,
 	path_pattern: String,
 	ignore_errors: bool,
-	threshold: String,
+	threshold: f64,
 	method: CompareMethod,
 }
 
@@ -94,14 +94,13 @@ async fn root() -> HttpResponse {
 }
 
 #[get("/compare")]
-async fn compare(args: Option<web::Query<CompareArgs>>) -> HttpResponse {
-	let args = if let Some(args) = args {
-		args
-	} else {
-		return http_500(templates::Error500::render("Missing query arguments"))
-	};
+async fn compare(req: HttpRequest) -> HttpResponse {
+	let args = web::Query::<CompareArgs>::from_query(req.query_string());
+	if let Err(err) = args {
+		return http_500(templates::Error::render(&err.to_string()));
+	}
 
-	match do_compare(args.into_inner()) {
+	match do_compare(args.unwrap().into_inner()) {
 		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
 		Err(e) => http_500(e),
 	}
@@ -155,25 +154,12 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		(args.threshold.clone(), args.method, args.path_pattern.trim(), args.ignore_errors);
 
 	let params = CompareParams {
-		threshold: thresh.parse().map_err(|e| format!("could not parse threshold: {:?}", e))?,
+		threshold: thresh,
 		method,
 		ignore_errors,
 	};
 	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
-	diff.sort_by(|a, b| {
-		let ord = a.change.change.cmp(&b.change.change).reverse();
-		if ord == Ordering::Equal {
-			if a.change.percent > b.change.percent {
-				Ordering::Greater
-			} else if a.change.percent == b.change.percent {
-				Ordering::Equal
-			} else {
-				Ordering::Less
-			}
-		} else {
-			ord
-		}
-	});
+	sort_changes(&mut diff);
 
 	Ok(templates::Compare::render(&diff, &args))
 }
