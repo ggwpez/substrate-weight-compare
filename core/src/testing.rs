@@ -27,6 +27,12 @@ pub fn succeeds(output: &std::process::Output) {
 	}
 }
 
+pub fn assert_contains(output: &str, pattern: &str) {
+	if !output.contains(pattern) {
+		panic!("The output:\n{:?}\nDid not contain the pattern:\n{:?}", output, pattern);
+	}
+}
+
 pub struct KillChildOnDrop(pub Child);
 
 impl Drop for KillChildOnDrop {

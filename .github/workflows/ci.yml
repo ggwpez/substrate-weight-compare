@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           components: rustfmt
 
       - name: Format
@@ -98,7 +98,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
 
       - name: Checkout Polkadot
         run: |
@@ -126,7 +126,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
 
       - name: Checkout Moonbeam
         uses: actions/checkout@v3
@@ -151,7 +151,7 @@ jobs:
         - uses: actions/checkout@v2
         - uses: actions-rs/toolchain@v1
           with:
-            toolchain: stable
+            toolchain: nightly
 
         - name: Checkout ComposableFI
           uses: actions/checkout@v3

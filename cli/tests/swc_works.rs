@@ -2,7 +2,7 @@ use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-use swc_core::testing::{assert_version, root_dir, succeeds};
+use swc_core::testing::{assert_contains, assert_version, root_dir, succeeds};
 
 #[test]
 fn swc_version_works() {
@@ -19,7 +19,7 @@ fn swc_help_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("Print help information"));
+	assert_contains(&out, "Print help information");
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn swc_compare_commits_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("pallet_election_provider_multi_phase.rs"));
+	assert_contains(&out, "pallet_election_provider_multi_phase.rs");
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn swc_compare_commits_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("No changes found."));
+	assert_contains(&out, "No changes found.");
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn swc_compare_commits_errors() {
 	assert!(!output.status.success());
 
 	let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-	assert!(out.contains("revspec 'vWrong' not found"));
+	assert_contains(&out, "revspec 'vWrong' not found");
 }
 
 #[test]
@@ -105,7 +105,7 @@ fn swc_compare_files_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("payout_stakers_dead_controller"));
+	assert_contains(&out, "payout_stakers_dead_controller");
 }
 
 #[test]
@@ -126,7 +126,7 @@ fn swc_compare_files_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("No changes found."));
+	assert_contains(&out, "No changes found.");
 }
 
 #[test]
@@ -150,5 +150,5 @@ fn swc_compare_files_errors() {
 	assert!(!output.status.success());
 
 	let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-	assert!(out.contains("Could not find a weight implementation in the passed file"));
+	assert_contains(&out, "Could not find a weight implementation in the passed file");
 }

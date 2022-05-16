@@ -1,6 +1,6 @@
 use syn::ItemConst;
 
-use crate::{term::Term, *};
+use crate::{parse::path_to_string, term::Term, *};
 
 pub type BlockExecutionWeight = Term;
 
@@ -27,6 +27,23 @@ pub fn parse_content(content: String) -> Result<Weight, String> {
 
 fn handle_item(item: &Item) -> Result<Weight, String> {
 	match item {
+		// The current Substrate template has a useless `constants` mod.
+		Item::Mod(m) => {
+			if m.ident == "constants" {
+				log::debug!("Found consts module");
+				if let Some((_, content)) = m.content.as_ref() {
+					for item in content {
+						let res = handle_item(item);
+						// Ignore errors
+						if res.is_ok() {
+							return res
+						}
+					}
+					return Err("Did not find parameter_types!".into())
+				}
+			}
+			Err(format!("Unexpected module: {}", m.ident))
+		},
 		Item::Macro(m) => {
 			let name = m.mac.path.segments.last();
 			if name.unwrap().ident == "parameter_types" {
@@ -72,12 +89,4 @@ fn type_to_string(p: &syn::Type, delimiter: Option<&str>) -> Result<String, Stri
 	} else {
 		Err("Unexpected type".into())
 	}
-}
-
-fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
-	p.segments
-		.iter()
-		.map(|s| s.ident.to_string())
-		.collect::<Vec<_>>()
-		.join(delimiter.unwrap_or_default())
 }

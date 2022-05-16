@@ -9,6 +9,7 @@ version-locked-tests = []
 polkadot = []
 moonbeam = []
 composable = []
+substrate = []
 
 [dependencies]
 ansi_term = "0.12.1"

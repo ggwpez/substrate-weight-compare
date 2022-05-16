@@ -48,3 +48,11 @@ pub fn read_file(file: &Path) -> Result<String, String> {
 		.map_err(|e| format!("{}: {:?}", file.display(), e))?;
 	Ok(content)
 }
+
+pub(crate) fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
+	p.segments
+		.iter()
+		.map(|s| s.ident.to_string())
+		.collect::<Vec<_>>()
+		.join(delimiter.unwrap_or_default())
+}

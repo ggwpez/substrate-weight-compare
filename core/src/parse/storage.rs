@@ -1,7 +1,7 @@
 use std::path::Path;
 use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
-use crate::term::Term;
+use crate::{parse::path_to_string, term::Term};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Db {
@@ -166,14 +166,6 @@ fn type_to_string(p: &syn::Type, delimiter: Option<&str>) -> Result<String, Stri
 	} else {
 		Err("Unexpected type".into())
 	}
-}
-
-fn path_to_string(p: &syn::Path, delimiter: Option<&str>) -> String {
-	p.segments
-		.iter()
-		.map(|s| s.ident.to_string())
-		.collect::<Vec<_>>()
-		.join(delimiter.unwrap_or_default())
 }
 
 fn member_to_string(m: &syn::Member) -> String {

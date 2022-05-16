@@ -6,7 +6,7 @@ use syn::{
 	Stmt, Token, Type,
 };
 
-use crate::{mul, term::Term};
+use crate::{mul, parse::path_to_string, term::Term};
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -91,7 +91,11 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrins
 					weights.push(Extrinsic { name: ext_name, pallet: pallet.clone(), term });
 				}
 			}
-			Ok(weights)
+			if weights.is_empty() {
+				Err("No weight functions found in trait impl".into())
+			} else {
+				Ok(weights)
+			}
 		},
 		_ => Err("No weight trait impl found".into()),
 	}
@@ -132,10 +136,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 		Expr::MethodCall(call) => parse_method_call(call),
 		Expr::Lit(lit) => Ok(Term::Value(lit_to_value(&lit.lit))),
 		Expr::Path(p) => {
-			if p.path.segments.len() != 1 {
-				return Err("Unexpected path as weight constant".into())
-			}
-			let ident = p.path.segments.first().ok_or("Empty path")?.ident.to_string();
+			let ident = path_to_string(&p.path, Some("::"));
 			Ok(Term::Var(ident))
 		},
 		_ => Err("Unexpected expression".into()),
