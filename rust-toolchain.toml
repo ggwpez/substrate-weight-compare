@@ -1,4 +1,5 @@
 [toolchain]
-channel = "nightly-2022-05-01"
+# Also update this in the Docker image.
+channel = "1.60"
 components = [ "rustfmt", "clippy" ]
 profile = "minimal"
