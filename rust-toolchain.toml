@@ -1,5 +1,4 @@
 [toolchain]
-# Also update this in the Docker image.
 channel = "1.60"
 components = [ "rustfmt", "clippy" ]
 profile = "minimal"

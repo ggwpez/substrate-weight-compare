@@ -1,4 +1,5 @@
 FROM rust:1.60 as builder
+# The exact rust version comes from the toolchain file.
 WORKDIR /opt/swc
 COPY . .
 RUN cargo install --profile production --path web
