@@ -29,35 +29,35 @@ jobs:
         name: Check
         with:
           command: check
-          args: --release --all-targets --all-features
+          args: --locked --release --all-targets --all-features
 
       - name: Style
         run: |
-          cargo clippy --release --all-targets --all-features -- -D warnings || true
+          cargo clippy --locked --release --all-targets --all-features -- -D warnings || true
 
       - uses: actions-rs/cargo@v1
         name: Documentation
         with:
           command: doc
-          args: --release --no-deps --all-features
+          args: --locked --release --no-deps --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build
         with:
           command: build
-          args: --release --all-targets --all-features
+          args: --locked --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build (Tests)
         with:
           command: test
-          args: --no-run --release --all-targets --all-features
+          args: --locked --no-run --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Test
         with:
           command: test
-          args: --release --all-targets # no --all-features
+          args: --locked --release --all-targets # no --all-features
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
