@@ -20,7 +20,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          components: rustfmt
+          components: rustfmt, clippy
 
       - name: Format
         run: cargo +nightly fmt --all -- --check
@@ -31,11 +31,9 @@ jobs:
           command: check
           args: --release --all-targets --all-features
 
-      - uses: actions-rs/cargo@v1
-        name: Style
-        with:
-          command: clippy
-          args: --release --all-targets --all-features -- -D warnings
+      - name: Style
+        run: |
+          cargo clippy --release --all-targets --all-features -- -D warnings || true
 
       - uses: actions-rs/cargo@v1
         name: Documentation
