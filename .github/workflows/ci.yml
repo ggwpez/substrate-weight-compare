@@ -157,7 +157,7 @@ jobs:
             fetch-depth: 1
             repository: ComposableFi/composable
             path: repos/composable
-            ref: b3492f26dd4fde7aca272bae8460682babbdbdd3
+            ref: 178f6f017888cd9270c275f29c0ea22956001cdd
 
         - uses: actions-rs/cargo@v1
           name: ComposableFI Tests (version locked)
