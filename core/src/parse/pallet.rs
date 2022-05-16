@@ -146,7 +146,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 fn validate_db_call(call: &Expr) -> Result<()> {
 	match call {
 		Expr::Call(call) => {
-			let _ = validate_db_func(&call.func)?;
+			validate_db_func(&call.func)?;
 			if !call.args.is_empty() {
 				Err("Unexpected arguments".into())
 			} else {

@@ -20,7 +20,7 @@ macro_rules! integration_test {
 			use serial_test::serial;
 			use std::path::{Path, PathBuf};
 
-			use crate::{
+			use $crate::{
 				checkout,
 				parse::{pallet::parse_file, ParsedFile},
 			};
@@ -131,7 +131,7 @@ macro_rules! integration_test {
 			#[cfg_attr(not(feature = $repo), ignore)]
 			fn parses_db_weight_files(storage_files: Vec<PathBuf>) {
 				for file in storage_files {
-					crate::parse::storage::parse_file(&file).unwrap();
+					$crate::parse::storage::parse_file(&file).unwrap();
 				}
 			}
 
@@ -144,7 +144,7 @@ macro_rules! integration_test {
 			) {
 				let weights = rust_files
 					.iter()
-					.filter(|p| crate::parse::storage::parse_file(p).is_ok())
+					.filter(|p| $crate::parse::storage::parse_file(p).is_ok())
 					.cloned()
 					.collect::<Vec<_>>();
 
@@ -170,7 +170,7 @@ macro_rules! integration_test {
 			) {
 				let detected = rust_files
 					.iter()
-					.filter_map(|f| crate::parse::try_parse_file(Path::new("."), f))
+					.filter_map(|f| $crate::parse::try_parse_file(Path::new("."), f))
 					.collect::<Vec<_>>();
 
 				let detected_pallets = detected
@@ -279,10 +279,9 @@ macro_rules! integration_test {
 				let mut output = String::new();
 				for weight in weights.iter() {
 					if !files.contains(weight) {
-						output.push_str(&format!(
-							"File could unexpectedly be parsed: {}\n",
-							weight.display()
-						));
+						output.push_str("File could unexpectedly be parsed: ");
+						output.push_str(&weight.display().to_string());
+						output.push_str("\n");
 					}
 				}
 				output

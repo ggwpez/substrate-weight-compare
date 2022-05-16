@@ -22,7 +22,7 @@ use scope::Scope;
 use term::{multivariadic_eval, Term};
 
 lazy_static! {
-	/// Version of the library. Example: `swc 0.2.0+78a04b2-modified`.
+	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
 	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--dirty", "--always"], fallback = "unknown"));
 	pub static ref VERSION_DIRTY: bool = {
 		VERSION.clone().contains("dirty")
