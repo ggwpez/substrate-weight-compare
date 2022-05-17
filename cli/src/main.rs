@@ -1,5 +1,5 @@
 use clap::Parser;
-use prettytable::{cell, row, table};
+use comfy_table::Table;
 use std::path::{Path, PathBuf};
 
 use swc_core::{
@@ -127,12 +127,13 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
 		return
 	}
 
-	let mut table = table!(["File", "Extrinsic", "Old", "New", "Change [%]"]);
+	let mut table = Table::new();
+	table.set_header(vec!["File", "Extrinsic", "Old", "New", "Change [%]"]);
 
 	for change in per_extrinsic.iter() {
-		table.add_row(row![
-			change.file,
-			change.name,
+		table.add_row(vec![
+			change.file.clone(),
+			change.name.clone(),
 			change.change.old_v.map(fmt_weight).unwrap_or_default(),
 			change.change.new_v.map(fmt_weight).unwrap_or_default(),
 			color_percent(change.change.percent, &change.change.change),
