@@ -1,6 +1,6 @@
 [package]
 name = "swc"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
