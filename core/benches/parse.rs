@@ -7,13 +7,13 @@ use swc_core::parse::{pallet::parse_file as parse_pallet, storage::parse_file as
 
 fn bench_parse_pallet(c: &mut Criterion) {
 	let path = Path::new("../test_data/new/pallet_staking.rs.txt");
-	let num_ext = parse_pallet(&path).expect("Must work").len();
+	let num_ext = parse_pallet(path).expect("Must work").len();
 	let mut group = c.benchmark_group("Parse");
 
 	group.sample_size(100);
 	group.throughput(Throughput::Elements(num_ext as u64));
 	group.bench_function("Pallet.Extrinsic", |b| {
-		b.iter(|| parse_pallet(black_box(&path)).expect("Must work"))
+		b.iter(|| parse_pallet(black_box(path)).expect("Must work"))
 	});
 }
 
@@ -24,7 +24,7 @@ fn bench_parse_storage(c: &mut Criterion) {
 	group.sample_size(100);
 	group.throughput(Throughput::Elements(1));
 	group.bench_function("Storage", |b| {
-		b.iter(|| parse_storage(black_box(&path)).expect("Must work"))
+		b.iter(|| parse_storage(black_box(path)).expect("Must work"))
 	});
 }
 
