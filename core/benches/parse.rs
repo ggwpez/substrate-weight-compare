@@ -1,10 +1,9 @@
 //! Measures the throughput of parsing an average extrinsic.
 
+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::path::Path;
-use criterion::{black_box, criterion_group, criterion_main, Throughput, Criterion};
 
-use swc_core::parse::pallet::parse_file as parse_pallet;
-use swc_core::parse::storage::parse_file as parse_storage;
+use swc_core::parse::{pallet::parse_file as parse_pallet, storage::parse_file as parse_storage};
 
 fn bench_parse_pallet(c: &mut Criterion) {
 	let path = Path::new("../test_data/new/pallet_staking.rs.txt");
@@ -13,7 +12,9 @@ fn bench_parse_pallet(c: &mut Criterion) {
 
 	group.sample_size(100);
 	group.throughput(Throughput::Elements(num_ext as u64));
-    group.bench_function("Pallet.Extrinsic", |b| b.iter(|| parse_pallet(black_box(&path)).expect("Must work")));
+	group.bench_function("Pallet.Extrinsic", |b| {
+		b.iter(|| parse_pallet(black_box(&path)).expect("Must work"))
+	});
 }
 
 fn bench_parse_storage(c: &mut Criterion) {
@@ -22,7 +23,9 @@ fn bench_parse_storage(c: &mut Criterion) {
 
 	group.sample_size(100);
 	group.throughput(Throughput::Elements(1));
-    group.bench_function("Storage", |b| b.iter(|| parse_storage(black_box(&path)).expect("Must work")));
+	group.bench_function("Storage", |b| {
+		b.iter(|| parse_storage(black_box(&path)).expect("Must work"))
+	});
 }
 
 criterion_group! {
