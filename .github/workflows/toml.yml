@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, dev]
   pull_request:
-        types: [review_requested, ready_for_review]
+    types: [review_requested, ready_for_review]
 
 env:
   CARGO_TERM_COLOR: always
@@ -26,7 +26,9 @@ jobs:
             *.tml
 
       - name: Install Cargo TOML linter
+        if: steps.changed-files-specific.outputs.only_changed == 'true'
         run: cargo install --git https://github.com/FuelLabs/cargo-toml-lint
 
       - name: Lint Cargo.toml
+        if: steps.changed-files-specific.outputs.only_changed == 'true'
         run: cargo-toml-lint Cargo.toml
