@@ -1,5 +1,9 @@
 use actix_web::{
-	get, middleware, middleware::Logger, web, App, HttpRequest, HttpResponse, HttpServer,
+	get,
+	http::header::{CacheControl, CacheDirective},
+	middleware,
+	middleware::Logger,
+	web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use badge_maker::BadgeBuilder;
 use clap::Parser;
@@ -126,7 +130,10 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 			http_500(format!("Version check failed: '{}' vs '{}'", current, version))
 		}
 	} else {
-		http_200(swc_core::VERSION.clone())
+		HttpResponse::Ok()
+			.insert_header(CacheControl(vec![CacheDirective::NoCache, CacheDirective::Public]))
+			.content_type("text/html; charset=utf-8")
+			.body(current)
 	}
 }
 
@@ -140,7 +147,10 @@ async fn version_badge() -> HttpResponse {
 		.expect("Must build svg")
 		.svg();
 
-	HttpResponse::Ok().content_type("image/svg+xml").body(svg)
+	HttpResponse::Ok()
+		.insert_header(CacheControl(vec![CacheDirective::NoCache, CacheDirective::Public]))
+		.content_type("image/svg+xml")
+		.body(svg)
 }
 
 fn do_compare(args: CompareArgs) -> Result<String, String> {
