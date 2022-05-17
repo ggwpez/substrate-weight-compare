@@ -131,7 +131,11 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 		}
 	} else {
 		HttpResponse::Ok()
-			.insert_header(CacheControl(vec![CacheDirective::NoCache, CacheDirective::Public]))
+			.insert_header(CacheControl(vec![
+				CacheDirective::NoCache,
+				CacheDirective::Public,
+				CacheDirective::MaxAge(600u32),
+			]))
 			.content_type("text/html; charset=utf-8")
 			.body(current)
 	}
@@ -148,7 +152,11 @@ async fn version_badge() -> HttpResponse {
 		.svg();
 
 	HttpResponse::Ok()
-		.insert_header(CacheControl(vec![CacheDirective::NoCache, CacheDirective::Public]))
+		.insert_header(CacheControl(vec![
+			CacheDirective::NoCache,
+			CacheDirective::Public,
+			CacheDirective::MaxAge(600u32),
+		]))
 		.content_type("image/svg+xml")
 		.body(svg)
 }
