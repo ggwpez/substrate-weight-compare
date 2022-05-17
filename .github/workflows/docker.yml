@@ -1,18 +1,16 @@
 name: Docker
 
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [master, dev]
-    #tags: ['v*.*.*']
-    types: [completed]
+  push:
+    branches: [master]
+    tags:
+      - 'v*.*.*'
+      - 'staging'
 
 jobs:
   docker:
-    name: "Deploy"
+    name: "Docker"
     runs-on: self-hosted
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
     steps:
       -
         name: Checkout
