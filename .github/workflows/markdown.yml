@@ -16,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Skip if unchanged
         id: changed-files-specific
@@ -27,6 +29,7 @@ jobs:
 
       - name: Link Markdown
         uses: gaurav-nelson/github-action-markdown-link-check@v1
+        if: steps.changed-files-specific.outputs.only_changed == 'true'
         with:
           config-file: '.github/mlc_config.json'
           use-quiet-mode: "yes"
