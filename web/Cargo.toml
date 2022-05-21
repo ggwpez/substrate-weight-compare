@@ -12,7 +12,7 @@ path = "src/main.rs"
 polkadot = []
 
 [dependencies]
-swc_core = { path = "../core" }
+swc_core = { version = "0.4.1", path = "../core" }
 
 actix-web = { version = "4.0.1", features = ["openssl"] }
 clap = { version = "3.1.12", features = ["derive"] }
