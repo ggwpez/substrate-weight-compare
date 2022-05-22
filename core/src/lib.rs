@@ -61,7 +61,8 @@ pub struct TermChange {
 	pub method: CompareMethod,
 }
 
-#[derive(Debug, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[serde(rename_all = "kebab-case")]
 pub enum RelativeChange {
 	Unchanged,
 	Added,

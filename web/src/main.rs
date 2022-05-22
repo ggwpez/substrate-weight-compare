@@ -12,7 +12,7 @@ use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{path::PathBuf, sync::Mutex};
 
-use swc_core::{compare_commits, sort_changes, CompareMethod, CompareParams, VERSION};
+use swc_core::{compare_commits, sort_changes, CompareMethod, CompareParams, VERSION, RelativeChange, filter_changes, FilterParams};
 
 mod html;
 use html::*;
@@ -175,6 +175,11 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 
 	let params = CompareParams { method, ignore_errors };
 	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
+	let filter = FilterParams {
+		threshold: args.threshold.clone(),
+		change: vec![RelativeChange::Changed, RelativeChange::Added, RelativeChange::Removed, RelativeChange::Unchanged],
+	};
+	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
 	Ok(templates::Compare::render(&diff, &args))
