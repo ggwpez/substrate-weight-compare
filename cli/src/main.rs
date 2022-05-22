@@ -1,6 +1,6 @@
 use clap::Parser;
 use comfy_table::Table;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 use swc_core::{
 	compare_commits, compare_files, filter_changes, fmt_weight,
@@ -123,8 +123,7 @@ fn main() -> Result<(), String> {
 			repo,
 			path_pattern,
 		})) => {
-			let mut diff =
-				compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
+			let mut diff = compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
 			diff = filter_changes(diff, &filter);
 			print_changes(diff, cmd.verbose, cmd.no_color);
 		},
@@ -172,10 +171,8 @@ pub fn color_percent(p: Percent, change: &RelativeChange, no_color: bool) -> Str
 
 	match change {
 		RelativeChange::Unchanged => "0.00% (No change)".to_string(),
-		RelativeChange::Added =>
-			maybe_color(Colour::Red, "+100.00% (Added)", no_color),
-		RelativeChange::Removed =>
-			maybe_color(Colour::Green, "-100.00% (Removed)", no_color),
+		RelativeChange::Added => maybe_color(Colour::Red, "+100.00% (Added)", no_color),
+		RelativeChange::Removed => maybe_color(Colour::Green, "-100.00% (Removed)", no_color),
 		RelativeChange::Changed => {
 			let s = format!("{:+5.2}", p);
 			match p {
@@ -183,7 +180,6 @@ pub fn color_percent(p: Percent, change: &RelativeChange, no_color: bool) -> Str
 				x if x > 0.0 => maybe_color(Colour::Red, s, no_color),
 				_ => maybe_color(Colour::White, s, no_color),
 			}
-			.to_string()
 		},
 	}
 }
