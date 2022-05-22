@@ -170,10 +170,10 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 		repo_guard.as_ref().ok_or_else(|| "Could not lock mutex".to_string())?.clone();
 
 	let (new, old) = (args.new.trim(), args.old.trim());
-	let (thresh, method, path_pattern, ignore_errors) =
+	let (_thresh, method, path_pattern, ignore_errors) =
 		(args.threshold, args.method, args.path_pattern.trim(), args.ignore_errors);
 
-	let params = CompareParams { threshold: thresh, method, ignore_errors };
+	let params = CompareParams { method, ignore_errors };
 	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
 	sort_changes(&mut diff);
 

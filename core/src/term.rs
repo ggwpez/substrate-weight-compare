@@ -10,11 +10,11 @@ use crate::{fmt_weight, scope::Scope};
 /// Can only be evaluated to a concrete value within a [`crate::scope::Scope`].
 ///
 /// ```rust
-/// use swc_core::{add, mul, val, scope::MockedScope, term::Term};
+/// use swc_core::{add, mul, val, scope::Scope, term::Term};
 ///
 /// // 5 * 5 + 10 == 35
 /// let term = add!(mul!(val!(5), val!(5)), val!(10));
-/// assert_eq!(term.eval(&MockedScope::default()), 35);
+/// assert_eq!(term.eval(&Scope::empty()), Ok(35));
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Term {

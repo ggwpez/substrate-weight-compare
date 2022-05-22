@@ -1,11 +1,11 @@
 use clap::Parser;
 use comfy_table::Table;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 
 use swc_core::{
-	compare_commits, compare_files, fmt_weight,
-	parse::{pallet::parse_files, try_parse_file},
-	sort_changes, CompareParams, Percent, RelativeChange, TotalDiff, VERSION,
+	compare_commits, compare_files, filter_changes, fmt_weight,
+	parse::pallet::{parse_files, try_parse_files},
+	sort_changes, CompareParams, FilterParams, Percent, RelativeChange, TotalDiff, VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -16,6 +16,10 @@ struct MainCmd {
 
 	#[clap(long)]
 	verbose: bool,
+
+	/// Disable color output.
+	#[clap(long)]
+	no_color: bool,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -44,6 +48,10 @@ struct CompareFilesCmd {
 	#[clap(flatten)]
 	pub params: CompareParams,
 
+	#[allow(missing_docs)]
+	#[clap(flatten)]
+	pub filter: FilterParams,
+
 	/// The old weight files.
 	#[clap(long, required(true), multiple_values(true))]
 	pub old: Vec<PathBuf>,
@@ -65,6 +73,10 @@ struct CompareCommitsCmd {
 	#[allow(missing_docs)]
 	#[clap(flatten)]
 	pub params: CompareParams,
+
+	#[allow(missing_docs)]
+	#[clap(flatten)]
+	pub filter: FilterParams,
 
 	/// Old commit/branch/tag.
 	#[clap(name = "OLD-COMMIT", index = 1)]
@@ -92,36 +104,41 @@ fn main() -> Result<(), String> {
 	}
 
 	match cmd.subcommand {
-		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params })) => {
-			let olds = parse_files(&old)?;
-			let news = parse_files(&new)?;
+		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params, filter })) => {
+			let olds =
+				if params.ignore_errors { try_parse_files(&old) } else { parse_files(&old)? };
+			let news =
+				if params.ignore_errors { try_parse_files(&new) } else { parse_files(&new)? };
 
-			let mut diff = compare_files(olds, news, params.threshold, params.method);
+			let mut diff = compare_files(olds, news, params.method);
+			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
-			print_changes(diff, cmd.verbose);
+			print_changes(diff, cmd.verbose, cmd.no_color);
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
 			old,
 			new,
 			params,
+			filter,
 			repo,
 			path_pattern,
 		})) => {
-			let per_extrinsic =
+			let mut diff =
 				compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
-			print_changes(per_extrinsic, cmd.verbose);
+			diff = filter_changes(diff, &filter);
+			print_changes(diff, cmd.verbose, cmd.no_color);
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
-			let parsed = files.iter().filter_map(|f| try_parse_file(Path::new("."), f));
-			println!("Parsed {} files successfully", parsed.count());
+			let parsed = try_parse_files(&files);
+			println!("Parsed {} files successfully", parsed.len());
 		},
 	}
 
 	Ok(())
 }
 
-fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
+fn print_changes(per_extrinsic: TotalDiff, verbose: bool, no_color: bool) {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
 		return
@@ -136,7 +153,7 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool) {
 			change.name.clone(),
 			change.change.old_v.map(fmt_weight).unwrap_or_default(),
 			change.change.new_v.map(fmt_weight).unwrap_or_default(),
-			color_percent(change.change.percent, &change.change.change),
+			color_percent(change.change.percent, &change.change.change, no_color),
 		]);
 	}
 	print(table.to_string(), verbose)
@@ -150,21 +167,31 @@ fn print(msg: String, verbose: bool) {
 	}
 }
 
-pub fn color_percent(p: Percent, change: &RelativeChange) -> String {
+pub fn color_percent(p: Percent, change: &RelativeChange, no_color: bool) -> String {
 	use ansi_term::Colour;
 
 	match change {
 		RelativeChange::Unchanged => "0.00% (No change)".to_string(),
-		RelativeChange::Added => Colour::Red.paint("100.00% (Added)").to_string(),
-		RelativeChange::Removed => Colour::Green.paint("-100.00% (Removed)").to_string(),
-		RelativeChange::Change => {
+		RelativeChange::Added =>
+			maybe_color(Colour::Red, "+100.00% (Added)", no_color),
+		RelativeChange::Removed =>
+			maybe_color(Colour::Green, "-100.00% (Removed)", no_color),
+		RelativeChange::Changed => {
 			let s = format!("{:+5.2}", p);
 			match p {
-				x if x < 0.0 => Colour::Green.paint(s),
-				x if x > 0.0 => Colour::Red.paint(s),
-				_ => Colour::White.paint(s),
+				x if x < 0.0 => maybe_color(Colour::Green, s, no_color),
+				x if x > 0.0 => maybe_color(Colour::Red, s, no_color),
+				_ => maybe_color(Colour::White, s, no_color),
 			}
 			.to_string()
 		},
+	}
+}
+
+fn maybe_color<S: Into<String>>(clr: ansi_term::Colour, msg: S, no_color: bool) -> String {
+	if no_color {
+		msg.into()
+	} else {
+		clr.paint(msg.into()).to_string()
 	}
 }

@@ -73,7 +73,7 @@ pub(crate) fn code_link(name: &str, file: &str, rev: &str) -> String {
 
 pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 	match change {
-		RelativeChange::Change => {
+		RelativeChange::Changed => {
 			if p < 0.0 {
 				format!("<p style='color:green'>-{:.2?}</p>", p.abs())
 			} else if p > 0.0 {
