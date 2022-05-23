@@ -31,6 +31,10 @@
 				<td>swc-web <%= swc_core::VERSION.clone() %></td>
 			</tr>
 			<tr>
+				<td>Repo</td>
+				<td><%= args.repo %></td>
+			</tr>
+			<tr>
 				<td>Old Commit</td>
 				<td><%= args.old %></td>
 			</tr>
@@ -56,6 +60,10 @@
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
 				<td><%= args.ignore_errors %></td>
+			</tr>
+			<tr>
+				<td>Response Cached</td>
+				<td><%= if was_cached { "Yes" } else { "No" } %></td>
 			</tr>
 		</tbody>
 	</table>

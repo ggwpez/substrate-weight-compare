@@ -5,15 +5,18 @@ use actix_web::{
 	middleware::Logger,
 	web, App, HttpRequest, HttpResponse, HttpServer,
 };
+use cached::proc_macro::once;
 use badge_maker::BadgeBuilder;
 use clap::Parser;
+use dashmap::DashMap;
 use lazy_static::lazy_static;
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use std::{path::PathBuf, sync::Mutex};
+use std::path::PathBuf;
 
 use swc_core::{
-	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams, VERSION,
+	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
+	VERSION, TotalDiff,
 };
 
 mod html;
@@ -22,8 +25,11 @@ use html::*;
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]
 pub(crate) struct MainCmd {
-	#[clap(long, short, default_value = "repos/substrate")]
-	pub repo: PathBuf,
+	#[clap(long = "root", short, default_value = "root/")]
+	pub root_path: PathBuf,
+
+	#[clap(long, multiple_values = true, default_value = "polkadot")]
+	pub repos: Vec<String>,
 
 	#[clap(long, short, default_value = "localhost")]
 	pub endpoint: String,
@@ -44,9 +50,10 @@ pub(crate) struct MainCmd {
 pub struct CompareArgs {
 	old: String,
 	new: String,
+	repo: String,
 	path_pattern: String,
 	ignore_errors: bool,
-	threshold: f64,
+	threshold: u32,
 	method: CompareMethod,
 }
 
@@ -56,10 +63,10 @@ pub struct VersionArgs {
 }
 
 lazy_static! {
-	/// Singleton mutex to protect the git repo from concurrent access.
+	/// Protects each git repo from concurrent access.
 	///
-	/// Contains the path to the repo.
-	static ref REPO: Mutex<Option<PathBuf>> = Mutex::new(None);
+	/// Maps the name of the repo to its path.
+	static ref REPOS: DashMap<String, PathBuf> = DashMap::new();
 }
 
 #[actix_web::main]
@@ -67,7 +74,21 @@ async fn main() -> std::io::Result<()> {
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
 	let cmd = MainCmd::parse();
-	*REPO.lock().unwrap() = Some(cmd.repo);
+
+	if cmd.repos.is_empty() {
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::Other,
+			"Need at least one value to --repos",
+		));
+	}
+	for repo_name in cmd.repos {
+		let path = cmd.root_path.join(&repo_name);
+		REPOS.insert(repo_name.clone(), path.clone());
+		// Check if the directory exists.
+		let _repo = git2::Repository::open(&path).unwrap();
+		info!("Exposing repo '{}' at '{}'", &repo_name, path.display());
+	}
+
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
 	info!("Listening to http://{}", endpoint);
 
@@ -110,7 +131,7 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 
 	match do_compare(args.unwrap().into_inner()) {
 		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
-		Err(e) => http_500(e),
+		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
 }
 
@@ -164,25 +185,50 @@ async fn version_badge() -> HttpResponse {
 }
 
 fn do_compare(args: CompareArgs) -> Result<String, String> {
-	let repo_guard = match REPO.lock() {
-		Ok(guard) => guard,
-		Err(poisoned) => poisoned.into_inner(),
-	};
-	let repo_path: PathBuf =
-		repo_guard.as_ref().ok_or_else(|| "Could not lock mutex".to_string())?.clone();
+	let res = do_compare_cached(&args)?;
+	Ok(templates::Compare::render(&res.value, &args, res.was_cached))
+}
+
+#[once(time = 3600, result = true, sync_writes = true, with_cached_flag = true)]
+fn do_compare_cached(args: &CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
+	// Call get_mut to acquire an exclusive permit.
+	// Assumption tested in `dashmap_exclusive_permit_works`.
+	let repo = REPOS
+		.get_mut(&args.repo)
+		.ok_or(format!("Value '{}' is invalid for argument 'repo'.", &args.repo))?;
 
 	let (new, old) = (args.new.trim(), args.old.trim());
 	let (_thresh, method, path_pattern, ignore_errors) =
 		(args.threshold, args.method, args.path_pattern.trim(), args.ignore_errors);
 
 	let params = CompareParams { method, ignore_errors };
-	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
-	let filter = FilterParams {
-		threshold: args.threshold,
-		change: None,
-	};
+	let mut diff = compare_commits(&repo, old, new, &params, path_pattern, 200)?;
+	let filter = FilterParams { threshold: args.threshold as f64, change: None };
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
-	Ok(templates::Compare::render(&diff, &args))
+	Ok(cached::Return::new(diff))
+}
+
+#[cfg(test)]
+mod tests {
+	use dashmap::DashMap;
+
+	/// Test my assumption that a shared ref can be used as exclusive permit.
+	#[test]
+	fn dashmap_exclusive_permit_works() {
+		let map = DashMap::new();
+		map.insert("foo", "bar");
+
+		// Storing a mutable ref in a shared ref does not decay it.
+		{
+			let _permit = map.get_mut("foo");
+			assert!(map.try_get("foo").is_locked());
+		}
+		// Meanwhile `get` cannot be used to create an exclusive permit.
+		{
+			let _permit = map.get("foo");
+			assert!(!map.try_get("foo").is_locked());
+		}
+	}
 }

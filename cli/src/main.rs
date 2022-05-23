@@ -20,6 +20,12 @@ struct MainCmd {
 	/// Disable color output.
 	#[clap(long)]
 	no_color: bool,
+
+	/// Include weight terms in the console output.
+	///
+	/// Note: The output will have _very_ long rows.
+	#[clap(long)]
+	print_terms: bool,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -145,7 +151,16 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool, no_color: bool) {
 
 	let mut table = Table::new();
 	table.set_constraints(vec![comfy_table::ColumnConstraint::ContentWidth]);
-	table.set_header(vec!["File", "Extrinsic", "Old", "New", "Change [%]", "Old Weight Term", "New Weight Term", "Used variables"]);
+	table.set_header(vec![
+		"File",
+		"Extrinsic",
+		"Old",
+		"New",
+		"Change [%]",
+		"Old Weight Term",
+		"New Weight Term",
+		"Used variables",
+	]);
 
 	for change in per_extrinsic.iter() {
 		table.add_row(vec![
@@ -154,9 +169,19 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool, no_color: bool) {
 			change.change.old_v.map(fmt_weight).unwrap_or_default(),
 			change.change.new_v.map(fmt_weight).unwrap_or_default(),
 			color_percent(change.change.percent, &change.change.change, no_color),
-			change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()),
-			change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()),
-			format!("{:?}", &change.change.scope)
+			change
+				.change
+				.old
+				.as_ref()
+				.map(|t| format!("{}", t))
+				.unwrap_or_else(|| "-".into()),
+			change
+				.change
+				.new
+				.as_ref()
+				.map(|t| format!("{}", t))
+				.unwrap_or_else(|| "-".into()),
+			format!("{:?}", &change.change.scope),
 		]);
 	}
 	print(table.to_string(), verbose)

@@ -93,12 +93,7 @@ pub struct FilterParams {
 	pub threshold: Percent,
 
 	/// Only include a subset of change-types.
-	#[clap(
-		long,
-		ignore_case = true,
-		multiple_values = true,
-		value_name = "CHANGE-TYPE",
-	)]
+	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
 	pub change: Option<Vec<RelativeChange>>,
 }
 
