@@ -1,9 +1,8 @@
 //! Measures the throughput of parsing an average extrinsic.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use std::path::Path;
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
-use swc_core::{add, mul, scope::Scope, term::*, val, var};
+use swc_core::{add, scope::Scope, term::*, val, var};
 
 fn bench_term_add(c: &mut Criterion) {
 	let mut group = c.benchmark_group("Term");

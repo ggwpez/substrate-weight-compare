@@ -65,7 +65,7 @@ impl Term {
 			Self::Add(x, y) => Ok(x.eval(ctx)? + y.eval(ctx)?),
 			Self::Mul(x, y) => Ok(x.eval(ctx)? * y.eval(ctx)?),
 			Self::Var(x) =>
-				if let Some(var) = ctx.get(&x) {
+				if let Some(var) = ctx.get(x) {
 					var.eval(ctx)
 				} else {
 					Err(format!("Variable '{}' not found", x))

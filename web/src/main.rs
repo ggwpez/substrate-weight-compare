@@ -5,8 +5,8 @@ use actix_web::{
 	middleware::Logger,
 	web, App, HttpRequest, HttpResponse, HttpServer,
 };
-use cached::proc_macro::once;
 use badge_maker::BadgeBuilder;
+use cached::proc_macro::once;
 use clap::Parser;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
-	VERSION, TotalDiff,
+	TotalDiff, VERSION,
 };
 
 mod html;
@@ -79,7 +79,7 @@ async fn main() -> std::io::Result<()> {
 		return Err(std::io::Error::new(
 			std::io::ErrorKind::Other,
 			"Need at least one value to --repos",
-		));
+		))
 	}
 	for repo_name in cmd.repos {
 		let path = cmd.root_path.join(&repo_name);
@@ -131,7 +131,7 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 
 	match do_compare(args.unwrap().into_inner()) {
 		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
-		Err(e) => http_500(templates::Error::render(&e.to_string())),
+		Err(e) => http_500(templates::Error::render(&e)),
 	}
 }
 
