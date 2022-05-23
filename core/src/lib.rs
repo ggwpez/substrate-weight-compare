@@ -163,7 +163,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 	}
 }
 
-#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Clone, Copy, Debug)]
+#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.

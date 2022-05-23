@@ -6,7 +6,7 @@ use actix_web::{
 	web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use badge_maker::BadgeBuilder;
-use cached::proc_macro::once;
+use cached::proc_macro::cached;
 use clap::Parser;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
@@ -46,7 +46,7 @@ pub(crate) struct MainCmd {
 	pub key: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct CompareArgs {
 	old: String,
 	new: String,
@@ -185,12 +185,12 @@ async fn version_badge() -> HttpResponse {
 }
 
 fn do_compare(args: CompareArgs) -> Result<String, String> {
-	let res = do_compare_cached(&args)?;
+	let res = do_compare_cached(args.clone())?;
 	Ok(templates::Compare::render(&res.value, &args, res.was_cached))
 }
 
-#[once(time = 600, result = true, sync_writes = true, with_cached_flag = true)]
-fn do_compare_cached(args: &CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
+#[cached(time = 600, result = true, sync_writes = true, with_cached_flag = true)]
+fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
 	// Call get_mut to acquire an exclusive permit.
 	// Assumption tested in `dashmap_exclusive_permit_works`.
 	let repo = REPOS
