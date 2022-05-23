@@ -189,7 +189,7 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 	Ok(templates::Compare::render(&res.value, &args, res.was_cached))
 }
 
-#[once(time = 3600, result = true, sync_writes = true, with_cached_flag = true)]
+#[once(time = 600, result = true, sync_writes = true, with_cached_flag = true)]
 fn do_compare_cached(args: &CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
 	// Call get_mut to acquire an exclusive permit.
 	// Assumption tested in `dashmap_exclusive_permit_works`.
