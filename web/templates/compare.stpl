@@ -31,7 +31,7 @@
 				<td>swc-web <%= swc_core::VERSION.clone() %></td>
 			</tr>
 			<tr>
-				<td>Repo</td>
+				<td><%- readme_link("Repository") %></td>
 				<td><%= args.repo %></td>
 			</tr>
 			<tr>
@@ -62,7 +62,7 @@
 				<td><%= args.ignore_errors %></td>
 			</tr>
 			<tr>
-				<td>Response Cached</td>
+				<td><%- readme_link("Cache") %> hit</td>
 				<td><%= if was_cached { "Yes" } else { "No" } %></td>
 			</tr>
 		</tbody>

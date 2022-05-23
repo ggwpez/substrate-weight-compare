@@ -119,7 +119,7 @@ Silently ignore parse errors. This is useful when using inclusive path patterns.
 
 ## Cache
 
-The web UI caches success responses for 60 minutes. Currently there is no flag to disable it.  
+The web UI caches success responses for 10 minutes. Currently there is no flag to disable it.  
 Use commit hashes instead of tags and branches if you need uncached results.
 
 # Running the Tests
