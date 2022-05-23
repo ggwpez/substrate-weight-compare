@@ -58,6 +58,12 @@ jobs:
           command: test
           args: --locked --release --all-targets # no --all-features
 
+      - uses: actions-rs/cargo@v1
+        name: Doc Test
+        with:
+          command: test
+          args: --locked --release --doc
+
   polkadot_version_locked:
     name: "Polkadot (version locked)"
     needs: basic

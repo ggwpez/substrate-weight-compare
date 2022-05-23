@@ -10,11 +10,11 @@ use crate::{fmt_weight, scope::Scope};
 /// Can only be evaluated to a concrete value within a [`crate::scope::Scope`].
 ///
 /// ```rust
-/// use swc_core::{add, mul, val, scope::MockedScope, term::Term};
+/// use swc_core::{add, mul, val, scope::Scope, term::Term};
 ///
 /// // 5 * 5 + 10 == 35
 /// let term = add!(mul!(val!(5), val!(5)), val!(10));
-/// assert_eq!(term.eval(&MockedScope::default()), 35);
+/// assert_eq!(term.eval(&Scope::empty()), Ok(35));
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Term {
@@ -59,13 +59,13 @@ macro_rules! mul {
 
 impl Term {
 	/// Evaluates the term within the given scope to a concrete value.
-	pub fn eval(self, ctx: &crate::scope::Scope) -> Result<u128, String> {
+	pub fn eval(&self, ctx: &crate::scope::Scope) -> Result<u128, String> {
 		match self {
-			Self::Value(x) => Ok(x),
+			Self::Value(x) => Ok(*x),
 			Self::Add(x, y) => Ok(x.eval(ctx)? + y.eval(ctx)?),
 			Self::Mul(x, y) => Ok(x.eval(ctx)? * y.eval(ctx)?),
 			Self::Var(x) =>
-				if let Some(var) = ctx.get(&x) {
+				if let Some(var) = ctx.get(x) {
 					var.eval(ctx)
 				} else {
 					Err(format!("Variable '{}' not found", x))

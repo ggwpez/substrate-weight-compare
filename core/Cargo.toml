@@ -1,11 +1,15 @@
 [package]
 name = "swc_core"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
 [[bench]]
 name = "parse"
+harness = false
+
+[[bench]]
+name = "term"
 harness = false
 
 [features]

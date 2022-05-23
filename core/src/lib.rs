@@ -19,7 +19,7 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files_in_repo, try_parse_files, Extrinsic};
+use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, Extrinsic};
 use scope::Scope;
 use term::{multivariadic_eval, Term};
 
@@ -61,20 +61,18 @@ pub struct TermChange {
 	pub method: CompareMethod,
 }
 
-#[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[serde(rename_all = "kebab-case")]
 pub enum RelativeChange {
 	Unchanged,
 	Added,
 	Removed,
-	Change,
+	Changed,
 }
 
 /// Parameters for modifying the benchmark behaviour.
 #[derive(Debug, Clone, PartialEq, Args)]
 pub struct CompareParams {
-	#[clap(long, value_name = "PERCENT", default_value = "5")]
-	pub threshold: Percent,
-
 	#[clap(
 		long,
 		short,
@@ -86,6 +84,17 @@ pub struct CompareParams {
 
 	#[clap(long)]
 	pub ignore_errors: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Args)]
+pub struct FilterParams {
+	/// Minimal magnitude of a relative change to be relevant.
+	#[clap(long, value_name = "PERCENT", default_value = "5")]
+	pub threshold: Percent,
+
+	/// Only include a subset of change-types.
+	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
+	pub change: Option<Vec<RelativeChange>>,
 }
 
 pub fn compare_commits(
@@ -107,8 +116,9 @@ pub fn compare_commits(
 	let paths = list_files(pattern.clone(), max_files)?;
 	// Ignore any parsing errors.
 	let olds = if params.ignore_errors {
-		try_parse_files(repo, &paths)
+		try_parse_files_in_repo(repo, &paths)
 	} else {
+		// TODO use option for repo
 		parse_files_in_repo(repo, &paths)?
 	};
 
@@ -119,13 +129,13 @@ pub fn compare_commits(
 	let paths = list_files(pattern, max_files)?;
 	// Ignore any parsing errors.
 	let news = if params.ignore_errors {
-		try_parse_files(repo, &paths)
+		try_parse_files_in_repo(repo, &paths)
 	} else {
 		parse_files_in_repo(repo, &paths)?
 	};
 
-	let diff = compare_files(olds, news, params.threshold, params.method);
-	Ok(filter_changes(diff, params.threshold)) // TODO filtered twice?
+	let diff = compare_files(olds, news, params.method);
+	Ok(diff)
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.
@@ -182,6 +192,32 @@ impl CompareMethod {
 	}
 }
 
+impl FilterParams {
+	pub fn included(&self, change: &RelativeChange) -> bool {
+		self.change.as_ref().map_or(true, |s| s.contains(change))
+	}
+}
+
+impl std::str::FromStr for RelativeChange {
+	type Err = String;
+	// TODO try clap ArgEnum
+	fn from_str(s: &str) -> Result<Self, String> {
+		match s {
+			"unchanged" => Ok(Self::Unchanged),
+			"changed" => Ok(Self::Changed),
+			"added" => Ok(Self::Added),
+			"removed" => Ok(Self::Removed),
+			_ => Err(format!("Unknown change: {}", s)),
+		}
+	}
+}
+
+impl RelativeChange {
+	pub fn variants() -> Vec<&'static str> {
+		vec!["unchanged", "changed", "added", "removed"]
+	}
+}
+
 pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMethod) -> TermChange {
 	let mut max = 0;
 	// Default substrate storage weights
@@ -215,7 +251,6 @@ pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMeth
 pub fn compare_files(
 	olds: Vec<Extrinsic>,
 	news: Vec<Extrinsic>,
-	thresh: Percent,
 	method: CompareMethod,
 ) -> TotalDiff {
 	let mut diff = TotalDiff::new();
@@ -239,7 +274,7 @@ pub fn compare_files(
 		diff.push(change);
 	}
 
-	filter_changes(diff, thresh)
+	diff
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {
@@ -259,11 +294,12 @@ pub fn sort_changes(diff: &mut TotalDiff) {
 	});
 }
 
-pub fn filter_changes(diff: TotalDiff, threshold: Percent) -> TotalDiff {
+pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	diff.iter()
+		.filter(|extrinsic| params.included(&extrinsic.change.change))
 		.filter(|extrinsic| match extrinsic.change.change {
-			RelativeChange::Change if extrinsic.change.percent.abs() < threshold => false,
-			RelativeChange::Unchanged if threshold >= 0.001 => false,
+			RelativeChange::Changed if extrinsic.change.percent.abs() < params.threshold => false,
+			RelativeChange::Unchanged if params.threshold >= 0.001 => false,
 
 			_ => true,
 		})
@@ -275,7 +311,7 @@ impl RelativeChange {
 	pub fn new(old: Option<u128>, new: Option<u128>) -> RelativeChange {
 		match (old, new) {
 			(old, new) if old == new => RelativeChange::Unchanged,
-			(Some(_), Some(_)) => RelativeChange::Change,
+			(Some(_), Some(_)) => RelativeChange::Changed,
 			(None, Some(_)) => RelativeChange::Added,
 			(Some(_), None) => RelativeChange::Removed,
 			(None, None) => unreachable!("Either old or new must be set"),
@@ -307,18 +343,4 @@ pub fn fmt_weight(w: u128) -> String {
 	} else {
 		w.to_string()
 	}
-}
-
-/// Put an underscore after each third digit. 1000 -> 1_000
-pub fn fmt_with_underscore(val: u128) -> String {
-	let mut res = String::new();
-	let s = val.to_string();
-
-	for (i, char) in s.chars().rev().enumerate() {
-		if i % 3 == 0 && i != 0 {
-			res.insert(0, '_');
-		}
-		res.insert(0, char);
-	}
-	res
 }

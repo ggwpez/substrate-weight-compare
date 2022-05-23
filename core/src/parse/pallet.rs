@@ -50,10 +50,20 @@ pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
 	Ok(res)
 }
 
-pub fn try_parse_files(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
+pub fn try_parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
 	let mut res = Vec::new();
 	for path in paths {
 		if let Ok(parsed) = parse_file_in_repo(repo, path) {
+			res.extend(parsed);
+		}
+	}
+	res
+}
+
+pub fn try_parse_files(paths: &[PathBuf]) -> Vec<Extrinsic> {
+	let mut res = Vec::new();
+	for path in paths {
+		if let Ok(parsed) = parse_file(path) {
 			res.extend(parsed);
 		}
 	}

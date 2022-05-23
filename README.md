@@ -74,9 +74,22 @@ It prints first the ones that decreased (good) and then the ones that increased 
 
 # Config options
 
+## Repository
+
+Selects the project to use. *SWC* has the goal of being compatible with:
+- [Substrate]
+- [Polkadot]
+- [Cumulus]
+
+Other projects which are currently compatible, but not a hard requirement:
+- [Moonbeam]
+- [Composable Finance]
+
+Note: Not all repositories are deployed to the *SWC* web service.
+
 ## Path Pattern
 
-Uses the [glob](https://docs.rs/glob/latest/glob/) crate to matche files in the repository path with the given pattern. 
+Uses the [glob](https://docs.rs/glob/latest/glob/) crate to match files in the repository path with the given pattern.  
 Here are some examples for Polkadot:  
 - Weight files of all runtimes: `runtime/*/src/weights/**/*.rs`
 - All Kusama weight files: `runtime/kusama/src/weights/**/*.rs`
@@ -104,6 +117,11 @@ Eg: from 100 to 150 would be +50% and would be included by any threshold >=50.
 
 Silently ignore parse errors. This is useful when using inclusive path patterns.
 
+## Cache
+
+The web UI caches success responses for 60 minutes. Currently there is no flag to disable it.  
+Use commit hashes instead of tags and branches if you need uncached results.
+
 # Running the Tests
 
 
@@ -118,3 +136,10 @@ cd substrate-weight-compare
 git clone https://github.com/paritytech/polkadot/ repos/polkadot
 cargo test --release --all-features
 ```
+
+<!-- LINKS -->
+[Substrate]: https://github.com/paritytech/substrate
+[Polkadot]: https://github.com/paritytech/polkadot
+[Cumulus]: https://github.com/paritytech/cumulus
+[Moonbeam]: https://github.com/PureStake/moonbeam
+[Composable Finance]: https://github.com/ComposableFi/composable

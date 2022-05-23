@@ -31,7 +31,7 @@ fn swc_web_url_works() {
 	let _cmd = KillChildOnDrop(
 		Command::cargo_bin("swc-web")
 			.unwrap()
-			.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
+			.args(["--root", root_dir().join("repos").to_str().unwrap(), "--repos", "polkadot"])
 			.env("RUST_LOG", "error")
 			.spawn()
 			.unwrap(),
@@ -45,7 +45,8 @@ fn swc_web_url_works() {
 			.text()
 			.unwrap();
 
-		if resp.contains("Example #1") {
+		// Search for an example:
+		if resp.contains("Polkadot with tags") {
 			return
 		}
 	}
@@ -59,7 +60,7 @@ fn swc_web_compare_works() {
 	let _cmd = KillChildOnDrop(
 		Command::cargo_bin("swc-web")
 			.unwrap()
-			.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
+			.args(["--root", root_dir().join("repos").to_str().unwrap(), "--repos", "polkadot"])
 			.env("RUST_LOG", "error")
 			.spawn()
 			.unwrap(),
@@ -68,7 +69,7 @@ fn swc_web_compare_works() {
 	for _ in 0..20 {
 		std::thread::sleep(std::time::Duration::from_millis(100));
 
-		let url = "http://localhost:8080/compare?old=v0.9.19&new=v0.9.20&threshold=10&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false";
+		let url = "http://localhost:8080/compare?old=v0.9.19&new=v0.9.20&repo=polkadot&threshold=10&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false";
 		let resp = reqwest::blocking::get(url).expect("Request error").text().unwrap();
 
 		// Some magic numbers
