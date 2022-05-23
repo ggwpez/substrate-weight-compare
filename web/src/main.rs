@@ -13,8 +13,7 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::{path::PathBuf, sync::Mutex};
 
 use swc_core::{
-	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
-	RelativeChange, VERSION,
+	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams, VERSION,
 };
 
 mod html;
@@ -23,7 +22,7 @@ use html::*;
 #[derive(Debug, Parser)]
 #[clap(author, version(&VERSION[..]))]
 pub(crate) struct MainCmd {
-	#[clap(long, short, default_value = "repos/polkadot")]
+	#[clap(long, short, default_value = "repos/substrate")]
 	pub repo: PathBuf,
 
 	#[clap(long, short, default_value = "localhost")]
@@ -180,12 +179,7 @@ fn do_compare(args: CompareArgs) -> Result<String, String> {
 	let mut diff = compare_commits(&repo_path, old, new, &params, path_pattern, 200)?;
 	let filter = FilterParams {
 		threshold: args.threshold,
-		change: vec![
-			RelativeChange::Changed,
-			RelativeChange::Added,
-			RelativeChange::Removed,
-			RelativeChange::Unchanged,
-		],
+		change: None,
 	};
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);

@@ -69,7 +69,7 @@
 			<th>Extrinsic</th>
 			<th>Old Weight</th>
 			<th>New Weight</th>
-			<th>Diff [%]</th>
+			<th>Change [%]</th>
 			<th>Old Weight Equation</th>
 			<th>New Weight Equation</th>
 			<th>Used Variables</th>

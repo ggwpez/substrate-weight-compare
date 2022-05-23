@@ -59,9 +59,9 @@ macro_rules! mul {
 
 impl Term {
 	/// Evaluates the term within the given scope to a concrete value.
-	pub fn eval(self, ctx: &crate::scope::Scope) -> Result<u128, String> {
+	pub fn eval(&self, ctx: &crate::scope::Scope) -> Result<u128, String> {
 		match self {
-			Self::Value(x) => Ok(x),
+			Self::Value(x) => Ok(*x),
 			Self::Add(x, y) => Ok(x.eval(ctx)? + y.eval(ctx)?),
 			Self::Mul(x, y) => Ok(x.eval(ctx)? * y.eval(ctx)?),
 			Self::Var(x) =>

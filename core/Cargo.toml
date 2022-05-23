@@ -8,6 +8,10 @@ authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 name = "parse"
 harness = false
 
+[[bench]]
+name = "term"
+harness = false
+
 [features]
 version-locked-tests = []
 polkadot = []

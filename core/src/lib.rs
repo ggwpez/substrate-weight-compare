@@ -95,13 +95,11 @@ pub struct FilterParams {
 	/// Only include a subset of change-types.
 	#[clap(
 		long,
-		value_name = "CHANGE",
 		ignore_case = true,
 		multiple_values = true,
-		default_value = "change, unchanged, added, removed",
-		possible_values = RelativeChange::variants(),
+		value_name = "CHANGE-TYPE",
 	)]
-	pub change: Vec<RelativeChange>,
+	pub change: Option<Vec<RelativeChange>>,
 }
 
 pub fn compare_commits(
@@ -201,7 +199,7 @@ impl CompareMethod {
 
 impl FilterParams {
 	pub fn included(&self, change: &RelativeChange) -> bool {
-		self.change.contains(change)
+		self.change.as_ref().map_or(true, |s| s.contains(change))
 	}
 }
 
