@@ -113,6 +113,12 @@ Filters the results by an absolute percentual threshold.
 The percentages values are calculated as increase or decrease.  
 Eg: from 100 to 150 would be +50% and would be included by any threshold >=50.
 
+## Unit
+
+Controls the unit of the output. Can be set to:
+- Weight: Raw weight numbers (default).
+- Time: Time each extrinsic took.
+
 ## Ignore Errors
 
 Silently ignore parse errors. This is useful when using inclusive path patterns.

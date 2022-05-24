@@ -82,6 +82,16 @@ pub struct CompareParams {
 	)]
 	pub method: CompareMethod,
 
+	#[clap(
+		long,
+		short,
+		value_name = "UNIT",
+		ignore_case = true,
+		default_value = "weight",
+		possible_values = Unit::variants(),
+	)]
+	pub unit: Unit,
+
 	#[clap(long)]
 	pub ignore_errors: bool,
 }
@@ -174,6 +184,13 @@ pub enum CompareMethod {
 	Worst,
 }
 
+#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum Unit {
+	Weight,
+	Time,
+}
+
 impl std::str::FromStr for CompareMethod {
 	type Err = String;
 
@@ -189,6 +206,24 @@ impl std::str::FromStr for CompareMethod {
 impl CompareMethod {
 	pub fn variants() -> Vec<&'static str> {
 		vec!["base", "worst"]
+	}
+}
+
+impl std::str::FromStr for Unit {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, String> {
+		match s {
+			"weight" => Ok(Self::Weight),
+			"time" => Ok(Self::Time),
+			_ => Err(format!("Unknown method: {}", s)),
+		}
+	}
+}
+
+impl Unit {
+	pub fn variants() -> Vec<&'static str> {
+		vec!["weight", "time"]
 	}
 }
 
@@ -320,15 +355,7 @@ impl RelativeChange {
 }
 
 pub fn percent(old: u128, new: u128) -> Percent {
-	if old == 0 && new != 0 {
-		100.0
-	} else if old != 0 && new == 0 {
-		-100.0
-	} else if old == 0 && new == 0 {
-		0.0
-	} else {
-		100.0 * (new as f64 / old as f64) - 100.0
-	}
+	100.0 * (new as f64 / old as f64) - 100.0
 }
 
 pub fn fmt_weight(w: u128) -> String {
@@ -342,5 +369,29 @@ pub fn fmt_weight(w: u128) -> String {
 		format!("{:.2}K", w as f64 / 1_000f64)
 	} else {
 		w.to_string()
+	}
+}
+
+/// Formats pico seconds.
+pub fn fmt_time(t: u128) -> String {
+	if t >= 1_000_000_000_000 {
+		format!("{:.2}s", t as f64 / 1_000_000_000_000f64)
+	} else if t >= 1_000_000_000 {
+		format!("{:.2}ms", t as f64 / 1_000_000_000f64)
+	} else if t >= 1_000_000 {
+		format!("{:.2}μs", t as f64 / 1_000_000f64)
+	} else if t >= 1_000 {
+		format!("{:.2}ns", t as f64 / 1_000f64)
+	} else {
+		format!("{:.2}ps", t)
+	}
+}
+
+impl Unit {
+	pub fn fmt_value(&self, v: u128) -> String {
+		match self {
+			Unit::Time => fmt_time(v),
+			Unit::Weight => fmt_weight(v),
+		}
 	}
 }

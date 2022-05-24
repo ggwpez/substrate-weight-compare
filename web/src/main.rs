@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
-	TotalDiff, VERSION,
+	TotalDiff, Unit, VERSION,
 };
 
 mod html;
@@ -54,6 +54,7 @@ pub struct CompareArgs {
 	path_pattern: String,
 	ignore_errors: bool,
 	threshold: u32,
+	unit: Unit,
 	method: CompareMethod,
 }
 
@@ -198,10 +199,10 @@ fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, Str
 		.ok_or(format!("Value '{}' is invalid for argument 'repo'.", &args.repo))?;
 
 	let (new, old) = (args.new.trim(), args.old.trim());
-	let (_thresh, method, path_pattern, ignore_errors) =
-		(args.threshold, args.method, args.path_pattern.trim(), args.ignore_errors);
+	let (_thresh, unit, method, path_pattern, ignore_errors) =
+		(args.threshold, args.unit, args.method, args.path_pattern.trim(), args.ignore_errors);
 
-	let params = CompareParams { method, ignore_errors };
+	let params = CompareParams { method, ignore_errors, unit };
 	let mut diff = compare_commits(&repo, old, new, &params, path_pattern, 200)?;
 	let filter = FilterParams { threshold: args.threshold as f64, change: None };
 	diff = filter_changes(diff, &filter);

@@ -68,8 +68,8 @@ pub(crate) fn readme_link(name: &str) -> String {
 	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
 }
 
-pub(crate) fn code_link(name: &str, file: &str, rev: &str) -> String {
-	format!("<a href=\"https://github.com/paritytech/polkadot/tree/{}/{}#:~:text=fn {}\" target=\"_blank\"><sup><small>CODE</small></sup></a>", rev, file, name)
+pub(crate) fn code_link(repo: &str, name: &str, file: &str, rev: &str) -> String {
+	format!("<a href=\"https://github.com/paritytech/{}/tree/{}/{}#:~:text=fn {}\" target=\"_blank\"><sup><small>CODE</small></sup></a>", repo, rev, file, name)
 }
 
 pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
