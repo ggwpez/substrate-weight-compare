@@ -6,7 +6,7 @@ pub mod templates {
 	use super::*;
 	use crate::CompareArgs;
 	use sailfish::TemplateOnce;
-	use swc_core::{fmt_weight, CompareMethod, TotalDiff};
+	use swc_core::{CompareMethod, TotalDiff};
 
 	#[derive(TemplateOnce)]
 	#[template(path = "root.stpl")]
