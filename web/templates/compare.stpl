@@ -51,6 +51,10 @@
 				<td><%= args.threshold %>%</td>
 			</tr>
 			<tr>
+				<td><%- readme_link("Unit") %></td>
+				<td><%= format!("{:?}", args.unit) %></td>
+			</tr>
+			<tr>
 				<td><%- readme_link("Evaluation Method") %></td>
 				<td><%= match args.method {
 					CompareMethod::Base => "Base - All components set to zero.",
