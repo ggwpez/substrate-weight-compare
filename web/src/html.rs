@@ -1,6 +1,8 @@
+#![allow(clippy::comparison_chain)] // TODO remove
+
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, Unit, RelativeChange};
+use swc_core::{Percent, RelativeChange, Unit};
 
 pub mod templates {
 	use super::*;
@@ -94,9 +96,9 @@ pub(crate) fn html_color_abs(diff: i128, change: RelativeChange, unit: Unit) -> 
 	match change {
 		RelativeChange::Changed => {
 			if diff < 0 {
-				format!("<p style='color:green'>-{}</p>", unit.fmt_value(diff.abs() as u128))
+				format!("<p style='color:green'>-{}</p>", unit.fmt_value(diff.unsigned_abs()))
 			} else if diff > 0 {
-				format!("<p style='color:red'>+{}</p>", unit.fmt_value(diff.abs() as u128))
+				format!("<p style='color:red'>+{}</p>", unit.fmt_value(diff.unsigned_abs()))
 			} else {
 				// 0 or NaN
 				format!("{:.0?}", diff)
