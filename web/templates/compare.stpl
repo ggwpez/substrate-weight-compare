@@ -3,67 +3,85 @@
 <html>
 	<head>
 		<title>SWC-Web</title>
+		<% include!("./header.stpl"); %>
+
+		<script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.12.1/r-2.3.0/sl-1.4.0/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.12.1/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
+
 		<style>
-			td {
-				white-space: nowrap;
-			}
-			table, th, td {
-				border: 1px solid black;
-			}
-			:target {
-				background-color: rgb(196, 196, 196);
-			}
+		<% include!("./table.css"); %>
 		</style>
+		<script>
+		<% include!("./table.js"); %>
+		</script>
 	</head>
 	<body>
-	<h1>
+	<h2>
 		⚠️ This software is in development. Please reports bugs to <code>@oliver.tale-yazdi:matrix.parity.io</code> or <a href='https://github.com/ggwpez/substrate-weight-compare/issues/new' target='_blank'>here</a>.
-	</h1>
+	</h2>
 	</br>
-	<table>
-		<tr>
-			<th>Config</th>
-			<th>Value</th>
-		</tr>
+	<table id="config_table">
+		<thead>
+			<tr>
+				<th>Config</th>
+				<th>Value</th>
+			</tr>
+		</thead>
 		<tbody>
 			<tr>
 				<td>Version</td>
-				<td>swc-web <%= swc_core::VERSION.clone() %></td>
+				<td><%= swc_core::VERSION.clone() %></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Repository") %></td>
-				<td><%= args.repo %></td>
+				<td>
+					<select id="select_repo">
+						<% for repo in repos.iter() { %>
+							<option value=<%= repo %> <%- if &args.repo == repo { "selected" } else { "" } %>><%= repo %></option>
+						<% } %>630f149745f880dd1164fb223489f69ea59c350f
+					</select>
+				</td>
 			</tr>
 			<tr>
 				<td>Old Commit</td>
-				<td><%= args.old %></td>
+				<td><input id="input_old" type="text" value="<%= args.old %>"></td>
 			</tr>
 			<tr>
 				<td>New Commit</td>
-				<td><%= args.new %></td>
+				<td><input id="input_new" type="text" value="<%= args.new %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Path Pattern") %></td>
-				<td><%= args.path_pattern %></td>
+				<td><input id="input_path_pattern" type="text" value="<%= args.path_pattern %>"></td>
 			</tr>
 			<tr>
-				<td><%- readme_link("Threshold") %></td>
-				<td><%= args.threshold %>%</td>
+				<td><%- readme_link("Rel Threshold") %></td>
+				<td><input id="input_threshold" type="number" value="<%= args.threshold %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Unit") %></td>
-				<td><%= format!("{:?}", args.unit) %></td>
+				<td>
+					<select id="select_unit">
+						<option value="weight">Weight</option>
+						<option value="time">Time</option>
+					</select>
+				</td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Evaluation Method") %></td>
-				<td><%= match args.method {
-					CompareMethod::Base => "Base - All components set to zero.",
-					CompareMethod::Worst => "Worst - All components set to 100.",
-				} %></td>
+
+				<td>
+					<select id="select_method">
+						<option value="base"  <%- if args.method == CompareMethod::Base { "selected" } else { "" } %>>Base</option>
+						<option value="worst" <%- if args.method == CompareMethod::Worst { "selected" } else { "" } %>>Worst</option>
+					</select>
+				</td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
-				<td><%= if args.ignore_errors { "Yes" } else { "No" } %></td>
+				<td><input id="checkbox_ignore_errors" type="checkbox" value="<%= args.path_pattern %>" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Cache") %> hit</td>
@@ -72,10 +90,8 @@
 		</tbody>
 	</table>
 	</br>
-		Listing <%= diff.len() %> extrinsic results:
-	</br>
-	</br>
-	<table>
+	<table id="sort_me" class="display">
+	<thead>
 		<tr>
 			<th>File</th>
 			<th>Extrinsic</th>
@@ -85,10 +101,11 @@
 			<th>Rel. Change</th>
 			<th>Abs. Change</th>
 
-			<th>Old Weight Equation</th>
-			<th>New Weight Equation</th>
+			<th>Old Equation</th>
+			<th>New Equation</th>
 			<th>Used Variables</th>
 		</tr>
+	</thead>
 	<tbody>
 		<% for change in diff.iter() { %>
 

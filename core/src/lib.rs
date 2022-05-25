@@ -168,7 +168,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 	let files = glob::glob(&regex).unwrap();
 	let files: Vec<_> = files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(format!("Too many files found. Found: {}, Max: {}", files.len(), max_files))
+		return Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files))
 	} else {
 		Ok(files)
 	}
@@ -380,7 +380,7 @@ pub fn fmt_time(t: u128) -> String {
 	} else if t >= 1_000_000_000 {
 		format!("{:.2}ms", t as f64 / 1_000_000_000f64)
 	} else if t >= 1_000_000 {
-		format!("{:.2}μs", t as f64 / 1_000_000f64)
+		format!("{:.2}us", t as f64 / 1_000_000f64)
 	} else if t >= 1_000 {
 		format!("{:.2}ns", t as f64 / 1_000f64)
 	} else {

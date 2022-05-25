@@ -129,9 +129,13 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 	if let Err(err) = args {
 		return http_500(templates::Error::render(&err.to_string()))
 	}
+	let args = args.unwrap().into_inner();
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
 
-	match do_compare(args.unwrap().into_inner()) {
-		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(res),
+	match do_compare_cached(args.clone()) {
+		Ok(res) => HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(templates::Compare::render(&res.value, &args, &repos, res.was_cached)),
 		Err(e) => http_500(templates::Error::render(&e)),
 	}
 }
@@ -183,11 +187,6 @@ async fn version_badge() -> HttpResponse {
 		]))
 		.content_type("image/svg+xml")
 		.body(svg)
-}
-
-fn do_compare(args: CompareArgs) -> Result<String, String> {
-	let res = do_compare_cached(args.clone())?;
-	Ok(templates::Compare::render(&res.value, &args, res.was_cached))
 }
 
 #[cached(time = 600, result = true, sync_writes = true, with_cached_flag = true)]

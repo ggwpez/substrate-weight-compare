@@ -1,0 +1,8 @@
+td {
+	white-space: nowrap;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
+* {
+	font-family: 'Courier Prime', monospace;
+}

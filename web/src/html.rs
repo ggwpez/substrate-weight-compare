@@ -19,6 +19,7 @@ pub mod templates {
 	pub struct Compare<'a> {
 		diff: &'a TotalDiff,
 		args: &'a CompareArgs,
+		repos: &'a Vec<String>,
 		was_cached: bool,
 	}
 
@@ -36,8 +37,13 @@ pub mod templates {
 	}
 
 	impl<'a> Compare<'a> {
-		pub fn render(diff: &'a TotalDiff, args: &'a CompareArgs, was_cached: bool) -> String {
-			let ctx = Self { diff, args, was_cached };
+		pub fn render(
+			diff: &'a TotalDiff,
+			args: &'a CompareArgs,
+			repos: &'a Vec<String>,
+			was_cached: bool,
+		) -> String {
+			let ctx = Self { diff, args, repos, was_cached };
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}
