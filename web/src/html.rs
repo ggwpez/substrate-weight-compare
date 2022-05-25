@@ -1,6 +1,6 @@
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, RelativeChange};
+use swc_core::{Percent, Unit, RelativeChange};
 
 pub mod templates {
 	use super::*;
@@ -76,12 +76,30 @@ pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 	match change {
 		RelativeChange::Changed => {
 			if p < 0.0 {
-				format!("<p style='color:green'>-{:.2?}</p>", p.abs())
+				format!("<p style='color:green'>-{:.2?}%</p>", p.abs())
 			} else if p > 0.0 {
-				format!("<p style='color:red'>+{:.2?}</p>", p.abs())
+				format!("<p style='color:red'>+{:.2?}%</p>", p.abs())
 			} else {
 				// 0 or NaN
 				format!("{:.0?}", p)
+			}
+		},
+		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),
+		RelativeChange::Added => "<p style='color:orange'>Added</p>".into(),
+		RelativeChange::Removed => "<p style='color:orange'>Removed</p>".into(),
+	}
+}
+
+pub(crate) fn html_color_abs(diff: i128, change: RelativeChange, unit: Unit) -> String {
+	match change {
+		RelativeChange::Changed => {
+			if diff < 0 {
+				format!("<p style='color:green'>-{}</p>", unit.fmt_value(diff.abs() as u128))
+			} else if diff > 0 {
+				format!("<p style='color:red'>+{}</p>", unit.fmt_value(diff.abs() as u128))
+			} else {
+				// 0 or NaN
+				format!("{:.0?}", diff)
 			}
 		},
 		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),

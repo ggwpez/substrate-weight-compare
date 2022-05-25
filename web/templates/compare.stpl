@@ -82,7 +82,8 @@
 
 			<th>Old [<%= format!("{:?}", args.unit) %>]</th>
 			<th>New [<%= format!("{:?}", args.unit) %>]</th>
-			<th>Change [%]</th>
+			<th>Rel. Change</th>
+			<th>Abs. Change</th>
 
 			<th>Old Weight Equation</th>
 			<th>New Weight Equation</th>
@@ -108,6 +109,9 @@
 				</td>
 				<td>
 					<%- html_color_percent(change.change.percent, change.change.change) %>
+				</td>
+				<td>
+					<%- html_color_abs(change.change.new_v.unwrap_or_default() as i128 - change.change.old_v.unwrap_or_default() as i128, change.change.change, args.unit) %>
 				</td>
 
 				<td>
