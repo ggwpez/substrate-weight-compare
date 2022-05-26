@@ -107,11 +107,15 @@ This is a deciding factor when making a decision whether or not a weight got wor
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
 This will be changed to include the correct values soon.
-## Threshold
+## Rel Threshold
 
-Filters the results by an absolute percentual threshold.  
+Filters the changes results by an absolute percentual threshold.  
 The percentages values are calculated as increase or decrease.  
 Eg: from 100 to 150 would be +50% and would be included by any threshold >=50.
+
+## Abs Threshold
+
+Filters the changes results by an absolute threshold.
 
 ## Unit
 

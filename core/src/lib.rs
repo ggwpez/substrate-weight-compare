@@ -5,6 +5,7 @@ use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
+use regex::Regex;
 use std::{
 	cmp::Ordering,
 	path::{Path, PathBuf},
@@ -61,6 +62,7 @@ pub struct TermChange {
 	pub method: CompareMethod,
 }
 
+// TODO rename
 #[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum RelativeChange {
@@ -105,6 +107,9 @@ pub struct FilterParams {
 	/// Only include a subset of change-types.
 	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
 	pub change: Option<Vec<RelativeChange>>,
+
+	#[clap(long, ignore_case = true, value_name = "REGEX")]
+	pub extrinsic: Option<String>,
 }
 
 pub fn compare_commits(
@@ -167,7 +172,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
 	let files = glob::glob(&regex).unwrap();
 	let files: Vec<_> = files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(format!("Too many files found. Found: {}, Max: {}", files.len(), max_files))
+		return Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files))
 	} else {
 		Ok(files)
 	}
@@ -330,7 +335,10 @@ pub fn sort_changes(diff: &mut TotalDiff) {
 }
 
 pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
+	// Parse the extrinsic regex
+	let regex = params.extrinsic.as_ref().map(|s| Regex::new(s).unwrap());
 	diff.iter()
+		.filter(|extrinsic| regex.as_ref().map_or(true, |r| r.is_match(&extrinsic.name)))
 		.filter(|extrinsic| params.included(&extrinsic.change.change))
 		.filter(|extrinsic| match extrinsic.change.change {
 			RelativeChange::Changed if extrinsic.change.percent.abs() < params.threshold => false,
@@ -379,7 +387,7 @@ pub fn fmt_time(t: u128) -> String {
 	} else if t >= 1_000_000_000 {
 		format!("{:.2}ms", t as f64 / 1_000_000_000f64)
 	} else if t >= 1_000_000 {
-		format!("{:.2}μs", t as f64 / 1_000_000f64)
+		format!("{:.2}us", t as f64 / 1_000_000f64)
 	} else if t >= 1_000 {
 		format!("{:.2}ns", t as f64 / 1_000f64)
 	} else {

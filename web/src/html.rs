@@ -1,6 +1,8 @@
+#![allow(clippy::comparison_chain)] // TODO remove
+
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, RelativeChange};
+use swc_core::{Percent, RelativeChange, TermChange, Unit};
 
 pub mod templates {
 	use super::*;
@@ -17,6 +19,7 @@ pub mod templates {
 	pub struct Compare<'a> {
 		diff: &'a TotalDiff,
 		args: &'a CompareArgs,
+		repos: &'a Vec<String>,
 		was_cached: bool,
 	}
 
@@ -34,8 +37,13 @@ pub mod templates {
 	}
 
 	impl<'a> Compare<'a> {
-		pub fn render(diff: &'a TotalDiff, args: &'a CompareArgs, was_cached: bool) -> String {
-			let ctx = Self { diff, args, was_cached };
+		pub fn render(
+			diff: &'a TotalDiff,
+			args: &'a CompareArgs,
+			repos: &'a Vec<String>,
+			was_cached: bool,
+		) -> String {
+			let ctx = Self { diff, args, repos, was_cached };
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}
@@ -76,9 +84,9 @@ pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 	match change {
 		RelativeChange::Changed => {
 			if p < 0.0 {
-				format!("<p style='color:green'>-{:.2?}</p>", p.abs())
+				format!("<p style='color:green'>-{:.2?}%</p>", p.abs())
 			} else if p > 0.0 {
-				format!("<p style='color:red'>+{:.2?}</p>", p.abs())
+				format!("<p style='color:red'>+{:.2?}%</p>", p.abs())
 			} else {
 				// 0 or NaN
 				format!("{:.0?}", p)
@@ -87,5 +95,46 @@ pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),
 		RelativeChange::Added => "<p style='color:orange'>Added</p>".into(),
 		RelativeChange::Removed => "<p style='color:orange'>Removed</p>".into(),
+	}
+}
+
+pub(crate) fn html_color_abs(change: &TermChange, unit: Unit) -> String {
+	match change.change {
+		RelativeChange::Changed => {
+			let diff = change.new_v.unwrap() as i128 - change.old_v.unwrap() as i128;
+			if diff < 0 {
+				format!("<p style='color:green'>-{}</p>", unit.fmt_value(diff.unsigned_abs()))
+			} else if diff > 0 {
+				format!("<p style='color:red'>+{}</p>", unit.fmt_value(diff.unsigned_abs()))
+			} else {
+				// 0 or NaN
+				format!("{:.0?}", diff)
+			}
+		},
+		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),
+		RelativeChange::Added => "<p style='color:orange'>Added</p>".into(),
+		RelativeChange::Removed => "<p style='color:orange'>Removed</p>".into(),
+	}
+}
+
+/// Converts a relative change to an absolute value to make it sortable in html.
+///
+/// Note: Undefined for values > i128::MAX or < i128::MIN.
+fn order_percent(change: &TermChange) -> i128 {
+	match change.change {
+		// This only considers the first three digits of the percent since the UI only shows these.
+		RelativeChange::Changed => (change.percent * 1000.0) as i128,
+		RelativeChange::Unchanged => 0,
+		RelativeChange::Added => i128::MAX,
+		RelativeChange::Removed => i128::MIN,
+	}
+}
+
+fn order_abs(change: &TermChange) -> i128 {
+	match change.change {
+		RelativeChange::Changed => change.new_v.unwrap() as i128 - change.old_v.unwrap() as i128,
+		RelativeChange::Unchanged => 0,
+		RelativeChange::Added => i128::MAX,
+		RelativeChange::Removed => i128::MIN,
 	}
 }

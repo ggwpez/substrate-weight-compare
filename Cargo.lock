@@ -2021,7 +2021,7 @@ dependencies = [
 
 [[package]]
 name = "swc"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "ansi_term",
  "assert_cmd",
@@ -2036,7 +2036,7 @@ dependencies = [
 
 [[package]]
 name = "swc_core"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "assert_cmd",
  "clap 3.1.18",
@@ -2049,6 +2049,7 @@ dependencies = [
  "lazy_static",
  "log",
  "proc-macro2",
+ "regex",
  "rstest",
  "semver",
  "serde",
@@ -2058,7 +2059,7 @@ dependencies = [
 
 [[package]]
 name = "swc_web"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "actix-web",
  "assert_cmd",
