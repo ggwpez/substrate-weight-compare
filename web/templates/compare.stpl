@@ -71,8 +71,8 @@
 				<td><%- readme_link("Unit") %></td>
 				<td>
 					<select id="select_unit">
-						<option value="weight">Weight</option>
-						<option value="time">Time</option>
+						<option value="weight" <%- if args.unit == Unit::Weight { "selected" } else { "" } %>>Weight</option>
+						<option value="time" <%- if args.unit == Unit::Time { "selected" } else { "" } %>>Time</option>
 					</select>
 				</td>
 			</tr>

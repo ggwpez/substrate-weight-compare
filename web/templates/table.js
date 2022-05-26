@@ -54,7 +54,7 @@ $(document).ready(function () {
 	}
 	
 	// Init the selectors.
-	const selectors = ["unit", "method", "repo" ,""]
+	const selectors = ["unit", "method", "repo"]
 	for (const selector of selectors) {
 		const id = `#select_${selector}`;
 		// Redirect on change.
