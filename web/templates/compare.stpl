@@ -125,10 +125,10 @@
 					<sup><a href=<%- format!("\"#{}.{}\"", &change.file, &change.name) %>>🔗</a></sup>
 				</td>
 
-				<td>
+				<td data-order='<%- change.change.old_v.unwrap_or_default() %>'>
 					<%= change.change.old_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
 				</td>
-				<td>
+				<td data-order='<%- change.change.new_v.unwrap_or_default() %>'>
 					<%= change.change.new_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td data-order='<%- order_percent(&change.change) %>'>
