@@ -5,12 +5,12 @@ use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
+use regex::Regex;
 use std::{
 	cmp::Ordering,
 	path::{Path, PathBuf},
 };
 use syn::{Expr, Item, Type};
-use regex::Regex;
 
 pub mod parse;
 pub mod scope;

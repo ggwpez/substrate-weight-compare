@@ -2,7 +2,7 @@
 
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, TermChange, RelativeChange, Unit};
+use swc_core::{Percent, RelativeChange, TermChange, Unit};
 
 pub mod templates {
 	use super::*;
@@ -118,7 +118,7 @@ pub(crate) fn html_color_abs(change: &TermChange, unit: Unit) -> String {
 }
 
 /// Converts a relative change to an absolute value to make it sortable in html.
-/// 
+///
 /// Note: Undefined for values > i128::MAX or < i128::MIN.
 fn order_percent(change: &TermChange) -> i128 {
 	match change.change {
