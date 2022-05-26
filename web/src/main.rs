@@ -203,7 +203,7 @@ fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, Str
 
 	let params = CompareParams { method, ignore_errors, unit };
 	let mut diff = compare_commits(&repo, old, new, &params, path_pattern, 200)?;
-	let filter = FilterParams { threshold: args.threshold as f64, change: None };
+	let filter = FilterParams { threshold: args.threshold as f64, change: None, extrinsic: None };
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 

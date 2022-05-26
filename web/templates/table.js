@@ -36,12 +36,6 @@ $(document).ready(function () {
 		fixedColumns:   {
             heightMatch: 'none'
         },
-		columnDefs: [
-            {
-                type: 'salary-grade',
-                targets: -1,
-            },
-        ]
 	});
 
 	// Select the row from the URL anchor - if any.

@@ -29,6 +29,7 @@ glob = "0.3.0"
 lazy_static = "1.4.0"
 log = "0.4.16"
 proc-macro2 = "1.0.36"
+regex = "1.5.6"
 semver = "1.0.9"
 serde = { version = "1.0.137", features = [ "derive" ] }
 syn = { version = "1.0.91", features = ["parsing", "full"] }

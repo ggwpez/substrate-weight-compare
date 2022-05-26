@@ -2,7 +2,7 @@
 
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, RelativeChange, Unit};
+use swc_core::{Percent, TermChange, RelativeChange, Unit};
 
 pub mod templates {
 	use super::*;
@@ -98,9 +98,10 @@ pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 	}
 }
 
-pub(crate) fn html_color_abs(diff: i128, change: RelativeChange, unit: Unit) -> String {
-	match change {
+pub(crate) fn html_color_abs(change: &TermChange, unit: Unit) -> String {
+	match change.change {
 		RelativeChange::Changed => {
+			let diff = change.new_v.unwrap() as i128 - change.old_v.unwrap() as i128;
 			if diff < 0 {
 				format!("<p style='color:green'>-{}</p>", unit.fmt_value(diff.unsigned_abs()))
 			} else if diff > 0 {
@@ -113,5 +114,27 @@ pub(crate) fn html_color_abs(diff: i128, change: RelativeChange, unit: Unit) -> 
 		RelativeChange::Unchanged => "<p style='color:gray'>Unchanged</p>".into(),
 		RelativeChange::Added => "<p style='color:orange'>Added</p>".into(),
 		RelativeChange::Removed => "<p style='color:orange'>Removed</p>".into(),
+	}
+}
+
+/// Converts a relative change to an absolute value to make it sortable in html.
+/// 
+/// Note: Undefined for values > i128::MAX or < i128::MIN.
+fn order_percent(change: &TermChange) -> i128 {
+	match change.change {
+		// This only considers the first three digits of the percent since the UI only shows these.
+		RelativeChange::Changed => (change.percent * 1000.0) as i128,
+		RelativeChange::Unchanged => 0,
+		RelativeChange::Added => i128::MAX,
+		RelativeChange::Removed => i128::MIN,
+	}
+}
+
+fn order_abs(change: &TermChange) -> i128 {
+	match change.change {
+		RelativeChange::Changed => change.new_v.unwrap() as i128 - change.old_v.unwrap() as i128,
+		RelativeChange::Unchanged => 0,
+		RelativeChange::Added => i128::MAX,
+		RelativeChange::Removed => i128::MIN,
 	}
 }

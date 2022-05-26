@@ -2049,6 +2049,7 @@ dependencies = [
  "lazy_static",
  "log",
  "proc-macro2",
+ "regex",
  "rstest",
  "semver",
  "serde",

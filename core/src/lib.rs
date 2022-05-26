@@ -10,6 +10,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 use syn::{Expr, Item, Type};
+use regex::Regex;
 
 pub mod parse;
 pub mod scope;
@@ -106,6 +107,9 @@ pub struct FilterParams {
 	/// Only include a subset of change-types.
 	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
 	pub change: Option<Vec<RelativeChange>>,
+
+	#[clap(long, ignore_case = true, value_name = "REGEX")]
+	pub extrinsic: Option<String>,
 }
 
 pub fn compare_commits(
@@ -331,7 +335,10 @@ pub fn sort_changes(diff: &mut TotalDiff) {
 }
 
 pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
+	// Parse the extrinsic regex
+	let regex = params.extrinsic.as_ref().map(|s| Regex::new(s).unwrap());
 	diff.iter()
+		.filter(|extrinsic| regex.as_ref().map_or(true, |r| r.is_match(&extrinsic.name)))
 		.filter(|extrinsic| params.included(&extrinsic.change.change))
 		.filter(|extrinsic| match extrinsic.change.change {
 			RelativeChange::Changed if extrinsic.change.percent.abs() < params.threshold => false,
