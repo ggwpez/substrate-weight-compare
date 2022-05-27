@@ -36,6 +36,8 @@ $(document).ready(function () {
 		fixedColumns:   {
             heightMatch: 'none'
         },
+		// Default sort by relative change worst to best.
+		aaSorting: [[ 4, "desc" ]]
 	});
 
 	// Select the row from the URL anchor - if any.

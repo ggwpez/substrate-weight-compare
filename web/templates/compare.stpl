@@ -139,12 +139,10 @@
 				</td>
 
 				<td>
-					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.old) %>
+					<%- change.change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.new) %>
+					<%- change.change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%= format!("{:?}", &change.change.scope) %>

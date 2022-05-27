@@ -3,9 +3,9 @@ use comfy_table::Table;
 use std::path::PathBuf;
 
 use swc_core::{
-	compare_commits, compare_files, filter_changes, fmt_weight,
+	compare_commits, compare_files, filter_changes,
 	parse::pallet::{parse_files, try_parse_files},
-	sort_changes, CompareParams, FilterParams, Percent, RelativeChange, TotalDiff, VERSION,
+	sort_changes, CompareParams, FilterParams, Percent, RelativeChange, TotalDiff, Unit, VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -20,12 +20,6 @@ struct MainCmd {
 	/// Disable color output.
 	#[clap(long)]
 	no_color: bool,
-
-	/// Include weight terms in the console output.
-	///
-	/// Note: The output will have _very_ long rows.
-	#[clap(long)]
-	print_terms: bool,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -65,6 +59,12 @@ struct CompareFilesCmd {
 	/// The new weight files.
 	#[clap(long, required(true), multiple_values(true))]
 	pub new: Vec<PathBuf>,
+
+	/// Include weight terms in the console output.
+	///
+	/// Note: The output will have _very_ long rows.
+	#[clap(long)]
+	print_terms: bool,
 }
 
 #[derive(Debug, Parser)]
@@ -97,6 +97,12 @@ struct CompareCommitsCmd {
 
 	#[clap(long)]
 	pub path_pattern: String,
+
+	/// Include weight terms in the console output.
+	///
+	/// Note: The output will have _very_ long rows.
+	#[clap(long)]
+	print_terms: bool,
 }
 
 fn main() -> Result<(), String> {
@@ -110,7 +116,13 @@ fn main() -> Result<(), String> {
 	}
 
 	match cmd.subcommand {
-		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd { old, new, params, filter })) => {
+		SubCommand::Compare(CompareCmd::Files(CompareFilesCmd {
+			old,
+			new,
+			params,
+			print_terms,
+			filter,
+		})) => {
 			let olds =
 				if params.ignore_errors { try_parse_files(&old) } else { parse_files(&old)? };
 			let news =
@@ -119,7 +131,7 @@ fn main() -> Result<(), String> {
 			let mut diff = compare_files(olds, news, params.method);
 			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
-			print_changes(diff, cmd.verbose, cmd.no_color);
+			print_changes(diff, cmd.verbose, cmd.no_color, print_terms, params.unit);
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
 			old,
@@ -127,11 +139,12 @@ fn main() -> Result<(), String> {
 			params,
 			filter,
 			repo,
+			print_terms,
 			path_pattern,
 		})) => {
 			let mut diff = compare_commits(&repo, &old, &new, &params, &path_pattern, usize::MAX)?;
 			diff = filter_changes(diff, &filter);
-			print_changes(diff, cmd.verbose, cmd.no_color);
+			print_changes(diff, cmd.verbose, cmd.no_color, print_terms, params.unit);
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
@@ -143,7 +156,13 @@ fn main() -> Result<(), String> {
 	Ok(())
 }
 
-fn print_changes(per_extrinsic: TotalDiff, verbose: bool, no_color: bool) {
+fn print_changes(
+	per_extrinsic: TotalDiff,
+	verbose: bool,
+	no_color: bool,
+	print_terms: bool,
+	unit: Unit,
+) {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
 		return
@@ -151,38 +170,39 @@ fn print_changes(per_extrinsic: TotalDiff, verbose: bool, no_color: bool) {
 
 	let mut table = Table::new();
 	table.set_constraints(vec![comfy_table::ColumnConstraint::ContentWidth]);
-	table.set_header(vec![
-		"File",
-		"Extrinsic",
-		"Old",
-		"New",
-		"Change [%]",
-		"Old Weight Term",
-		"New Weight Term",
-		"Used variables",
-	]);
+	let mut header = vec!["File", "Extrinsic", "Old", "New", "Change [%]"];
+	if print_terms {
+		header.extend(vec!["Old Weight Term", "New Weight Term", "Used variables"]);
+	}
+	table.set_header(header);
 
 	for change in per_extrinsic.iter() {
-		table.add_row(vec![
+		let mut row = vec![
 			change.file.clone(),
 			change.name.clone(),
-			change.change.old_v.map(fmt_weight).unwrap_or_default(),
-			change.change.new_v.map(fmt_weight).unwrap_or_default(),
+			change.change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
+			change.change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
 			color_percent(change.change.percent, &change.change.change, no_color),
-			change
-				.change
-				.old
-				.as_ref()
-				.map(|t| format!("{}", t))
-				.unwrap_or_else(|| "-".into()),
-			change
-				.change
-				.new
-				.as_ref()
-				.map(|t| format!("{}", t))
-				.unwrap_or_else(|| "-".into()),
-			format!("{:?}", &change.change.scope),
-		]);
+		];
+
+		if print_terms {
+			row.extend(vec![
+				change
+					.change
+					.old
+					.as_ref()
+					.map(|t| format!("{}", t))
+					.unwrap_or_else(|| "-".into()),
+				change
+					.change
+					.new
+					.as_ref()
+					.map(|t| format!("{}", t))
+					.unwrap_or_else(|| "-".into()),
+				format!("{:?}", &change.change.scope),
+			]);
+		}
+		table.add_row(row);
 	}
 	print(table.to_string(), verbose)
 }

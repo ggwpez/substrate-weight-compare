@@ -169,6 +169,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 	}
 }
 
+/// Returns a version badge in the style of <https://shields.io>.
 #[get("/version/badge")]
 async fn version_badge() -> HttpResponse {
 	let svg = BadgeBuilder::new()
