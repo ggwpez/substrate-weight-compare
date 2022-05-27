@@ -162,15 +162,18 @@ pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 
 	match reference {
 		// gref is an actual reference like branches or tags
-		Some(gref) => repo.set_head(gref.name().unwrap()),
+		Some(gref) => repo.set_head(gref.name().ok_or_else(|| git2::Error::from_str("No name"))?),
 		// this is a commit, not a reference
 		None => repo.set_head_detached(object.id()),
 	}
 }
 
 fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
-	let files = glob::glob(&regex).unwrap();
-	let files: Vec<_> = files.map(|f| f.unwrap()).filter(|f| !f.ends_with("mod.rs")).collect();
+	let files = glob::glob(&regex).map_err(|e| format!("Invalid path pattern: {:?}", e))?;
+	let files = files
+		.collect::<Result<Vec<_>, _>>()
+		.map_err(|e| format!("Path pattern error: {:?}", e))?;
+	let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
 		return Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files))
 	} else {
