@@ -23,10 +23,10 @@ cargo install --git https://github.com/ggwpez/substrate-weight-compare swc swc_w
 
 # Example: Web Interface
 
-Assuming you have a Substrate compatible repository checked out, for example `Polkadot`:
+Assuming you have a Substrate compatible repository checked out in the parent directory:
 
 ```sh
-swc-web --repo ../polkadot
+swc-web --root ../ --repos polkadot substrate cumulus
 ```
 
 then open your browser and try the following:
@@ -37,11 +37,48 @@ then open your browser and try the following:
 Suppose you have some weight files in:
 - `OLD=repos/polkadot/` and
 - `NEW=my_other_repos/polkadot`   
-Compare them with:
+The base command looks like this:
 
 ```sh
-swc compare files --old $OLD/* --new $NEW/*
+swc compare files --old $OLD/* --new $NEW/* --method worst
 ```
+
+If you want to compare the weights of the Kusama to the Polkadot runtime, the command becomes a bit more longer:
+```sh
+swc compare files --old ../polkadot/runtime/kusama/**/weights/*.rs --new ../polkadot/runtime/polkadot/*/weights/*.rs --method worst --ignore-errors --change changed unchanged --unit time --threshold 10
+```
+
+```sh
++-----------------------------------------+-----------------------------+----------+----------+---------------+
+| File                                    | Extrinsic                   | Old      | New      | Change [%]    |
++=============================================================================================================+
+| pallet_election_provider_multi_phase.rs | feasibility_check           | 1.23ms   | 812.80us | -33.90 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| frame_benchmarking_baseline.rs          | addition                    | 162.00ns | 112.00ns | -30.86 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | hrmp_cancel_open_request    | 27.90us  | 39.02us  | +39.86 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| pallet_tips.rs                          | slash_tip                   | 15.86us  | 22.61us  | +42.56 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_initializer.rs       | force_approve               | 3.12us   | 4.53us   | +45.02 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | clean_open_channel_requests | 366.82us | 590.73us | +61.04 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | hrmp_accept_open_channel    | 29.81us  | 48.54us  | +62.81 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | hrmp_close_channel          | 27.58us  | 44.92us  | +62.89 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | force_process_hrmp_open     | 2.17ms   | 3.64ms   | +67.28 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | hrmp_init_open_channel      | 32.67us  | 55.70us  | +70.49 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | force_process_hrmp_close    | 1.21ms   | 2.11ms   | +74.25 |
+|-----------------------------------------+-----------------------------+----------+----------+---------------|
+| runtime_parachains_hrmp.rs              | force_clean_hrmp            | 1.82ms   | 3.27ms   | +80.04 |
++-----------------------------------------+-----------------------------+----------+----------+---------------+
+```
+Cou can use the `--print-terms` flag to print the terms. This example omits them since the rows get really long.
+
 
 # Example: Compare Polkadot Commits
 
@@ -97,13 +134,30 @@ Here are some examples for Polkadot:
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
 The `mod.rs` file is *always* excluded.  
 
+## Pallet
+
+Filter by the pallets to include by using a [Regex].  
+Examples:
+- `.*` would be *any* pallet.
+- `system|assets` would be the `system` and the `assets` pallet.
+- `
+
+## Extrinsic
+
+Analogous to the [Pallet](#pallet) filter this filters by the extrinsics using a [Regex].  
+Examples:
+- `.*` would be *any* extrinsic.
+- `mint|burn` would be the `mint` and the `burn` extrinsics.
+
 ## Evaluation Method
 
 The evaluation method defines how the weight equation is evaluate (=calculated).  
 This is a deciding factor when making a decision whether or not a weight got worse.
 
-- Base: Only consider the constant factor of the weight plus storage operations.
-- Worst: This sets all components to 100 and thereby emulating high inputs. This is a best-effort approach until [substrate#11397](https://github.com/paritytech/substrate/issues/11397) is done.
+- *Base*: Only consider the constant factor of the weight plus storage operations.
+- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.  
+Unfortunately this option currently does not mix well with the [Ignore Errors](#ignore-errors), since it will silently omit extrinsics that do not have component ranges. Use *Guess Worst* instead.
+- *Guess Worst*: Tries to apply *Exact Worst* but defaults to setting all components to 100. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
 This will be changed to include the correct values soon.
@@ -127,6 +181,11 @@ Controls the unit of the output. Can be set to:
 
 Silently ignore parse errors. This is useful when using inclusive path patterns.
 
+## Git Pull
+
+Pull the branch before comparing anything. This ensures that you are on the last commit.  
+This does not override the *Cache*. It can therefore take up to 10 minutes for a new change to show up.
+
 ## Cache
 
 The web UI caches success responses for 10 minutes. Currently there is no flag to disable it.  
@@ -134,17 +193,25 @@ Use commit hashes instead of tags and branches if you need uncached results.
 
 # Running the Tests
 
-
+There exist *unit* and *integration* tests. Most of them are guarded behind feature flags. The explanation below covers both in one.
 
 ## Integration tests
 
-The test use the Polkadot repo in `repo/Polkadot`.
+Integration tests do currently not exist for all supported repos (see [integration.rs]).
 
 ```sh
 git clone https://github.com/ggwpez/substrate-weight-compare
 cd substrate-weight-compare
+
+# Clone all the test-able repos
+mkdir -p repos
 git clone https://github.com/paritytech/polkadot/ repos/polkadot
-cargo test --release --all-features
+git clone https://github.com/paritytech/substrate/ repos/substrate
+git clone https://github.com/PureStake/moonbeam/ repos/moonbeam
+git clone https://github.com/ComposableFi/composable/ repos/composable
+
+# Run ALL the tests
+cargo test --release --all-targets --all-features
 ```
 
 <!-- LINKS -->
@@ -153,3 +220,6 @@ cargo test --release --all-features
 [Cumulus]: https://github.com/paritytech/cumulus
 [Moonbeam]: https://github.com/PureStake/moonbeam
 [Composable Finance]: https://github.com/ComposableFi/composable
+
+[Regex]: https://github.com/fancy-regex/fancy-regex
+[integration.rs]: https://github.com/ggwpez/substrate-weight-compare/blob/master/core/src/test/parse/integration.rs

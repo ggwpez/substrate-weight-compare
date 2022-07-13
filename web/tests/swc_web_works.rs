@@ -69,7 +69,7 @@ fn swc_web_compare_works() {
 	for _ in 0..20 {
 		std::thread::sleep(std::time::Duration::from_millis(100));
 
-		let url = "http://localhost:8080/compare?old=v0.9.19&new=v0.9.20&repo=polkadot&threshold=10&unit=weight&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false";
+		let url = "http://localhost:8080/compare?old=v0.9.19&new=v0.9.20&repo=polkadot&threshold=10&unit=weight&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false&git_pull=false";
 		let resp = reqwest::blocking::get(url).expect("Request error").text().unwrap();
 
 		// Some magic numbers

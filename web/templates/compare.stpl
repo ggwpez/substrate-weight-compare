@@ -57,6 +57,14 @@
 				<td><input id="input_path_pattern" type="text" value="<%= args.path_pattern %>"></td>
 			</tr>
 			<tr>
+				<td><%- readme_link("Pallet") %></td>
+				<td><input id="input_pallet" type="text" value="<%= args.pallet.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Extrinsic") %></td>
+				<td><input id="input_extrinsic" type="text" value="<%= args.extrinsic.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
 				<td><%- readme_link("Rel Threshold") %></td>
 				<td>
 				<div class="input-group">
@@ -82,13 +90,18 @@
 				<td>
 					<select id="select_method">
 						<option value="base"  <%- if args.method == CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="worst" <%- if args.method == CompareMethod::Worst { "selected" } else { "" } %>>Worst</option>
+						<option value="guess-worst" <%- if args.method == CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
+						<option value="exact-worst" <%- if args.method == CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
 					</select>
 				</td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
-				<td><input id="checkbox_ignore_errors" type="checkbox" value="<%= args.path_pattern %>" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+				<td><input id="checkbox_ignore_errors" type="checkbox" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Git Pull") %></td>
+				<td><input id="checkbox_git_pull" type="checkbox" <%- if args.git_pull.unwrap_or(true) { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Cache") %> hit</td>
@@ -139,12 +152,10 @@
 				</td>
 
 				<td>
-					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.old) %>
+					<%- change.change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.new) %>
+					<%- change.change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%= format!("{:?}", &change.change.scope) %>

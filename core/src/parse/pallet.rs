@@ -1,9 +1,14 @@
 use crate::{reads, writes, ExtrinsicName, PalletName};
 
-use std::path::{Path, PathBuf};
+use fancy_regex::Regex;
+use lazy_static::lazy_static;
+use std::{
+	collections::HashMap,
+	path::{Path, PathBuf},
+};
 use syn::{
-	punctuated::Punctuated, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit, ReturnType,
-	Stmt, Token, Type,
+	punctuated::Punctuated, Attribute, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit,
+	ReturnType, Stmt, Token, Type,
 };
 
 use crate::{
@@ -14,12 +19,24 @@ use crate::{
 
 pub type Result<T> = std::result::Result<T, String>;
 
-#[derive(Clone)]
+pub type ComponentName = String;
+
+/// Inclusive range of a component.
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub struct ComponentRange {
+	pub min: u32,
+	pub max: u32,
+}
+pub type ComponentRanges = HashMap<ComponentName, ComponentRange>;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Extrinsic {
 	pub name: ExtrinsicName,
 	pub pallet: PalletName,
 
 	pub term: Term,
+	/// Min and max value that each weight component can have.
+	pub comp_ranges: Option<ComponentRanges>,
 }
 
 pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
@@ -71,12 +88,13 @@ pub fn try_parse_files(paths: &[PathBuf]) -> Vec<Extrinsic> {
 }
 
 pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsic>> {
-	let ast = syn::parse_file(&content).map_err(|e| e.to_string())?;
+	let ast = syn::parse_file(&content).map_err(|e| format!("syn refused to parse: {}", e))?;
 	for item in ast.items {
 		if let Ok(weights) = handle_item(pallet.clone(), &item) {
 			return Ok(weights)
 		}
 	}
+	log::warn!("Could not find a weight implementation in {}", &pallet);
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
@@ -114,8 +132,14 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrins
 			let mut weights = Vec::new();
 			for f in &imp.items {
 				if let ImplItem::Method(m) = f {
-					let (ext_name, term) = handle_method(m)?;
-					weights.push(Extrinsic { name: ext_name, pallet: pallet.clone(), term });
+					let (ext_name, term, comp_ranges) = handle_method(m)?;
+
+					weights.push(Extrinsic {
+						name: ext_name,
+						pallet: pallet.clone(),
+						term,
+						comp_ranges,
+					});
 				}
 			}
 			if weights.is_empty() {
@@ -128,7 +152,75 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrins
 	}
 }
 
-fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term)> {
+/// Parses range component attributes.
+///
+/// Returns `Ok(None)` if the attribute is was not detected.
+/// Returns `Err(e)` if the attribute was detected but is invalid.
+///
+/// This doc comment:
+///   The range of component `c` is `[1_337, 2000]`.
+/// would be parsed into:
+///   ("c", (1_337, =2000))
+fn parse_component_attr(attr: &Attribute) -> Result<Option<(ComponentName, ComponentRange)>> {
+	lazy_static! {
+		// TODO syn seems to put a ="…" around the comment.
+		static ref REGEX: Regex = Regex::new(
+			r#"[\w\s]*`(?P<component>\w+)`[\w\s]*`\[(?P<min>[\d_]+),\s*(?P<max>[\d_]+)\]`.*"#
+		)
+		.unwrap();
+	}
+
+	let input = attr.tokens.to_string();
+	let caps = REGEX.captures(&input).expect("Regex is known good");
+	if caps.is_none() {
+		return Ok(None)
+	}
+	let caps = caps.unwrap();
+
+	let component = caps.name("component").ok_or("Missing component name")?.as_str();
+	let min: u32 = caps
+		.name("min")
+		.ok_or("Min value not found")?
+		.as_str()
+		.replace('_', "")
+		.parse()
+		.map_err(|e| format!("Could not parse min value: {:?}", e))?;
+	let max: u32 = caps
+		.name("max")
+		.ok_or("Max value not found")?
+		.as_str()
+		.replace('_', "")
+		.parse()
+		.map_err(|e| format!("Could not parse max value: {:?}", e))?;
+	// Sanity check
+	if min > max {
+		return Err("Min value is greater than max value".into())
+	}
+	Ok(Some((component.into(), ComponentRange { min, max })))
+}
+
+fn parse_component_attrs(attrs: &Vec<Attribute>) -> Result<Option<ComponentRanges>> {
+	let mut res = HashMap::new();
+	for attr in attrs {
+		match parse_component_attr(attr) {
+			Ok(Some((name, range))) => {
+				res.insert(name.replace('_', ""), range);
+			},
+			Ok(None) => {
+				// Some kind of other attribute that we ignore.
+			},
+			Err(e) => return Err(e),
+		}
+	}
+
+	if res.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(res))
+	}
+}
+
+fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term, Option<ComponentRanges>)> {
 	let name = m.sig.ident.to_string();
 	// Check the return type to end with `Weight`.
 	if let ReturnType::Type(_, i) = &m.sig.output {
@@ -152,7 +244,12 @@ fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term)> {
 		Stmt::Expr(expr) => parse_expression(expr)?,
 		_ => unreachable!("Expected expression"),
 	};
-	Ok((name, weight))
+	// We later on check that the number of weight components matches
+	// the number of components in the term. This cannot be done here
+	// as global constants could mess up the counting.
+	let comp_ranges = parse_component_attrs(&m.attrs)?;
+
+	Ok((name, weight, comp_ranges))
 }
 
 pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
@@ -164,7 +261,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 		Expr::Lit(lit) => Ok(Term::Value(lit_to_value(&lit.lit))),
 		Expr::Path(p) => {
 			let ident = path_to_string(&p.path, Some("::"));
-			Ok(Term::Var(ident))
+			Ok(Term::Var(ident.into()))
 		},
 		_ => Err("Unexpected expression".into()),
 	}

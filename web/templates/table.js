@@ -36,6 +36,8 @@ $(document).ready(function () {
 		fixedColumns:   {
             heightMatch: 'none'
         },
+		// Default sort by relative change worst to best.
+		aaSorting: [[ 4, "desc" ]]
 	});
 
 	// Select the row from the URL anchor - if any.
@@ -63,7 +65,7 @@ $(document).ready(function () {
 		});
 	}
 	// Init the input boxes.
-	const inputs = ["threshold", "path_pattern", "old", "new"];
+	const inputs = ["threshold", "path_pattern", "old", "new", "pallet", "extrinsic"];
 	for (const input of inputs) {
 		const id = `#input_${input}`;
 		// Redirect on change.
@@ -72,7 +74,7 @@ $(document).ready(function () {
 		});
 	}
 	// Init the checkboxes.
-	const checkboxes = ["ignore_errors"];
+	const checkboxes = ["ignore_errors", "git_pull"];
 	for (const checkbox of checkboxes) {
 		const id = `#checkbox_${checkbox}`;
 		// Redirect on change.

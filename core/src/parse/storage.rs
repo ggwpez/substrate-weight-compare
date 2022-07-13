@@ -154,7 +154,7 @@ fn parse_expression(expr: &Expr) -> Result<Term, String> {
 			Ok(term)
 		},
 		Expr::Lit(lit) => Ok(Term::Value(super::pallet::lit_to_value(&lit.lit))),
-		Expr::Path(p) => Ok(Term::Var(path_to_string(&p.path, Some("::")))),
+		Expr::Path(p) => Ok(Term::Var(crate::term::VarValue(path_to_string(&p.path, Some("::"))))),
 		_ => Err("Unexpected expression".into()),
 	}
 }
