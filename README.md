@@ -155,8 +155,9 @@ The evaluation method defines how the weight equation is evaluate (=calculated).
 This is a deciding factor when making a decision whether or not a weight got worse.
 
 - *Base*: Only consider the constant factor of the weight plus storage operations.
-- *Guess Worst*: This sets all components to 100 and thereby emulating high inputs. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
-- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.
+- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.  
+Unfortunately this option currently does not mix well with the [Ignore Errors](#ignore-errors), since it will silently omit extrinsics that do not have component ranges. Use *Guess Worst* instead.
+- *Guess Worst*: Tries to apply *Exact Worst* but defaults to setting all components to 100. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
 This will be changed to include the correct values soon.
@@ -187,15 +188,25 @@ Use commit hashes instead of tags and branches if you need uncached results.
 
 # Running the Tests
 
+There exist *unit* and *integration* tests. Most of them are guarded behind feature flags. The explanation below covers both in one.
+
 ## Integration tests
 
-The test use the Polkadot repo in `repo/Polkadot`.
+Integration tests do currently not exist for all supported repos (see [integration.rs]).
 
 ```sh
 git clone https://github.com/ggwpez/substrate-weight-compare
 cd substrate-weight-compare
+
+# Clone all the test-able repos
+mkdir -p repos
 git clone https://github.com/paritytech/polkadot/ repos/polkadot
-cargo test --release --all-features
+git clone https://github.com/paritytech/substrate/ repos/substrate
+git clone https://github.com/PureStake/moonbeam/ repos/moonbeam
+git clone https://github.com/ComposableFi/composable/ repos/composable
+
+# Run ALL the tests
+cargo test --release --all-targets --all-features
 ```
 
 <!-- LINKS -->
@@ -204,4 +215,6 @@ cargo test --release --all-features
 [Cumulus]: https://github.com/paritytech/cumulus
 [Moonbeam]: https://github.com/PureStake/moonbeam
 [Composable Finance]: https://github.com/ComposableFi/composable
+
 [Regex]: https://github.com/fancy-regex/fancy-regex
+[integration.rs]: https://github.com/ggwpez/substrate-weight-compare/blob/master/core/src/test/parse/integration.rs
