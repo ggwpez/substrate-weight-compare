@@ -182,6 +182,7 @@ pub fn compare_commits(
 /// Checkout and maybe pull the given refname in the given repo.
 pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
 	// Checkout
+	log::info!("Checking out {} in {}", refname, path);
 	let mut cmd = Command::new("git");
 	cmd.arg("-C").arg(path).arg("checkout").arg(refname);
 	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
