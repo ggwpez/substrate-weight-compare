@@ -84,7 +84,7 @@ fn swc_compare_commits_errors() {
 	assert!(!output.status.success());
 
 	let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-	assert_contains(&out, "revspec 'vWrong' not found");
+	assert_contains(&out, "pathspec 'vWrong' did not match");
 }
 
 #[test]

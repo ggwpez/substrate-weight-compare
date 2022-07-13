@@ -97,7 +97,11 @@
 			</tr>
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
-				<td><input id="checkbox_ignore_errors" type="checkbox" value="<%= args.path_pattern %>" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+				<td><input id="checkbox_ignore_errors" type="checkbox" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Git Pull") %></td>
+				<td><input id="checkbox_git_pull" type="checkbox" <%- if args.git_pull.unwrap_or(true) { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Cache") %> hit</td>

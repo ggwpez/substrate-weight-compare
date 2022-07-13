@@ -57,6 +57,7 @@ pub struct CompareArgs {
 	ignore_errors: bool,
 	threshold: u32,
 	unit: Unit,
+	git_pull: Option<bool>,
 	method: CompareMethod,
 }
 
@@ -203,10 +204,16 @@ fn do_compare_cached(
 		.ok_or(format!("Value '{}' is invalid for argument 'repo'.", &args.repo))?;
 
 	let (new, old) = (args.new.trim(), args.old.trim());
-	let (_thresh, unit, method, path_pattern, ignore_errors) =
-		(args.threshold, args.unit, args.method, args.path_pattern.trim(), args.ignore_errors);
+	let (_thresh, unit, method, path_pattern, ignore_errors, git_pull) = (
+		args.threshold,
+		args.unit,
+		args.method,
+		args.path_pattern.trim(),
+		args.ignore_errors,
+		args.git_pull.unwrap_or(true),
+	);
 
-	let params = CompareParams { method, ignore_errors, unit };
+	let params = CompareParams { method, ignore_errors, unit, git_pull };
 	let filter = FilterParams {
 		threshold: args.threshold as f64,
 		change: None,

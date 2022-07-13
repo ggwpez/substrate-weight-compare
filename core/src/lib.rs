@@ -2,7 +2,6 @@
 
 use clap::Args;
 use fancy_regex::Regex;
-use git2::*;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
@@ -10,6 +9,7 @@ use std::{
 	cmp::Ordering,
 	collections::HashSet,
 	path::{Path, PathBuf},
+	process::Command,
 };
 use syn::{Expr, Item, Type};
 
@@ -97,6 +97,12 @@ pub struct CompareParams {
 
 	#[clap(long)]
 	pub ignore_errors: bool,
+
+	/// Do a 'git pull' after checking out the refname.
+	///
+	/// This ensures that you get the newest commit on a branch.
+	#[clap(long)]
+	pub git_pull: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Args)]
@@ -129,7 +135,7 @@ pub fn compare_commits(
 		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = checkout(repo, old) {
+	if let Err(err) = checkout(repo, old, params.git_pull) {
 		return Err(format!("{:?}", err).into())
 	}
 	let pattern = format!("{}/{}", repo.display(), path_pattern);
@@ -143,7 +149,7 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = checkout(repo, new) {
+	if let Err(err) = checkout(repo, new, params.git_pull) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(pattern, max_files)?;
@@ -158,7 +164,7 @@ pub fn compare_commits(
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.
-pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
+/*pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 	let repo = Repository::open(path)?;
 
 	let (object, reference) = repo.revparse_ext(refname)?;
@@ -170,6 +176,34 @@ pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 		// this is a commit, not a reference
 		None => repo.set_head_detached(object.id()),
 	}
+}*/
+
+/// Checkout and maybe pull the given refname in the given repo.
+pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
+	// Checkout
+	let mut cmd = Command::new("git");
+	cmd.arg("-C").arg(path).arg("checkout").arg(refname);
+	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
+	if !output.status.success() {
+		return Err(format!(
+			"Could not checkout: {}",
+			String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".into())
+		))
+	}
+
+	if !pull {
+		return Ok(())
+	}
+	log::info!("Pulling {}", refname);
+	// Pull
+	let mut cmd = Command::new("git");
+	cmd.arg("-C").arg(path).arg("pull");
+	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
+	if !output.status.success() {
+		return Err(format!("Could not pull: {}", output.status))
+	}
+
+	Ok(())
 }
 
 fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {

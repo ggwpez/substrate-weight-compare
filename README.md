@@ -181,6 +181,11 @@ Controls the unit of the output. Can be set to:
 
 Silently ignore parse errors. This is useful when using inclusive path patterns.
 
+## Git Pull
+
+Pull the branch before comparing anything. This ensures that you are on the last commit.  
+This does not override the *Cache*. It can therefore take up to 10 minutes for a new change to show up.
+
 ## Cache
 
 The web UI caches success responses for 10 minutes. Currently there is no flag to disable it.  

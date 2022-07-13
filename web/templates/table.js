@@ -74,7 +74,7 @@ $(document).ready(function () {
 		});
 	}
 	// Init the checkboxes.
-	const checkboxes = ["ignore_errors"];
+	const checkboxes = ["ignore_errors", "git_pull"];
 	for (const checkbox of checkboxes) {
 		const id = `#checkbox_${checkbox}`;
 		// Redirect on change.
