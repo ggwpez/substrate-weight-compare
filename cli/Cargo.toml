@@ -16,6 +16,7 @@ clap = { version = "3.1.12", features = ["derive"] }
 syn = { version = "1.0.91", features = ["parsing", "full"] }
 ansi_term = "0.12.1"
 comfy-table = { version = "5.0.1", default-features = false }
+serde = { version = "1.0.137", features = [ "derive" ] }
 
 [dev-dependencies]
 assert_cmd = "2.0.4"

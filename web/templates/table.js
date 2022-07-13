@@ -65,7 +65,7 @@ $(document).ready(function () {
 		});
 	}
 	// Init the input boxes.
-	const inputs = ["threshold", "path_pattern", "old", "new"];
+	const inputs = ["threshold", "path_pattern", "old", "new", "pallet", "extrinsic"];
 	for (const input of inputs) {
 		const id = `#input_${input}`;
 		// Redirect on change.

@@ -52,6 +52,8 @@ pub struct CompareArgs {
 	new: String,
 	repo: String,
 	path_pattern: String,
+	extrinsic: Option<String>,
+	pallet: Option<String>,
 	ignore_errors: bool,
 	threshold: u32,
 	unit: Unit,
@@ -136,7 +138,7 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 		Ok(res) => HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(templates::Compare::render(&res.value, &args, &repos, res.was_cached)),
-		Err(e) => http_500(templates::Error::render(&e)),
+		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
 }
 
@@ -191,7 +193,9 @@ async fn version_badge() -> HttpResponse {
 }
 
 #[cached(time = 600, result = true, sync_writes = true, with_cached_flag = true)]
-fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
+fn do_compare_cached(
+	args: CompareArgs,
+) -> Result<cached::Return<TotalDiff>, Box<dyn std::error::Error>> {
 	// Call get_mut to acquire an exclusive permit.
 	// Assumption tested in `dashmap_exclusive_permit_works`.
 	let repo = REPOS
@@ -203,9 +207,15 @@ fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, Str
 		(args.threshold, args.unit, args.method, args.path_pattern.trim(), args.ignore_errors);
 
 	let params = CompareParams { method, ignore_errors, unit };
-	let mut diff = compare_commits(&repo, old, new, &params, path_pattern, 200)?;
-	let filter = FilterParams { threshold: args.threshold as f64, change: None, extrinsic: None };
-	diff = filter_changes(diff, &filter);
+	let filter = FilterParams {
+		threshold: args.threshold as f64,
+		change: None,
+		pallet: args.pallet,
+		extrinsic: args.extrinsic,
+	};
+
+	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 200)?;
+	diff = filter_changes(diff, &filter)?;
 	sort_changes(&mut diff);
 
 	Ok(cached::Return::new(diff))

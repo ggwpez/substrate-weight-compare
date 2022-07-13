@@ -45,8 +45,10 @@ swc compare files --old $OLD/* --new $NEW/* --method worst
 
 If you want to compare the weights of the Kusama to the Polkadot runtime, the command becomes a bit more longer:
 ```sh
-$ swc compare files --old ../polkadot/runtime/kusama/**/weights/*.rs --new ../polkadot/runtime/polkadot/*/weights/*.rs --method worst --ignore-errors --change changed unchanged --unit time --threshold 10
+swc compare files --old ../polkadot/runtime/kusama/**/weights/*.rs --new ../polkadot/runtime/polkadot/*/weights/*.rs --method worst --ignore-errors --change changed unchanged --unit time --threshold 10
+```
 
+```sh
 +-----------------------------------------+-----------------------------+----------+----------+---------------+
 | File                                    | Extrinsic                   | Old      | New      | Change [%]    |
 +=============================================================================================================+
@@ -132,13 +134,29 @@ Here are some examples for Polkadot:
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
 The `mod.rs` file is *always* excluded.  
 
+## Pallet
+
+Filter by the pallets to include by using a [Regex].  
+Examples:
+- `.*` would be *any* pallet.
+- `system|assets` would be the `system` and the `assets` pallet.
+- `
+
+## Extrinsic
+
+Analogous to the [Pallet](#pallet) filter this filters by the extrinsics using a [Regex].  
+Examples:
+- `.*` would be *any* extrinsic.
+- `mint|burn` would be the `mint` and the `burn` extrinsics.
+
 ## Evaluation Method
 
 The evaluation method defines how the weight equation is evaluate (=calculated).  
 This is a deciding factor when making a decision whether or not a weight got worse.
 
-- Base: Only consider the constant factor of the weight plus storage operations.
-- Worst: This sets all components to 100 and thereby emulating high inputs. This is a best-effort approach until [substrate#11397](https://github.com/paritytech/substrate/issues/11397) is done.
+- *Base*: Only consider the constant factor of the weight plus storage operations.
+- *Guess Worst*: This sets all components to 100 and thereby emulating high inputs. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
+- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
 This will be changed to include the correct values soon.
@@ -169,8 +187,6 @@ Use commit hashes instead of tags and branches if you need uncached results.
 
 # Running the Tests
 
-
-
 ## Integration tests
 
 The test use the Polkadot repo in `repo/Polkadot`.
@@ -188,3 +204,4 @@ cargo test --release --all-features
 [Cumulus]: https://github.com/paritytech/cumulus
 [Moonbeam]: https://github.com/PureStake/moonbeam
 [Composable Finance]: https://github.com/ComposableFi/composable
+[Regex]: https://github.com/fancy-regex/fancy-regex

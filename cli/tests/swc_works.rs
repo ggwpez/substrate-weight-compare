@@ -127,7 +127,7 @@ fn swc_compare_files_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	let newlines = out.matches("No change").count();
+	let newlines = out.matches("Unchanged").count();
 	assert_eq!(newlines, 30); // There are 30 extrinsics in the file.
 }
 

@@ -57,6 +57,14 @@
 				<td><input id="input_path_pattern" type="text" value="<%= args.path_pattern %>"></td>
 			</tr>
 			<tr>
+				<td><%- readme_link("Pallet") %></td>
+				<td><input id="input_pallet" type="text" value="<%= args.pallet.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Extrinsic") %></td>
+				<td><input id="input_extrinsic" type="text" value="<%= args.extrinsic.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
 				<td><%- readme_link("Rel Threshold") %></td>
 				<td>
 				<div class="input-group">
@@ -82,7 +90,8 @@
 				<td>
 					<select id="select_method">
 						<option value="base"  <%- if args.method == CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="worst" <%- if args.method == CompareMethod::Worst { "selected" } else { "" } %>>Worst</option>
+						<option value="guess-worst" <%- if args.method == CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
+						<option value="exact-worst" <%- if args.method == CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
 					</select>
 				</td>
 			</tr>

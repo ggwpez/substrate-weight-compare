@@ -1,10 +1,10 @@
 use rstest::*;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use syn::*;
 
 use crate::{
 	add, mul,
-	parse::pallet::{parse_content, parse_expression, parse_file},
+	parse::pallet::{parse_content, parse_expression, parse_file, ComponentRange, Extrinsic},
 	reads,
 	scope::Scope,
 	term::Term,
@@ -34,11 +34,41 @@ fn parses_weight_files(#[case] path: PathBuf) {
 	} \
 }"
 )]
-fn parse_content_works(#[case] input: String) {
-	let _got = parse_content("".into(), input).unwrap();
+fn parse_function_works(#[case] input: String) {
+	let got = parse_content("".into(), input).unwrap();
 
-	//FIXME let want = ParsedExtrinsic::from([("ext".into(), 5)]);
-	//assert_eq!(want, got);
+	let want =
+		vec![Extrinsic { name: "ext".into(), pallet: "".into(), term: val!(5), comp_ranges: None }];
+	assert_eq!(want, got);
+}
+
+// NOTE: Try not to put // into a multiline comment, it will break!
+// Rather use the r# syntax.
+
+#[rstest]
+#[case(
+	r#"impl<T: frame_system::Config> my_pallet::WeightInfo for WeightInfo<T> {
+		/// The range of component `c` is `[1_337, 2000]`.
+		/// The range of component `d` is `[42, 999999]`.
+		fn ext(c: u32, d: u32, ) -> Weight {
+			(5 as Weight)
+		}
+	}"#
+)]
+fn parse_component_range_works(#[case] input: String) {
+	let got = parse_content("".into(), input).unwrap();
+
+	let ranges = HashMap::from([
+		("c".into(), ComponentRange { min: 1_337, max: 2000 }),
+		("d".into(), ComponentRange { min: 42, max: 999_999 }),
+	]);
+	let want = vec![Extrinsic {
+		name: "ext".into(),
+		pallet: "".into(),
+		term: val!(5),
+		comp_ranges: Some(ranges),
+	}];
+	assert_eq!(want, got);
 }
 
 #[rstest]
@@ -84,7 +114,6 @@ fn parse_content_works(#[case] input: String) {
 	.saturating_add(T::DbWeight::get().writes(12))
 	.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(s as Weight)))",
 	add!(add!(add!(add!(val!(123), mul!(val!(7), var!("s"))), reads!(val!(12))), writes!(val!(12))), writes!(mul!(val!(1), var!("s")))))]
-
 fn parse_expression_works(#[case] input: &str, #[case] want: Term) {
 	let expr: Expr = syn::parse_str(input).unwrap();
 	let got = parse_expression(&expr).unwrap();
