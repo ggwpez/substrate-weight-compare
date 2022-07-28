@@ -1,18 +1,23 @@
+use actix_files as fs;
 use actix_web::{
 	get,
 	http::header::{CacheControl, CacheDirective},
 	middleware,
 	middleware::Logger,
-	web, App, HttpRequest, HttpResponse, HttpServer,
+	web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use badge_maker::BadgeBuilder;
 use cached::proc_macro::cached;
 use clap::Parser;
 use dashmap::DashMap;
-use lazy_static::lazy_static;
+use lazy_static::{__Deref, lazy_static};
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use std::{
+	path::PathBuf,
+	process::{Command, Stdio},
+};
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
@@ -22,11 +27,14 @@ use swc_core::{
 mod html;
 use html::*;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[clap(author, version(&VERSION[..]))]
 pub(crate) struct MainCmd {
 	#[clap(long = "root", short, default_value = "root/")]
 	pub root_path: PathBuf,
+
+	#[clap(long = "static", short, default_value = "web/static")]
+	pub static_path: PathBuf,
 
 	#[clap(long, multiple_values = true, default_value = "polkadot")]
 	pub repos: Vec<String>,
@@ -71,13 +79,14 @@ lazy_static! {
 	///
 	/// Maps the name of the repo to its path.
 	static ref REPOS: DashMap<String, PathBuf> = DashMap::new();
+	static ref CONFIG: MainCmd = MainCmd::parse();
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
-	let cmd = MainCmd::parse();
+	let cmd = CONFIG.clone();
+	let static_path = cmd.static_path.into_os_string();
 
 	if cmd.repos.is_empty() {
 		return Err(std::io::Error::new(
@@ -96,14 +105,16 @@ async fn main() -> std::io::Result<()> {
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
 	info!("Listening to http://{}", endpoint);
 
-	let server = HttpServer::new(|| {
+	let server = HttpServer::new(move || {
 		App::new()
 			.wrap(middleware::Compress::default())
 			.wrap(Logger::new("%a %r %s %b %{Referer}i %Ts"))
+			.service(fs::Files::new("/static", &static_path).show_files_listing())
 			.service(compare)
 			.service(version_badge)
 			.service(version)
 			.service(root)
+			.service(branches)
 	})
 	.workers(4);
 
@@ -123,7 +134,101 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn root() -> HttpResponse {
-	http_200(templates::Root::render())
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+
+	http_200(templates::Root::render(repos))
+}
+
+/// Returns supported repositories.
+#[get("/repos")]
+async fn repositories() -> Result<impl Responder> {
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+
+	#[derive(Serialize)]
+	struct Info {
+		repos: Vec<String>,
+	}
+
+	let obj = Info { repos };
+	Ok(web::Json(obj))
+}
+
+#[derive(Deserialize)]
+struct BranchArgs {
+	repo: String,
+	fetch: Option<bool>,
+}
+
+/// Returns the available branches for the repositories.
+#[get("/branches")]
+async fn branches(req: HttpRequest) -> Result<impl Responder> {
+	let args = web::Query::<BranchArgs>::from_query(req.query_string()).map_err(|e| {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse query: {}", e))
+	})?;
+
+	let path = REPOS.get(&args.repo).ok_or(std::io::Error::new(
+		std::io::ErrorKind::Other,
+		format!("Unknown repo '{}'", args.repo),
+	))?;
+	if args.fetch.unwrap_or_default() {
+		info!("Fetching branches for '{}'", &args.repo);
+		// Fetch all tags and branches from the repo by spawning a git command
+		// and parsing the output.
+		let output = Command::new("git")
+			.arg("fetch")
+			.arg("--all")
+			.arg("--prune")
+			.arg("--tags")
+			.current_dir(path.deref())
+			.output()
+			.map_err(|e| {
+				std::io::Error::new(
+					std::io::ErrorKind::Other,
+					format!("Failed to fetch branches: {}", e),
+				)
+			})?;
+		if !output.status.success() {
+			let err = String::from_utf8(output.stderr).unwrap();
+			log::error!("Failed to fetch branches: {}", &err);
+
+			return Err(std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Failed to fetch branches: {}", &err),
+			)
+			.into())
+		}
+	}
+
+	// Spawn a git command and return all branches
+	let output = Command::new("git")
+		.args(&["ls-remote", "--tags", "--heads"])
+		.current_dir(path.deref())
+		.output()?;
+	if !output.status.success() {
+		let err = String::from_utf8(output.stderr).unwrap();
+		log::error!("Failed to list branches: {}", &err);
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::Other,
+			format!("Failed to list branches: {}", &err),
+		)
+		.into())
+	}
+	let stdout = String::from_utf8_lossy(&output.stdout);
+	// Collect all branches and remove the leading refs/heads/
+	let bs = stdout
+		.lines()
+		.map(|l| l.split_whitespace().nth(1).unwrap().to_string())
+		.map(|l| l.replace("refs/heads/", ""))
+		.map(|l| l.replace("refs/tags/", ""))
+		.collect::<Vec<_>>();
+
+	#[derive(Serialize)]
+	struct Branches {
+		bs: Vec<String>,
+	}
+
+	let obj = Branches { bs };
+	Ok(web::Json(obj))
 }
 
 #[get("/compare")]

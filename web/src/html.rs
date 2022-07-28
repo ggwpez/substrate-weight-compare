@@ -12,7 +12,9 @@ pub mod templates {
 
 	#[derive(TemplateOnce)]
 	#[template(path = "root.stpl")]
-	pub struct Root {}
+	pub struct Root {
+		repos: Vec<String>,
+	}
 
 	#[derive(TemplateOnce)]
 	#[template(path = "compare.stpl")]
@@ -30,8 +32,8 @@ pub mod templates {
 	}
 
 	impl Root {
-		pub fn render() -> String {
-			let ctx = Self {};
+		pub fn render(repos: Vec<String>) -> String {
+			let ctx = Self { repos };
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}
