@@ -4,13 +4,21 @@
 	<head>
 		<% include!("./header.stpl"); %>
 
+		<!-- Data tables -->
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.css"/>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
+
 		<link rel="stylesheet" href="/static/table.css">
 		<script src="/static/table.js"></script>
 	</head>
 	<body>
-	<h3>
-		⚠️ This software is in development. Please reports bugs to <code>@oliver.tale-yazdi:matrix.parity.io</code> or <a href='https://github.com/ggwpez/substrate-weight-compare/issues/new' target='_blank'>here</a>.
-	</h3>
+	<div class="form-check form-switch">
+		<label class="form-check-label" for="lightSwitch"> Dark Mode </label>
+		<input class="form-check-input" type="checkbox" id="lightSwitch" />
+	</div>
+
 	</br>
 	<table id="config_table">
 		<tbody>

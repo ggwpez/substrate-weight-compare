@@ -14,18 +14,18 @@
 </head>
 
 <body>
-	<!-- Loading animation -->
+	<!-- Loading animation, normally hidden -->
 	<div class="overlay"></div>
 	<div class="spanner">
-	<div class="loader"></div>
+		<div class="loader"></div>
 	</div>
 
 	<!-- MultiStep Form -->
 	<div class="container-fluid" id="grad1">
 		<div class="row justify-content-center mt-0">
 			<div class="col-11 col-sm-9 col-md-7 col-lg-6 text-center p-0 mt-3 mb-2">
-				<div class="card px-0 pt-4 pb-0 mt-3 mb-3">
-					<h2><strong>Set up the comparison</strong></h2>
+				<div class="card px-0 pt-4 pb-0 mb-3" style="margin-top: 10rem">
+					<h2><strong>Set up a comparison</strong></h2>
 					<div class="row">
 						<div class="col-md-12 mx-0">
 							<form id="msform">
@@ -40,35 +40,39 @@
 								<fieldset>
 									<div class="form-card">
 										<h2 class="fs-title">Repository</h2>
-										<p>Please select the repository from which you would like to compare some files.</p>
+										<p>Please select a repository. There are <var><%= repos.len() %></var> available.</p>
 										<select class="form-control js-example-basic-single" id="repoSelect" style="width: 100%;">
 											<% for repo in repos { %>
 												<option value="<%= repo.to_lowercase() %>"><%= repo %></option>
 											<% } %>
 										</select>
 									</div>
-									<input type="button" name="next" class="next action-button" value="Next Step" />
+
+									<input type="button" name="next" class="next action-button" value="Next" />
 								</fieldset>
 								<fieldset>
 									<div class="form-card">
 										<h2 class="fs-title">First commit</h2>
-										<p>Please select the first commit that you would like to use as <i>baseline</i> for your comparison. You can <button type="button" class="btn btn-link" id="fetch">fetch</button> if you think that your branch is missing from this list.</p>
+										<p>Please select the first commit hash, tag or branch that you would like to use as <i>baseline</i> for your comparison. You can <button type="button" class="btn btn-link" id="fetch">fetch</button> if you think that your branch is missing from this list. There are <var class="branchCount">?</var> available.</p>
 										<select class="form-control js-example-basic-single" id="firstSelect" style="width: 100%;">
 										</select>
 									</div>
+
 									<input type="button" name="previous" class="previous action-button-previous"
-										value="Previous" />
-									<input type="button" name="next" class="next action-button" value="Next Step" />
+										value="Back" />
+									<input type="button" name="next" class="next action-button" value="Next" />
 								</fieldset>
 								<fieldset>
 									<div class="form-card">
 										<h2 class="fs-title">Second Commit</h2>
+										<p>Please select the second branch that you would like to compare with. You can <button type="button" class="btn btn-link" id="fetch">fetch</button> if you think that your branch is missing from this list. There are <var class="branchCount">?</var> available.</p>
 										<select class="form-control js-example-basic-single" id="secondSelect" style="width: 100%;">
 										</select>
 									</div>
+
 									<input type="button" name="previous" class="previous action-button-previous"
-										value="Previous" />
-									<input type="button" name="make_payment" class="next action-button"
+										value="Back" />
+									<input type="button" class="next action-button"
 										value="Confirm" />
 								</fieldset>
 								<fieldset>
@@ -80,13 +84,12 @@
 										<input type="text" class="disabled" id="selectedFirst"/>
 										<p>Second Commit</p>
 										<input type="text" class="disabled" id="selectedSecond"/>
-
-										<div class="row justify-content-center">
-											<div class="col-3">
-												<input type="button" id="bthPost" class="action-button" value="Compare" />
-											</div>
-										</div>
 									</div>
+
+									<input type="button" name="previous" class="previous action-button-previous"
+											value="Back" />
+									<input type="button" id="bthPost" class="action-button"
+										value="Compare" />
 								</fieldset>
 							</form>
 						</div>

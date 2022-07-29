@@ -215,19 +215,26 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 	}
 	let stdout = String::from_utf8_lossy(&output.stdout);
 	// Collect all branches and remove the leading refs/heads/
-	let bs = stdout
+	let branch = stdout
 		.lines()
-		.map(|l| l.split_whitespace().nth(1).unwrap().to_string())
+		// Some tags contain weird stuff like {} or ^, let's filter those out.
+		.filter(|l| !l.contains('{') && !l.contains('^'))
 		.map(|l| l.replace("refs/heads/", ""))
 		.map(|l| l.replace("refs/tags/", ""))
-		.collect::<Vec<_>>();
+		// Split at whitespace and use the first part as the branch name
+		// and the second as commit hash.
+		.map(|l| {
+			let splits = l.split_whitespace().collect::<Vec<&str>>();
+			(splits[1].to_string(), splits[0][..12].to_string())
+		})
+		.collect::<Vec<(String, String)>>();
 
 	#[derive(Serialize)]
 	struct Branches {
-		bs: Vec<String>,
+		branch: Vec<(String, String)>,
 	}
 
-	let obj = Branches { bs };
+	let obj = Branches { branch };
 	Ok(web::Json(obj))
 }
 

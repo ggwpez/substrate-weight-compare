@@ -3,9 +3,16 @@ const path_pattern_presets = {
     "polkadot": "runtime/**/src/weights/**/*.rs",
 };
 
+// Local storage keys
+const lsk_selected_repo = "selected-repo";
+const lsk_selected_first = "selected-second";
+const lsk_selected_second = "selected-first";
+
+// Maps repos to their branches.
 var branches = {};
 
 function loading(yes) {
+    console.debug("Loading: " + yes);
     if (yes) {
         $("div.spanner").addClass("show");
         $("div.overlay").addClass("show");
@@ -15,27 +22,64 @@ function loading(yes) {
     }
 }
 
+// branches maps the branches to their last commits.
 function populate_branches(branches) {
     $('#firstSelect').empty().trigger("change");
     $('#secondSelect').empty().trigger("change");
+    $('.branchCount').text(branches.length);
 
     for (var i = 0; i < branches.length; i++) {
-        var newOption = new Option(branches[i], branches[i], false, false);
+        let branch_name = branches[i][0];
+        let last_commit = branches[i][1];
+        let text = `${branch_name} on ${last_commit}`;
 
-        $('#firstSelect').append(newOption).trigger('change');
+        var newOption = new Option(text, branch_name, false, false);
+        $('#firstSelect').append(newOption);
+
         // Somehow we need to create this twice, otherwise it does not work.
-        var newOption2 = new Option(branches[i], branches[i], false, false);
-        $('#secondSelect').append(newOption2).trigger('change');
+        var newOption2 = new Option(text, branch_name, false, false);
+        $('#secondSelect').append(newOption2);
     }
 
-    // Select the master branch as first if it exists.
-    if (branches.includes("master")) {
-        $('#firstSelect').val("master").trigger("change");
+    // Load the selected branch from local storage or master.
+    var selected_first = localStorage.getItem(lsk_selected_first);
+    if (selected_first != null && branches.includes(selected_first)) {
+        console.debug("Setting first branch to " + selected_first);
+        $('#firstSelect').val(selected_first).trigger('change');
+    } else {
+        console.debug("Setting first branch to master");
+        $('#firstSelect').val("master").trigger('change');
+    }
+
+    var selected_second = localStorage.getItem(lsk_selected_second);
+    if (selected_second != null && branches.includes(selected_second)) {
+        console.debug("Setting second branch to " + selected_second);
+        $('#secondSelect').val(selected_second).trigger('change');
+    } else {
+        console.debug("Setting second branch to master");
+        $('#secondSelect').val("master").trigger('change');
     }
 }
 
 function load_config() {
     var repos = [];
+}
+
+function load_branches(repo, fetch) {
+    // Is the repo unknown or should be fetched?
+    if (!(repo in branches) || fetch) {
+        loading(true);
+        console.log("Loading branches for " + repo);
+        $.getJSON("/branches?repo=" + repo + "&fetch=" + (fetch ? "true" : "false"), function (d) {
+            let data = d['branch'];
+            branches[repo] = data;
+        }).done(function () {
+            populate_branches(branches[repo]);
+            loading(false);
+        });
+    } else {
+        populate_branches(branches[repo]);
+    }
 }
 
 $(document).ready(function () {
@@ -85,7 +129,7 @@ $(document).ready(function () {
         //hide the current fieldset with style
         current_fs.animate({ opacity: 0 }, {
             step: function (now) {
-                // for making fielset appear animation
+                // for making fieldset appear animation
                 opacity = 1 - now;
 
                 current_fs.css({
@@ -120,6 +164,7 @@ $(document).ready(function () {
         }
 
         console.log(url);
+        loading(true);
         window.location.href = url;
     });
 
@@ -127,41 +172,39 @@ $(document).ready(function () {
         const repo = $(this).val();
 
         $('#selectedRepo').val(repo);
+        localStorage.setItem(lsk_selected_repo, repo);
 
         // Load the branches of the repo if not already loaded.
-        if (!(repo in branches)) {
-            console.log("Loading branches for " + repo);
-            $.getJSON("/branches?repo=" + repo, function (d) {
-                let data = d['bs'];
-                branches[repo] = data;
-            }).done(function () {
-                populate_branches(branches[repo]);
-            });
-        } else {
-            populate_branches(branches[repo]);
-        }
+        load_branches(repo, false);
     });
     $('#firstSelect').change(function () {
+        if (!$(this).val())
+            return;
+
         $('#selectedFirst').val($(this).val());
+        localStorage.setItem(lsk_selected_first, $(this).val());
+        console.debug("Storing first branch as " + $(this).val());
     });
     $('#secondSelect').change(function () {
+        if (!$(this).val())
+            return;
+        
         $('#selectedSecond').val($(this).val());
+        localStorage.setItem(lsk_selected_second, $(this).val());
+        console.debug("Storing second branch as " + $(this).val());
     });
 
     $('#fetch').click(function () {
         const repo = $('#repoSelect').val();
         if (repo === null)
             return;
-        // Fade the button out within 200 ms
-        $('#fetch').fadeOut(200);
-        console.log("Fetching repo " + repo);
-
-        $.getJSON("/branches?repo=" + repo + "&fetch=true", function (d) {
-            let data = d['bs'];
-            branches[repo] = data;
-        }).done(function () {
-            populate_branches(branches[repo]);
-            $('#fetch').fadeIn(200);
-        });
+        load_branches(repo, true);
     });
+
+    // Load the repo that was last selected
+    var selected_repo = localStorage.getItem(lsk_selected_repo);
+    if (selected_repo) {
+        console.debug("Loading last selected repo: " + selected_repo);
+        $('#repoSelect').val(selected_repo).trigger('change');
+    }
 });
