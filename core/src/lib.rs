@@ -309,7 +309,7 @@ pub fn compare_extrinsics(
 	new: Option<&Extrinsic>,
 	method: CompareMethod,
 ) -> Result<TermChange, String> {
-	let mut scope = scope::Scope::empty().with_storage_weights(val!(25_000), val!(100_000));
+	let mut scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
 	extend_scoped_components(old, new, method, &mut scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
