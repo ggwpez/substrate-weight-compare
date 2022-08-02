@@ -14,10 +14,7 @@ use lazy_static::{__Deref, lazy_static};
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Serialize};
-use std::{
-	path::PathBuf,
-	process::{Command, Stdio},
-};
+use std::{path::PathBuf, process::Command};
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
@@ -115,6 +112,7 @@ async fn main() -> std::io::Result<()> {
 			.service(version)
 			.service(root)
 			.service(branches)
+			.service(compare_mrs)
 	})
 	.workers(4);
 
@@ -253,6 +251,14 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 			.body(templates::Compare::render(&res.value, &args, &repos, res.was_cached)),
 		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
+}
+
+#[derive(Deserialize)]
+struct MrArgs {}
+
+#[get("/release-mrs")]
+async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
+	http_200(templates::MRs::render())
 }
 
 /// Exposes version information for automatic deployments.

@@ -17,6 +17,10 @@ pub mod templates {
 	}
 
 	#[derive(TemplateOnce)]
+	#[template(path = "merge_requests.stpl")]
+	pub struct MRs {}
+
+	#[derive(TemplateOnce)]
 	#[template(path = "compare.stpl")]
 	pub struct Compare<'a> {
 		diff: &'a TotalDiff,
@@ -34,6 +38,13 @@ pub mod templates {
 	impl Root {
 		pub fn render(repos: Vec<String>) -> String {
 			let ctx = Self { repos };
+			ctx.render_once().expect("Must render static template; qed")
+		}
+	}
+
+	impl MRs {
+		pub fn render() -> String {
+			let ctx = Self {};
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}

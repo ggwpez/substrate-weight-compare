@@ -1,0 +1,56 @@
+<html>
+
+<head>
+	<% include!("./header.stpl"); %>
+
+	<!-- Dropdown autocomplete input box -->
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+	<!-- Data tables -->
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.css"/>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
+
+	<!-- Moment.js for relative time diff printing -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+	<script type="module" src="/static/merge_requests.js"></script>
+	<script type="module" src="/static/default_params.js"></script>
+	<link rel="stylesheet" href="/static/merge_requests.css">
+</head>
+
+<body>
+	<!-- Loading animation, normally hidden -->
+	<div class="overlay"></div>
+	<div class="spanner">
+		<div class="loader"></div>
+	</div>
+
+	<!-- Light switch -->
+	<div class="form-check form-switch">
+		<label class="form-check-label" for="lightSwitch"> Dark Mode </label>
+		<input class="form-check-input" type="checkbox" id="lightSwitch" />
+	</div>
+
+	<div class="container-fluid">
+		<p class="text-center">
+			Please double-click on the merge request that you would like to compare.<br>
+			<var id="highlighted">0</var> merge requests are <span style="color: lightgreen;">highlighted</span> as potentially interesting.<br>
+		</p>
+	</div>
+
+	<table id="mrTable" class="display table">
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Creator</th>
+
+			<th>Head</th>
+			<th>Base</th>
+
+			<th>Last Push</th>
+		</tr>
+	</thead>	
+</body>
