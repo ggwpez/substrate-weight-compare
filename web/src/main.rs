@@ -164,10 +164,9 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse query: {}", e))
 	})?;
 
-	let path = REPOS.get(&args.repo).ok_or(std::io::Error::new(
-		std::io::ErrorKind::Other,
-		format!("Unknown repo '{}'", args.repo),
-	))?;
+	let path = REPOS.get(&args.repo).ok_or_else(|| {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Unknown repo '{}'", args.repo))
+	})?;
 	if args.fetch.unwrap_or_default() {
 		info!("Fetching branches for '{}'", &args.repo);
 		// Fetch all tags and branches from the repo by spawning a git command

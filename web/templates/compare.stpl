@@ -81,9 +81,9 @@
 
 				<td>
 					<select id="select_method">
-						<option value="base"  <%- if args.method == CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="guess-worst" <%- if args.method == CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
-						<option value="exact-worst" <%- if args.method == CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
+						<option value="base"  <%- if args.method == swc_core::CompareMethod::Base { "selected" } else { "" } %>>Base</option>
+						<option value="guess-worst" <%- if args.method == swc_core::CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
+						<option value="exact-worst" <%- if args.method == swc_core::CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
 					</select>
 				</td>
 			</tr>
