@@ -1,6 +1,7 @@
 const path_pattern_presets = {
     "substrate": "frame/*/src/weights.rs",
     "polkadot": "runtime/**/src/weights/**/*.rs",
+	"cumulus": "parachains/runtimes/assets/*/src/weights/*.rs",
 };
 
 // Local storage keys
@@ -161,6 +162,10 @@ $(document).ready(function () {
 
         if (repo in path_pattern_presets) {
             url += "&path_pattern=" + path_pattern_presets[repo];
+        } else {
+            // Show an alert
+            alert("No path pattern for " + repo);
+            return;
         }
 
         console.log(url);
