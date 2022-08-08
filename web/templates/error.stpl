@@ -3,8 +3,14 @@
 	<title>
 		SWC-Web: 500
 	</title>
+
+    <% include!("./header.stpl"); %>
 </head>
 <body>
+    <div class="form-check form-switch">
+		<label class="form-check-label" for="lightSwitch"> Dark Mode </label>
+		<input class="form-check-input" type="checkbox" id="lightSwitch" />
+	</div>
 	<h1>Error</h1>
 	<h2><%= msg %></h2>
 	The query arguments are explained in the <a href="https://github.com/ggwpez/substrate-weight-compare#config-options" target="_blank">README.md</a>.
@@ -12,13 +18,13 @@
 	<h2>Examples:</h2>
     <ul>
         <li>
-            <a href='/compare?old=768bd6655577dbfda140b40fdd4ca16700fcf589&new=b6770460668a7c3ef8df0ac0f3376e1f917a17e8&threshold=10&unit=weight&repo=polkadot&path_pattern=runtime/kusama/src/weights/*.rs&method=base&ignore_errors=false#runtime/kusama/src/weights/pallet_election_provider_multi_phase.rs.create_snapshot_internal'>Polkadot with commits</a>
+            <a href='/compare?old=768bd6655577dbfda140b40fdd4ca16700fcf589&new=b6770460668a7c3ef8df0ac0f3376e1f917a17e8&threshold=10&unit=weight&repo=polkadot&path_pattern=runtime/kusama/src/weights/*.rs&method=guess-worst&ignore_errors=false#runtime/kusama/src/weights/pallet_election_provider_multi_phase.rs.create_snapshot_internal'>Polkadot with commits</a>
         </li>
         <li>
-            <a href='/compare?old=v0.9.19&new=v0.9.20&threshold=30&unit=time&repo=polkadot&path_pattern=runtime/**/src/weights/**/*.rs&method=worst&ignore_errors=true'>Polkadot with tags</a>
+            <a href='/compare?old=v0.9.19&new=v0.9.20&threshold=30&unit=time&repo=polkadot&path_pattern=runtime/**/src/weights/**/*.rs&method=guess-worst&ignore_errors=true'>Polkadot with tags</a>
         </li>
 		<li>
-            <a href='/compare?old=0345460197179a9f2b3a6310be99360aec69d513&new=644e59a35322a1e5d69f1e7220cb14150b476ff8&threshold=15&unit=weight&repo=substrate&path_pattern=frame/*/src/weights.rs&method=worst&ignore_errors=true'>Substrate with commits</a>
+            <a href='/compare?old=0345460197179a9f2b3a6310be99360aec69d513&new=644e59a35322a1e5d69f1e7220cb14150b476ff8&threshold=15&unit=weight&repo=substrate&path_pattern=frame/*/src/weights.rs&method=guess-worst&ignore_errors=true'>Substrate with commits</a>
         </li>
     </ul>
 </body>

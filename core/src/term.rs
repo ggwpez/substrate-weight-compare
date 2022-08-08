@@ -1,5 +1,7 @@
 //! Contains the [`Term`] which is used to express weight equations.
 
+use lazy_static::__Deref;
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet as Set, fmt};
 use syn::{BinOp, ExprBinary};
 
@@ -16,13 +18,49 @@ use crate::{fmt_weight, scope::Scope};
 /// let term = add!(mul!(val!(5), val!(5)), val!(10));
 /// assert_eq!(term.eval(&Scope::empty()), Ok(35));
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Term {
 	Value(u128),
-	Var(String),
+	Var(VarValue),
 
 	Add(Box<Term>, Box<Term>),
 	Mul(Box<Term>, Box<Term>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A `VarValue` is an opaque string.
+pub struct VarValue(pub String);
+
+impl From<VarValue> for String {
+	fn from(v: VarValue) -> String {
+		v.0
+	}
+}
+
+impl From<String> for VarValue {
+	fn from(s: String) -> Self {
+		Self(s)
+	}
+}
+
+impl From<&str> for VarValue {
+	fn from(s: &str) -> Self {
+		Self(s.into())
+	}
+}
+
+impl std::ops::Deref for VarValue {
+	type Target = String;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl PartialEq for VarValue {
+	fn eq(&self, other: &Self) -> bool {
+		self.0.replace('_', "") == other.0.replace('_', "")
+	}
 }
 
 /// Builds a [`Term::Value`] from a [`u128`].
@@ -68,7 +106,7 @@ impl Term {
 				if let Some(var) = ctx.get(x) {
 					var.eval(ctx)
 				} else {
-					Err(format!("Variable '{}' not found", x))
+					Err(format!("Variable '{}' not found", x.deref()))
 				},
 		}
 	}
@@ -80,7 +118,7 @@ impl Term {
 	pub fn free_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::default(),
-			Self::Var(var) => Set::from([var.into()]),
+			Self::Var(var) => Set::from([var.clone().into()]),
 
 			Self::Value(_) => Set::default(),
 			Self::Mul(l, r) | Self::Add(l, r) =>
@@ -94,7 +132,7 @@ impl Term {
 	/// This is the inverse of [`free_vars`].
 	pub fn bound_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
-			Self::Var(var) if scope.get(var).is_some() => Set::from([var.into()]),
+			Self::Var(var) if scope.get(var).is_some() => Set::from([var.clone().into()]),
 			Self::Var(_var) => Set::default(),
 
 			Self::Value(_) => Set::default(),
@@ -143,26 +181,9 @@ impl Term {
 				}
 			},
 			Self::Value(val) => fmt_weight(*val),
-			Self::Var(var) => var.clone(),
+			Self::Var(var) => var.clone().into(),
 		}
 	}
-}
-
-/// This function is recursive to easier adopt changes.
-/// It assumes that increasing variables always correlate to increasing weights.
-/// We therefore only look at the corner where all variables are set to their `MAX` value.
-/// The better solution would be to calculate along all edges
-/// by setting all variables to `MIN` and `MAX`.
-/// Calculating along the whole plane should not be needed since we assume linear equations.
-/// TODO a check could be added to ensure that we are indeed dealing with linear equations.
-pub fn multivariadic_eval(f: &Term, scope: &mut Scope, value: u128) -> u128 {
-	let free_vars: Set<_> = f.free_vars(scope);
-	for var in free_vars {
-		scope.put_var(&var, val!(value));
-	}
-
-	let _eq = f.fmt_equation(scope);
-	f.clone().eval(scope).expect("Set all variables; qed")
 }
 
 impl fmt::Display for Term {

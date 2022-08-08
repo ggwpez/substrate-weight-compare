@@ -1,14 +1,103 @@
 <html>
+
 <head>
-	<title>
-		SWC-Web
-	</title>
+	<% include!("./header.stpl"); %>
+
+	<!-- Dropdown autocomplete input box -->
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+	<script src="/static/root.js"></script>
+	<link rel="stylesheet" href="/static/root.css">
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet" />
 </head>
+
 <body>
-	<h1>Substrate Weight Compare</h1>
-	This web endpoint is exposed by <a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank">SWC</a>.</br>
-	It allows to compare weight files of substrate compatible projects.</br>
-	</br>
-	The only exposed endpoint is currently: <a href="/compare">/compare</a>.
+	<!-- Loading animation, normally hidden -->
+	<div class="overlay"></div>
+	<div class="spanner">
+		<div class="loader"></div>
+	</div>
+
+	<!-- MultiStep Form -->
+	<div class="container-fluid" id="grad1">
+		<div class="row justify-content-center mt-0">
+			<div class="col-11 col-sm-9 col-md-7 col-lg-6 text-center p-0 mt-3 mb-2">
+				<div class="card px-0 pt-4 pb-0 mb-3" style="margin-top: 10rem">
+					<h2><strong>Set up a comparison</strong></h2>
+					<div class="row">
+						<div class="col-md-12 mx-0">
+							<form id="msform">
+								<!-- progressbar -->
+								<ul id="progressbar">
+									<li class="active" id="account"><strong>Repo</strong></li>
+									<li id="personal"><strong>First Commit</strong></li>
+									<li id="payment"><strong>Second Commit</strong></li>
+									<li id="confirm"><strong>Verify</strong></li>
+								</ul>
+								<!-- fieldsets -->
+								<fieldset>
+									<div class="form-card">
+										<h2 class="fs-title">Repository</h2>
+										<p>Please select a repository. There are <var><%= repos.len() %></var> available.</p>
+										<select class="form-control js-example-basic-single" id="repoSelect" style="width: 100%;">
+											<% for repo in repos { %>
+												<option value="<%= repo.to_lowercase() %>"><%= repo %></option>
+											<% } %>
+										</select>
+									</div>
+
+									<input type="button" name="next" class="next action-button" value="Next" />
+								</fieldset>
+								<fieldset>
+									<div class="form-card">
+										<h2 class="fs-title">First commit</h2>
+										<p>Please select the first commit hash, tag or branch that you would like to use as <i>baseline</i> for your comparison. You can <button type="button" class="btn btn-link" id="fetch">fetch</button> if you think that your branch is missing from this list. There are <var class="branchCount">?</var> available.</p>
+										<select class="form-control js-example-basic-single" id="firstSelect" style="width: 100%;">
+										</select>
+									</div>
+
+									<input type="button" name="previous" class="previous action-button-previous"
+										value="Back" />
+									<input type="button" name="next" class="next action-button" value="Next" />
+								</fieldset>
+								<fieldset>
+									<div class="form-card">
+										<h2 class="fs-title">Second Commit</h2>
+										<p>Please select the second branch that you would like to compare with. You can <button type="button" class="btn btn-link" id="fetch">fetch</button> if you think that your branch is missing from this list. There are <var class="branchCount">?</var> available.</p>
+										<select class="form-control js-example-basic-single" id="secondSelect" style="width: 100%;">
+										</select>
+									</div>
+
+									<input type="button" name="previous" class="previous action-button-previous"
+										value="Back" />
+									<input type="button" class="next action-button"
+										value="Confirm" />
+								</fieldset>
+								<fieldset>
+									<div class="form-card">
+										<h2 class="fs-title text-center">Verify</h2>
+										<p>Repository</p>
+										<input type="text" class="disabled" id="selectedRepo"/>
+										<p>First Commit</p>
+										<input type="text" class="disabled" id="selectedFirst"/>
+										<p>Second Commit</p>
+										<input type="text" class="disabled" id="selectedSecond"/>
+									</div>
+
+									<input type="button" name="previous" class="previous action-button-previous"
+											value="Back" />
+									<input type="button" id="bthPost" class="action-button"
+										value="Compare" />
+								</fieldset>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
+
 </html>

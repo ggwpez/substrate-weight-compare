@@ -2,31 +2,23 @@
 
 <html>
 	<head>
-		<title>SWC-Web</title>
 		<% include!("./header.stpl"); %>
 
-		<script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css"/>
+		<!-- Data tables -->
 		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.css"/>
-		
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
 		<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
 
-
-		<style>
-		<% include!("./table.css"); %>
-		</style>
-		<script>
-		<% include!("./table.js"); %>
-		</script>
+		<link rel="stylesheet" href="/static/table.css">
+		<script src="/static/table.js"></script>
 	</head>
 	<body>
-	<h3>
-		⚠️ This software is in development. Please reports bugs to <code>@oliver.tale-yazdi:matrix.parity.io</code> or <a href='https://github.com/ggwpez/substrate-weight-compare/issues/new' target='_blank'>here</a>.
-	</h3>
+	<div class="form-check form-switch">
+		<label class="form-check-label" for="lightSwitch"> Dark Mode </label>
+		<input class="form-check-input" type="checkbox" id="lightSwitch" />
+	</div>
+
 	</br>
 	<table id="config_table">
 		<tbody>
@@ -57,6 +49,14 @@
 				<td><input id="input_path_pattern" type="text" value="<%= args.path_pattern %>"></td>
 			</tr>
 			<tr>
+				<td><%- readme_link("Pallet") %></td>
+				<td><input id="input_pallet" type="text" value="<%= args.pallet.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Extrinsic") %></td>
+				<td><input id="input_extrinsic" type="text" value="<%= args.extrinsic.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+			</tr>
+			<tr>
 				<td><%- readme_link("Rel Threshold") %></td>
 				<td>
 				<div class="input-group">
@@ -81,14 +81,19 @@
 
 				<td>
 					<select id="select_method">
-						<option value="base"  <%- if args.method == CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="worst" <%- if args.method == CompareMethod::Worst { "selected" } else { "" } %>>Worst</option>
+						<option value="base"  <%- if args.method == swc_core::CompareMethod::Base { "selected" } else { "" } %>>Base</option>
+						<option value="guess-worst" <%- if args.method == swc_core::CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
+						<option value="exact-worst" <%- if args.method == swc_core::CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
 					</select>
 				</td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
-				<td><input id="checkbox_ignore_errors" type="checkbox" value="<%= args.path_pattern %>" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+				<td><input id="checkbox_ignore_errors" type="checkbox" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+			</tr>
+			<tr>
+				<td><%- readme_link("Git Pull") %></td>
+				<td><input id="checkbox_git_pull" type="checkbox" <%- if args.git_pull.unwrap_or(true) { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Cache") %> hit</td>
@@ -139,12 +144,10 @@
 				</td>
 
 				<td>
-					<%= change.change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.old) %>
+					<%- change.change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= change.change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()) %>
-					<%- code_link(&args.repo, &change.name, &change.file, &args.new) %>
+					<%- change.change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%= format!("{:?}", &change.change.scope) %>

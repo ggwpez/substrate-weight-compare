@@ -1,18 +1,20 @@
+use actix_files as fs;
 use actix_web::{
 	get,
 	http::header::{CacheControl, CacheDirective},
 	middleware,
 	middleware::Logger,
-	web, App, HttpRequest, HttpResponse, HttpServer,
+	web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
 use badge_maker::BadgeBuilder;
 use cached::proc_macro::cached;
 use clap::Parser;
 use dashmap::DashMap;
-use lazy_static::lazy_static;
+use lazy_static::{__Deref, lazy_static};
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use std::{path::PathBuf, process::Command};
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
@@ -22,11 +24,14 @@ use swc_core::{
 mod html;
 use html::*;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[clap(author, version(&VERSION[..]))]
 pub(crate) struct MainCmd {
 	#[clap(long = "root", short, default_value = "root/")]
 	pub root_path: PathBuf,
+
+	#[clap(long = "static", short, default_value = "web/static")]
+	pub static_path: PathBuf,
 
 	#[clap(long, multiple_values = true, default_value = "polkadot")]
 	pub repos: Vec<String>,
@@ -52,9 +57,12 @@ pub struct CompareArgs {
 	new: String,
 	repo: String,
 	path_pattern: String,
+	extrinsic: Option<String>,
+	pallet: Option<String>,
 	ignore_errors: bool,
 	threshold: u32,
 	unit: Unit,
+	git_pull: Option<bool>,
 	method: CompareMethod,
 }
 
@@ -68,13 +76,14 @@ lazy_static! {
 	///
 	/// Maps the name of the repo to its path.
 	static ref REPOS: DashMap<String, PathBuf> = DashMap::new();
+	static ref CONFIG: MainCmd = MainCmd::parse();
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
-	let cmd = MainCmd::parse();
+	let cmd = CONFIG.clone();
+	let static_path = cmd.static_path.into_os_string();
 
 	if cmd.repos.is_empty() {
 		return Err(std::io::Error::new(
@@ -93,14 +102,17 @@ async fn main() -> std::io::Result<()> {
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
 	info!("Listening to http://{}", endpoint);
 
-	let server = HttpServer::new(|| {
+	let server = HttpServer::new(move || {
 		App::new()
 			.wrap(middleware::Compress::default())
 			.wrap(Logger::new("%a %r %s %b %{Referer}i %Ts"))
+			.service(fs::Files::new("/static", &static_path).show_files_listing())
 			.service(compare)
 			.service(version_badge)
 			.service(version)
 			.service(root)
+			.service(branches)
+			.service(compare_mrs)
 	})
 	.workers(4);
 
@@ -120,7 +132,107 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn root() -> HttpResponse {
-	http_200(templates::Root::render())
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+
+	http_200(templates::Root::render(repos))
+}
+
+/// Returns supported repositories.
+#[get("/repos")]
+async fn repositories() -> Result<impl Responder> {
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+
+	#[derive(Serialize)]
+	struct Info {
+		repos: Vec<String>,
+	}
+
+	let obj = Info { repos };
+	Ok(web::Json(obj))
+}
+
+#[derive(Deserialize)]
+struct BranchArgs {
+	repo: String,
+	fetch: Option<bool>,
+}
+
+/// Returns the available branches for the repositories.
+#[get("/branches")]
+async fn branches(req: HttpRequest) -> Result<impl Responder> {
+	let args = web::Query::<BranchArgs>::from_query(req.query_string()).map_err(|e| {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse query: {}", e))
+	})?;
+
+	let path = REPOS.get(&args.repo).ok_or_else(|| {
+		std::io::Error::new(std::io::ErrorKind::Other, format!("Unknown repo '{}'", args.repo))
+	})?;
+	if args.fetch.unwrap_or_default() {
+		info!("Fetching branches for '{}'", &args.repo);
+		// Fetch all tags and branches from the repo by spawning a git command
+		// and parsing the output.
+		let output = Command::new("git")
+			.arg("fetch")
+			.arg("--all")
+			.arg("--prune")
+			.arg("--tags")
+			.current_dir(path.deref())
+			.output()
+			.map_err(|e| {
+				std::io::Error::new(
+					std::io::ErrorKind::Other,
+					format!("Failed to fetch branches: {}", e),
+				)
+			})?;
+		if !output.status.success() {
+			let err = String::from_utf8(output.stderr).unwrap();
+			log::error!("Failed to fetch branches: {}", &err);
+
+			return Err(std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Failed to fetch branches: {}", &err),
+			)
+			.into())
+		}
+	}
+
+	// Spawn a git command and return all branches
+	let output = Command::new("git")
+		.args(&["ls-remote", "--tags", "--heads"])
+		.current_dir(path.deref())
+		.output()?;
+	if !output.status.success() {
+		let err = String::from_utf8(output.stderr).unwrap();
+		log::error!("Failed to list branches: {}", &err);
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::Other,
+			format!("Failed to list branches: {}", &err),
+		)
+		.into())
+	}
+	let stdout = String::from_utf8_lossy(&output.stdout);
+	// Collect all branches and remove the leading refs/heads/
+	let branch = stdout
+		.lines()
+		// Some tags contain weird stuff like {} or ^, let's filter those out.
+		.filter(|l| !l.contains('{') && !l.contains('^'))
+		.map(|l| l.replace("refs/heads/", ""))
+		.map(|l| l.replace("refs/tags/", ""))
+		// Split at whitespace and use the first part as the branch name
+		// and the second as commit hash.
+		.map(|l| {
+			let splits = l.split_whitespace().collect::<Vec<&str>>();
+			(splits[1].to_string(), splits[0][..12].to_string())
+		})
+		.collect::<Vec<(String, String)>>();
+
+	#[derive(Serialize)]
+	struct Branches {
+		branch: Vec<(String, String)>,
+	}
+
+	let obj = Branches { branch };
+	Ok(web::Json(obj))
 }
 
 #[get("/compare")]
@@ -136,8 +248,16 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 		Ok(res) => HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(templates::Compare::render(&res.value, &args, &repos, res.was_cached)),
-		Err(e) => http_500(templates::Error::render(&e)),
+		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
+}
+
+#[derive(Deserialize)]
+struct MrArgs {}
+
+#[get("/release-mrs")]
+async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
+	http_200(templates::MRs::render())
 }
 
 /// Exposes version information for automatic deployments.
@@ -169,6 +289,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 	}
 }
 
+/// Returns a version badge in the style of <https://shields.io>.
 #[get("/version/badge")]
 async fn version_badge() -> HttpResponse {
 	let svg = BadgeBuilder::new()
@@ -190,7 +311,9 @@ async fn version_badge() -> HttpResponse {
 }
 
 #[cached(time = 600, result = true, sync_writes = true, with_cached_flag = true)]
-fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, String> {
+fn do_compare_cached(
+	args: CompareArgs,
+) -> Result<cached::Return<TotalDiff>, Box<dyn std::error::Error>> {
 	// Call get_mut to acquire an exclusive permit.
 	// Assumption tested in `dashmap_exclusive_permit_works`.
 	let repo = REPOS
@@ -198,13 +321,25 @@ fn do_compare_cached(args: CompareArgs) -> Result<cached::Return<TotalDiff>, Str
 		.ok_or(format!("Value '{}' is invalid for argument 'repo'.", &args.repo))?;
 
 	let (new, old) = (args.new.trim(), args.old.trim());
-	let (_thresh, unit, method, path_pattern, ignore_errors) =
-		(args.threshold, args.unit, args.method, args.path_pattern.trim(), args.ignore_errors);
+	let (_thresh, unit, method, path_pattern, ignore_errors, git_pull) = (
+		args.threshold,
+		args.unit,
+		args.method,
+		args.path_pattern.trim(),
+		args.ignore_errors,
+		args.git_pull.unwrap_or(true),
+	);
 
-	let params = CompareParams { method, ignore_errors, unit };
-	let mut diff = compare_commits(&repo, old, new, &params, path_pattern, 200)?;
-	let filter = FilterParams { threshold: args.threshold as f64, change: None, extrinsic: None };
-	diff = filter_changes(diff, &filter);
+	let params = CompareParams { method, ignore_errors, unit, git_pull };
+	let filter = FilterParams {
+		threshold: args.threshold as f64,
+		change: None,
+		pallet: args.pallet,
+		extrinsic: args.extrinsic,
+	};
+
+	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 200)?;
+	diff = filter_changes(diff, &filter)?;
 	sort_changes(&mut diff);
 
 	Ok(cached::Return::new(diff))

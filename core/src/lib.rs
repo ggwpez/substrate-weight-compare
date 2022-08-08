@@ -1,14 +1,15 @@
 //! Parse and compare weight Substrate weight files.
 
 use clap::Args;
-use git2::*;
+use fancy_regex::Regex;
 use git_version::git_version;
 use lazy_static::lazy_static;
 
-use regex::Regex;
 use std::{
 	cmp::Ordering,
+	collections::HashSet,
 	path::{Path, PathBuf},
+	process::Command,
 };
 use syn::{Expr, Item, Type};
 
@@ -22,11 +23,12 @@ mod test;
 
 use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, Extrinsic};
 use scope::Scope;
-use term::{multivariadic_eval, Term};
+use term::Term;
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
 	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--dirty", "--always"], fallback = "unknown"));
+
 	pub static ref VERSION_DIRTY: bool = {
 		VERSION.clone().contains("dirty")
 	};
@@ -96,6 +98,12 @@ pub struct CompareParams {
 
 	#[clap(long)]
 	pub ignore_errors: bool,
+
+	/// Do a 'git pull' after checking out the refname.
+	///
+	/// This ensures that you get the newest commit on a branch.
+	#[clap(long)]
+	pub git_pull: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Args)]
@@ -110,6 +118,9 @@ pub struct FilterParams {
 
 	#[clap(long, ignore_case = true, value_name = "REGEX")]
 	pub extrinsic: Option<String>,
+
+	#[clap(long, alias("file"), ignore_case = true, value_name = "REGEX")]
+	pub pallet: Option<String>,
 }
 
 pub fn compare_commits(
@@ -117,15 +128,16 @@ pub fn compare_commits(
 	old: &str,
 	new: &str,
 	params: &CompareParams,
+	filter: &FilterParams,
 	path_pattern: &str,
 	max_files: usize,
-) -> Result<TotalDiff, String> {
+) -> Result<TotalDiff, Box<dyn std::error::Error>> {
 	if path_pattern.contains("..") {
-		return Err("Path pattern cannot contain '..'".to_string())
+		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = checkout(repo, old) {
-		return Err(format!("{:?}", err))
+	if let Err(err) = checkout(repo, old, params.git_pull) {
+		return Err(format!("{:?}", err).into())
 	}
 	let pattern = format!("{}/{}", repo.display(), path_pattern);
 	let paths = list_files(pattern.clone(), max_files)?;
@@ -138,8 +150,8 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = checkout(repo, new) {
-		return Err(format!("{:?}", err))
+	if let Err(err) = checkout(repo, new, params.git_pull) {
+		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(pattern, max_files)?;
 	// Ignore any parsing errors.
@@ -149,12 +161,11 @@ pub fn compare_commits(
 		parse_files_in_repo(repo, &paths)?
 	};
 
-	let diff = compare_files(olds, news, params.method);
-	Ok(diff)
+	compare_files(olds, news, params.method, filter, params.ignore_errors)
 }
 
 /// Check out a repo to a given *commit*, *branch* or *tag*.
-pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
+/*pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 	let repo = Repository::open(path)?;
 
 	let (object, reference) = repo.revparse_ext(refname)?;
@@ -166,16 +177,47 @@ pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
 		// this is a commit, not a reference
 		None => repo.set_head_detached(object.id()),
 	}
+}*/
+
+/// Checkout and maybe pull the given refname in the given repo.
+pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
+	// Checkout
+	log::info!("Checking out {} in {}", refname, path.display());
+	let mut cmd = Command::new("git");
+	cmd.arg("-C").arg(path).arg("checkout").arg(refname);
+	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
+	if !output.status.success() {
+		return Err(format!(
+			"Could not checkout: {}",
+			String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".into())
+		))
+	}
+
+	if !pull {
+		return Ok(())
+	}
+	log::info!("Pulling {}", refname);
+	// Pull
+	let mut cmd = Command::new("git");
+	cmd.arg("-C").arg(path).arg("pull");
+	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
+	if !output.status.success() {
+		return Err(format!("Could not pull: {}", output.status))
+	}
+
+	Ok(())
 }
 
-fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, String> {
+fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
 	let files = glob::glob(&regex).map_err(|e| format!("Invalid path pattern: {:?}", e))?;
 	let files = files
 		.collect::<Result<Vec<_>, _>>()
 		.map_err(|e| format!("Path pattern error: {:?}", e))?;
 	let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files))
+		return Err(
+			format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into()
+		)
 	} else {
 		Ok(files)
 	}
@@ -187,9 +229,9 @@ pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.
 	Base,
 	/// The worst case weight by setting all variables to 100.
-	///
-	/// Assumes
-	Worst,
+	GuessWorst,
+
+	ExactWorst,
 }
 
 #[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -205,7 +247,8 @@ impl std::str::FromStr for CompareMethod {
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
 			"base" => Ok(CompareMethod::Base),
-			"worst" => Ok(CompareMethod::Worst),
+			"guess-worst" => Ok(CompareMethod::GuessWorst),
+			"exact-worst" => Ok(CompareMethod::ExactWorst),
 			_ => Err(format!("Unknown method: {}", s)),
 		}
 	}
@@ -213,7 +256,7 @@ impl std::str::FromStr for CompareMethod {
 
 impl CompareMethod {
 	pub fn variants() -> Vec<&'static str> {
-		vec!["base", "worst"]
+		vec!["base", "guess-worst", "exact-worst"]
 	}
 }
 
@@ -261,25 +304,101 @@ impl RelativeChange {
 	}
 }
 
-pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMethod) -> TermChange {
-	let mut max = 0;
-	// Default substrate storage weights
-	let scope = scope::Scope::empty().with_storage_weights(val!(25_000), val!(100_000));
+pub fn compare_extrinsics(
+	old: Option<&Extrinsic>,
+	new: Option<&Extrinsic>,
+	method: CompareMethod,
+) -> Result<TermChange, String> {
+	let mut scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
+	extend_scoped_components(old, new, method, &mut scope)?;
+	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
+	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
 
-	if method == CompareMethod::Worst {
-		// Use 100 until <https://github.com/paritytech/substrate/issues/11397> is done.
-		max = 100;
+	if !old.map_or(true, |e| e.term.free_vars(&scope).is_empty()) {
+		panic!(
+			"Free variable where there should be none: {}::{} {:?}",
+			name,
+			&pallet,
+			old.unwrap().term.free_vars(&scope)
+		);
+	}
+	assert!(new.map_or(true, |e| e.term.free_vars(&scope).is_empty()));
+
+	compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, &scope)
+}
+
+// TODO handle case that both have (different) ranges.
+pub(crate) fn extend_scoped_components(
+	a: Option<&Extrinsic>,
+	b: Option<&Extrinsic>,
+	method: CompareMethod,
+	scope: &mut Scope,
+) -> Result<(), String> {
+	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
+	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
+	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
+
+	let ra = a.map(|ext| ext.clone().comp_ranges.unwrap_or_default());
+	let rb = b.map(|ext| ext.clone().comp_ranges.unwrap_or_default());
+
+	let (pallet, extrinsic) = a.or(b).map(|e| (e.pallet.clone(), e.name.clone())).unwrap();
+
+	// Calculate a concrete value for each component.
+	let values = frees
+		.iter()
+		.map(|component| {
+			let v = match (
+				ra.as_ref().and_then(|r| r.get(component)),
+				rb.as_ref().and_then(|r| r.get(component)),
+			) {
+				// Only one extrinsic has a component range? Good
+				(Some(r), None) | (None, Some(r)) => Ok(match method {
+					CompareMethod::Base => r.min,
+					CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
+				}),
+				// Both extrinsics have the same range? Good
+				(Some(ra), Some(rb)) if ra == rb => Ok(match method {
+					CompareMethod::Base => ra.min,
+					CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
+				}),
+				// Both extrinsics have different ranges? Bad, use the min/max
+				(Some(ra), Some(rb)) => Ok(match method {
+					CompareMethod::Base => ra.min.min(rb.min),
+					CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
+				}),
+				// No ranges? Bad, just guess 100
+				(None, None) => match method {
+					CompareMethod::Base => Ok(0),
+					CompareMethod::GuessWorst => Ok(100),
+					CompareMethod::ExactWorst => Err(format!(
+						"No range for component {} of extrinsic {}::{}",
+						component, pallet, extrinsic
+					)),
+				},
+			};
+			(component, v)
+		})
+		.collect::<Vec<_>>();
+
+	for (component, value) in values {
+		scope.put_var(component, val!(value?));
 	}
 
-	let mut old_scope = scope.clone();
-	let old_v = old.map(|t| multivariadic_eval(t, &mut old_scope, max));
-	let mut new_scope = scope;
-	let new_v = new.map(|t| multivariadic_eval(t, &mut new_scope, max));
+	Ok(())
+}
+
+pub fn compare_terms(
+	old: Option<&Term>,
+	new: Option<&Term>,
+	method: CompareMethod,
+	scope: &Scope,
+) -> Result<TermChange, String> {
+	let old_v = old.map(|t| t.eval(scope)).transpose()?;
+	let new_v = new.map(|t| t.eval(scope)).transpose()?;
 	let change = RelativeChange::new(old_v, new_v);
 	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
 
-	let merged = old_scope.merge(new_scope);
-	TermChange {
+	Ok(TermChange {
 		old: old.cloned(),
 		old_v,
 		new: new.cloned(),
@@ -287,37 +406,51 @@ pub fn compare_terms(old: Option<&Term>, new: Option<&Term>, method: CompareMeth
 		change,
 		percent: p,
 		method,
-		scope: merged,
-	}
+		scope: scope.clone(),
+	})
 }
 
 pub fn compare_files(
 	olds: Vec<Extrinsic>,
 	news: Vec<Extrinsic>,
 	method: CompareMethod,
-) -> TotalDiff {
+	filter: &FilterParams,
+	ignore_errors: bool, // TODO this is hacky...
+) -> Result<TotalDiff, Box<dyn std::error::Error>> {
+	let ext_regex = filter.extrinsic.as_ref().map(|s| Regex::new(s)).transpose()?;
+	let pallet_regex = filter.pallet.as_ref().map(|s| Regex::new(s)).transpose()?;
+
 	let mut diff = TotalDiff::new();
 	let old_names = olds.iter().cloned().map(|e| (e.pallet, e.name));
 	let new_names = news.iter().cloned().map(|e| (e.pallet, e.name));
 	let names = old_names.chain(new_names).collect::<std::collections::BTreeSet<_>>();
 
 	for (pallet, extrinsic) in names {
-		let new = news
-			.iter()
-			.find(|&n| n.name == extrinsic && n.pallet == pallet)
-			.map(|e| &e.term);
-		let old = olds
-			.iter()
-			.find(|&n| n.name == extrinsic && n.pallet == pallet)
-			.map(|e| &e.term);
+		if !pallet_regex.as_ref().map_or(true, |r| r.is_match(&pallet).unwrap_or_default()) {
+			// TODO add "skipped" or "ignored" result type.
+			continue
+		}
+		if !ext_regex.as_ref().map_or(true, |r| r.is_match(&extrinsic).unwrap_or_default()) {
+			continue
+		}
 
-		let change = compare_terms(old, new, method);
-		let change = ExtrinsicDiff { name: extrinsic.clone(), file: pallet.clone(), change };
+		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
+		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 
+		let change = compare_extrinsics(old, new, method);
+		if change.is_err() && ignore_errors {
+			log::warn!("Error in {}", &pallet);
+			continue
+		}
+		let change = ExtrinsicDiff {
+			name: extrinsic.clone(),
+			file: pallet.clone(),
+			change: change.unwrap(),
+		};
 		diff.push(change);
 	}
 
-	diff
+	Ok(diff)
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {
@@ -337,11 +470,14 @@ pub fn sort_changes(diff: &mut TotalDiff) {
 	});
 }
 
-pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
-	// Parse the extrinsic regex
-	let regex = params.extrinsic.as_ref().map(|s| Regex::new(s).unwrap());
-	diff.iter()
-		.filter(|extrinsic| regex.as_ref().map_or(true, |r| r.is_match(&extrinsic.name)))
+pub fn filter_changes(
+	diff: TotalDiff,
+	params: &FilterParams,
+) -> Result<TotalDiff, Box<dyn std::error::Error>> {
+	// Note: the pallet and extrinsic are already filtered in compare_files.
+
+	Ok(diff
+		.iter()
 		.filter(|extrinsic| params.included(&extrinsic.change.change))
 		.filter(|extrinsic| match extrinsic.change.change {
 			RelativeChange::Changed if extrinsic.change.percent.abs() < params.threshold => false,
@@ -350,7 +486,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 			_ => true,
 		})
 		.cloned()
-		.collect()
+		.collect())
 }
 
 impl RelativeChange {

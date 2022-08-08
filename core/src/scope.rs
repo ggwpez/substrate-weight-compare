@@ -1,12 +1,13 @@
 //! Provides a scope for evaluating [`Term`]s.
 
 use crate::{term::Term, val, WEIGHT_PER_NANOS};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap as Map;
 
 pub const STORAGE_READ_VAR: &str = "READ";
 pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Scope {
 	vars: Map<String, Term>,
 }
@@ -42,6 +43,18 @@ impl Scope {
 
 	pub fn merge(self, other: Self) -> Self {
 		Self { vars: self.vars.into_iter().chain(other.vars).collect() }
+	}
+
+	pub fn extend(&mut self, other: Self) {
+		self.vars.extend(other.vars);
+	}
+
+	pub fn len(&self) -> usize {
+		self.vars.len()
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.vars.is_empty()
 	}
 }
 
