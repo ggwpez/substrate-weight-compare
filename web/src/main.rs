@@ -255,7 +255,7 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 #[derive(Deserialize)]
 struct MrArgs {}
 
-#[get("/release-mrs")]
+#[get("/compare-mr")]
 async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
 	http_200(templates::MRs::render())
 }
