@@ -100,14 +100,14 @@ $(document).ready(function () {
 					console.log("Opening: " + url);
 					$.getJSON("/branches?repo=" + repo + "&fetch=true", function (d) {
 						loading(false);
-						window.open(url);
+						window.location.href = url;
 					}).done(function () {
 						populate_branches(branches[repo]);
 						loading(false);
 					});					
 				});
 				/*$(row).click(function() {
-					window.open(mr.html_url);
+					window.location.href = mr.html_url;
 				});*/
 			})(mr);
 		}
