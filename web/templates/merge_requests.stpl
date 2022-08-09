@@ -36,8 +36,8 @@
 
 	<div class="container-fluid">
 		<p class="text-center">
-			Please double-click on the merge request that you would like to compare.<br>
-			<var id="highlighted">0</var> merge requests are <span style="color: lightgreen;">highlighted</span> as potentially interesting.<br>
+			Please <b>double-click</b> on the merge request that you would like to compare.<br>
+			<var id="highlighted">0</var> merge requests are <span style="color: seagreen;">highlighted</span> as potentially interesting.<br>
 		</p>
 	</div>
 
@@ -45,7 +45,7 @@
 	<thead>
 		<tr>
 			<th>Name</th>
-			<th>Creator</th>
+			<th>Author</th>
 
 			<th>Head</th>
 			<th>Base</th>
