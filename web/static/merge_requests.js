@@ -106,9 +106,9 @@ $(document).ready(function () {
 						loading(false);
 					});					
 				});
-				$(row).click(function() {
+				/*$(row).click(function() {
 					window.open(mr.html_url, '_blank');
-				});
+				});*/
 			})(mr);
 		}
 
