@@ -22,9 +22,9 @@ function should_highlight(mr) {
 	//	(mr.head.ref.toLowerCase().includes("weight") ||
 	//	 mr.base.ref.toLowerCase().includes("weight"));
 
-	var user = ["chevdor", "coderobe", "ggwpez"].includes(mr.user.login);
+	//var user = ["chevdor", "coderobe", "ggwpez"].includes(mr.user.login);
 
-	return text && user;
+	return text;
 }
 
 // Expose URL params as vars.
