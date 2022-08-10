@@ -13,15 +13,15 @@
   </a>
 </p>
 
-This project parses and analyzes Substrate Weight files. The results can be analyzed in the terminal or in the browser.
+This project parses and compares Substrate Weight files. It helps tremendously with the review process of large Weight diffs. The results can be displayed conveniently in the CLI or browser.
 
 # Abstract
 
 Manually comparing Substrate Weight files is a task where humans falter and computers excel.  
 When you want to know what I am talking about; take a look at [this diff](https://github.com/paritytech/polkadot/pull/5098/files).  
-Now tell me which lines are problematic and which are fine 😈 Does not look appealing, does it? 
+Now tell me which lines are problematic and which are fine 😈? Does not look appealing, does it? 
 
-This is where *SWC* comes to the rescue. It takes the old and the new version and compare all extrinsics.  
+This is where *SWC* comes to the rescue: It takes the old and the new version and compares all extrinsics.  
 The human-friendly output looks like this:  
 
 ![](.assets/compare%20mr%20output.png)
