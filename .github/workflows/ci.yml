@@ -162,7 +162,7 @@ jobs:
           fetch-depth: 1
           repository: paritytech/cumulus
           path: repos/cumulus
-          ref: 1fd71c7845d6c28c532795ec79106d959dd1fe30
+          ref: 530a0aaf0c8a422f708415873d1366ae4c8ea456
 
       - uses: actions-rs/cargo@v1
         name: Cumulus Tests (version locked)
