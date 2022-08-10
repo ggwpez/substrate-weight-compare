@@ -94,8 +94,13 @@ async fn main() -> std::io::Result<()> {
 	for repo_name in cmd.repos {
 		let path = cmd.root_path.join(&repo_name);
 		REPOS.insert(repo_name.clone(), path.clone());
-		// Check if the directory exists.
-		let _repo = git2::Repository::open(&path).unwrap();
+		// Check if the repo directory exists.
+		if !path.exists() {
+			return Err(std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Repo directory '{}' does not exist", path.display()),
+			));
+		}
 		info!("Exposing repo '{}' at '{}'", &repo_name, path.display());
 	}
 
