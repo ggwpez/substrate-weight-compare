@@ -113,6 +113,7 @@ async fn main() -> std::io::Result<()> {
 			.service(root)
 			.service(branches)
 			.service(compare_mrs)
+			.service(compare_commit)
 	})
 	.workers(4);
 
@@ -132,6 +133,14 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn root() -> HttpResponse {
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+
+	http_200(templates::Root::render(repos))
+}
+
+// TODO
+#[get("/compare-commit")]
+async fn compare_commit() -> HttpResponse {
 	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
 
 	http_200(templates::Root::render(repos))
