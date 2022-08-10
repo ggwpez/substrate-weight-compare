@@ -255,9 +255,11 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 #[derive(Deserialize)]
 struct MrArgs {}
 
+/// This endpoint is a two-in one. If no repo is passed,
 #[get("/compare-mr")]
 async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
-	http_200(templates::MRs::render())
+	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+	http_200(templates::MRs::render(repos))
 }
 
 /// Exposes version information for automatic deployments.

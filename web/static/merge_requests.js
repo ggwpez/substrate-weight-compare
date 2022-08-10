@@ -13,18 +13,14 @@ function loading(yes) {
 }
 
 function should_highlight(mr) {
-	// Does the title or the description contain "weight"?
-	var text =
-		(new String(mr.title).toLowerCase().includes("weight") ||
-	     new String(mr.body).toLowerCase().includes("weight"));
+	// Does the title contain "weight"?
+	var text = new String(mr.title).toLowerCase().includes("weight");
 
-	//var branch =
-	//	(mr.head.ref.toLowerCase().includes("weight") ||
-	//	 mr.base.ref.toLowerCase().includes("weight"));
+	var branch =
+		(mr.head.ref.toLowerCase().includes("weight") ||
+		 mr.base.ref.toLowerCase().includes("weight"));
 
-	//var user = ["chevdor", "coderobe", "ggwpez"].includes(mr.user.login);
-
-	return text;
+	return text || branch;
 }
 
 // Expose URL params as vars.
@@ -41,6 +37,31 @@ $.param = function(name, def){
 		return def;
 	}
 	return res;
+}
+
+// Takes query name and value to redirect to.
+function url_redirect(arg, value) {
+	if (value === null || value === '' || value === undefined) {
+		console.warn(`url_redirect: invalid value ${value} for arg ${arg}`);
+		return;
+	}
+	var url = new URL(window.location);
+	url.searchParams.set(arg, value);
+	console.log("Redirecting to: " + url.toString());
+
+	window.location.href = url.toString();
+}
+
+function init_ui() {
+	// Init the selectors.
+	const selectors = ["repo"]
+	for (const selector of selectors) {
+		const id = `#select_${selector}`;
+		// Redirect on change.
+		$(id).change(function() {
+			url_redirect(selector, $(this).val());
+		});
+	}
 }
 
 $(document).ready(function () {
@@ -61,12 +82,14 @@ $(document).ready(function () {
 
 	var owner = $.param('owner', 'paritytech');
 	var repo = $.param('repo', 'polkadot');
+	$('#select_repo').val(repo);
+	init_ui();
 
 	var highlighted = 0;
 	// Request the GitHub API to list all merge requests
 	// for the given repository and owner.
 	$.getJSON(`https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30&sort=updated&direction=desc`, function(data) {
-	// There is a mock for testing:
+	// Use this pre-downloaded data for testing:
 	//$.getJSON(`static/dummy-mrs.json`, function(data) {
 		// Sort the data by the last push date. This is kind of bad but the table
 		// somehow ignores the data-sort attribute if I add via JS...

@@ -18,7 +18,9 @@ pub mod templates {
 
 	#[derive(TemplateOnce)]
 	#[template(path = "merge_requests.stpl")]
-	pub struct MRs {}
+	pub struct MRs {
+		repos: Vec<String>,
+	}
 
 	#[derive(TemplateOnce)]
 	#[template(path = "compare.stpl")]
@@ -43,8 +45,8 @@ pub mod templates {
 	}
 
 	impl MRs {
-		pub fn render() -> String {
-			let ctx = Self {};
+		pub fn render(repos: Vec<String>) -> String {
+			let ctx = Self { repos };
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}

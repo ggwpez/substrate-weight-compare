@@ -32,7 +32,7 @@
 					<select id="select_repo">
 						<% for repo in repos.iter() { %>
 							<option value=<%= repo %> <%- if &args.repo == repo { "selected" } else { "" } %>><%= repo %></option>
-						<% } %>630f149745f880dd1164fb223489f69ea59c350f
+						<% } %>
 					</select>
 				</td>
 			</tr>
