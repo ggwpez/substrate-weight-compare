@@ -81,10 +81,10 @@ jobs:
           cd repos/polkadot
           git init
           git remote add origin https://github.com/paritytech/polkadot
-          git fetch origin 190515004445a60a54711547765baf7e5bcb5e6d
+          git fetch origin 4863d0a33a4a3534236f76abb5b1dc91751c6c34
           git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
           git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
-          git checkout 190515004445a60a54711547765baf7e5bcb5e6d
+          git checkout 4863d0a33a4a3534236f76abb5b1dc91751c6c34
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (version locked)
@@ -120,6 +120,56 @@ jobs:
           command: test
           args: --release --all-targets --features version-locked-tests,polkadot "polkadot::"
 
+  substrate_version_locked:
+    name: "Substrate (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Checkout Substrate
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: paritytech/substrate
+          path: repos/substrate
+          ref: 1fd71c7845d6c28c532795ec79106d959dd1fe30
+
+      - uses: actions-rs/cargo@v1
+        name: Substrate Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,substrate "substrate::"
+
+  cumulus_version_locked:
+    name: "Cumulus (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Checkout Cumulus
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: paritytech/cumulus
+          path: repos/cumulus
+          ref: 1fd71c7845d6c28c532795ec79106d959dd1fe30
+
+      - uses: actions-rs/cargo@v1
+        name: Cumulus Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,cumulus "cumulus::"
+
   moonbeam_version_locked:
     name: "Moonbeam (version locked)"
     needs: basic
@@ -137,7 +187,7 @@ jobs:
           fetch-depth: 1
           repository: PureStake/moonbeam
           path: repos/moonbeam
-          ref: 9665bd46a19ef4cc4ad1327f360150d7743dfd76
+          ref: 54e40e2aa3f1f41a45a7df067a6ac6a0256cda6a
 
       - uses: actions-rs/cargo@v1
         name: Moonbeam Tests (version locked)
@@ -162,7 +212,7 @@ jobs:
             fetch-depth: 1
             repository: ComposableFi/composable
             path: repos/composable
-            ref: 178f6f017888cd9270c275f29c0ea22956001cdd
+            ref: 6f407847041ea170db8ddfb4770e0492e253db1f
 
         - uses: actions-rs/cargo@v1
           name: ComposableFI Tests (version locked)

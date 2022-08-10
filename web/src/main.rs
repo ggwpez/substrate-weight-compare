@@ -99,7 +99,7 @@ async fn main() -> std::io::Result<()> {
 			return Err(std::io::Error::new(
 				std::io::ErrorKind::Other,
 				format!("Repo directory '{}' does not exist", path.display()),
-			));
+			))
 		}
 		info!("Exposing repo '{}' at '{}'", &repo_name, path.display());
 	}

@@ -10,9 +10,9 @@ use crate::integration_test;
 integration_test!(
 	substrate,
 	"substrate",
-	"4fd77a94e1aa516c7eb9f6a0428f81637fe87f07",
-	1399,
-	41,
+	"1fd71c7845d6c28c532795ec79106d959dd1fe30",
+	1438,
+	43,
 	2,
 	2,
 	vec!["**/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
@@ -24,9 +24,9 @@ integration_test!(
 integration_test!(
 	polkadot,
 	"polkadot",
-	"568169b41aea59a54ab8cfa23c31e84a26708280",
-	804,
-	138,
+	"4863d0a33a4a3534236f76abb5b1dc91751c6c34",
+	653,
+	135,
 	10,
 	10,
 	vec![
@@ -41,11 +41,26 @@ integration_test!(
 );
 
 integration_test!(
+	cumulus,
+	"cumulus",
+	"530a0aaf0c8a422f708415873d1366ae4c8ea456",
+	198,
+	59,
+	12,
+	12,
+	vec![
+		"**/weights/*.rs", "**/src/weights.rs",
+	]; exclude=vec![],
+	vec!["**/*db_weights.rs"],
+	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]
+);
+
+integration_test!(
 	moonbeam,
 	"moonbeam",
-	"9665bd46a19ef4cc4ad1327f360150d7743dfd76",
-	195,
-	6,
+	"54e40e2aa3f1f41a45a7df067a6ac6a0256cda6a",
+	234,
+	7,
 	0,
 	0,
 	vec!["**/weights.rs", "pallets/parachain-staking/src/traits.rs"]; exclude=vec![],
@@ -56,16 +71,14 @@ integration_test!(
 integration_test!(
 	composable,
 	"composable",
-	"178f6f017888cd9270c275f29c0ea22956001cdd",
-	344,
-	79 - 2,
+	"6f407847041ea170db8ddfb4770e0492e253db1f",
+	442,
+	87,
 	0,
 	0,
-	vec!["**/weights.rs", "**/weights/*.rs"]; exclude=vec![
-		// Implementing the weight directly on the trait is not supported.
-		"frame/liquidations/src/weights.rs",
-		// This file uses `u64` instead of `Weight`...
-		"runtime/dali/src/weights/dutch_auction.rs"],
+	vec!["**/weights.rs", "**/weights/*.rs", "**/weight.rs",
+		"frame/ibc/ibc-trait/src/lib.rs"];
+	exclude=vec![],
 	vec![],
 	vec![]
 );
