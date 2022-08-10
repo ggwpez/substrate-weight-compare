@@ -19,6 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Rust Version Info
+        run: |
+          cargo version
+          rustc --version
+          cargo clippy --version
+
       - name: Format
         run: cargo +nightly fmt --all -- --check
 
