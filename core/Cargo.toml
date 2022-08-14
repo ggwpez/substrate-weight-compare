@@ -18,6 +18,7 @@ version-locked-tests = []
 polkadot = []
 substrate = []
 cumulus = []
+acala = []
 moonbeam = []
 composable = []
 

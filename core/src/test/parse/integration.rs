@@ -56,6 +56,28 @@ integration_test!(
 );
 
 integration_test!(
+	acala,
+	"acala",
+	"c64bb09242bbb8db46ff64a97f30331a3006875e",
+	380,
+	105,
+	0,
+	0,
+	vec![
+		"runtime/*/src/weights/*.rs",
+		"modules/*/src/weights.rs",
+		// Should be possible to remove in the future.
+		"modules/homa-validator-list/src/lib.rs",
+	]; exclude=vec![
+		"**/mod.rs",
+		// This file is just empty, wtf?
+		"runtime/common/src/weights/lib.rs",
+	],
+	vec![],
+	vec![]
+);
+
+integration_test!(
 	moonbeam,
 	"moonbeam",
 	"54e40e2aa3f1f41a45a7df067a6ac6a0256cda6a",
