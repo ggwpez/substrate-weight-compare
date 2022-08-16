@@ -26,7 +26,6 @@ serde = { version = "1.0.137", features = [ "derive" ] }
 sailfish = "0.4.0"
 badge-maker = "0.2.1"
 dashmap = "5.3.3"
-git2 = "0.14.4"
 cached = "0.34.0"
 
 [dev-dependencies]

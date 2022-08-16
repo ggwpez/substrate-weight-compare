@@ -25,8 +25,8 @@ macro_rules! integration_test {
 				parse::ParsedFile,
 			};
 
-			/// These tests only work on Moonbeam master and are therefore not run by default.
-			/// They must possibly be updated on every Moonbeam update.
+			/// These tests only work on master and are therefore not run by default.
+			/// They must possibly be updated on every master update.
 			mod version_locked {
 				use super::*;
 
@@ -42,7 +42,7 @@ macro_rules! integration_test {
 				/// The number of database weight files in the repo.
 				const NUM_OVERHEAD_WEIGHT_FILES: usize = $num_overhead_files;
 
-				/// Ensure that Moonbeam master is checked out.
+				/// Ensure that master is checked out.
 				///
 				/// Other tests could have messed it up.
 				fn init() {
@@ -60,7 +60,7 @@ macro_rules! integration_test {
 					assert_eq!(rust_files().len(), NUM_RUST_FILES);
 				}
 
-				/// Asserts that the correct number of weight files is found.
+				/// Asserts that the correct number of pallet weight files is found.
 				#[test]
 				#[serial]
 				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
@@ -69,7 +69,7 @@ macro_rules! integration_test {
 					assert_eq!(pallet_files().len(), NUM_PALLET_WEIGHT_FILES);
 				}
 
-				/// Asserts that the correct number of weight files is found.
+				/// Asserts that the correct number of storage weight files is found.
 				#[test]
 				#[serial]
 				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
@@ -78,7 +78,7 @@ macro_rules! integration_test {
 					assert_eq!(storage_files().len(), NUM_STORAGE_WEIGHT_FILES);
 				}
 
-				/// Asserts that the correct number of weight files is found.
+				/// Asserts that the correct number of overhead weight files is found.
 				#[test]
 				#[serial]
 				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
@@ -123,7 +123,7 @@ macro_rules! integration_test {
 
 			// Setup code
 
-			/// Returns all weight files from a moonbeam repository.
+			/// Returns all weight files from the repository.
 			#[fixture]
 			fn pallet_files() -> Vec<PathBuf> {
 				let pattern: Vec<&str> = $pallet_patterns;
@@ -143,7 +143,7 @@ macro_rules! integration_test {
 					.collect()
 			}
 
-			/// Returns all weight files from a moonbeam repository.
+			/// Returns all weight files from the repository.
 			#[fixture]
 			fn storage_files() -> Vec<PathBuf> {
 				let pattern: Vec<&str> = $db_patterns;
@@ -157,9 +157,7 @@ macro_rules! integration_test {
 					.collect()
 			}
 
-			// FIXME remove moonbeam
-
-			/// Returns all weight files from a moonbeam repository.
+			/// Returns all weight files from the repository.
 			#[fixture]
 			fn overhead_files() -> Vec<PathBuf> {
 				let pattern: Vec<&str> = $overhead_patterns;
@@ -173,14 +171,14 @@ macro_rules! integration_test {
 					.collect()
 			}
 
-			/// Returns the number of rust files in the Moonbeam repository.
+			/// Returns the number of rust files in the repository.
 			#[fixture]
 			fn rust_files() -> Vec<PathBuf> {
 				let root = format!("{}/**/*.rs", root().to_string_lossy());
 				glob(&root).unwrap().map(|f| f.unwrap()).collect()
 			}
 
-			/// Returns the root directory to the Moonbeam git repository.
+			/// Returns the root directory to the git repository.
 			fn root() -> PathBuf {
 				PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("repos").join($repo)
 			}

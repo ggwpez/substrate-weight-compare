@@ -164,21 +164,6 @@ pub fn compare_commits(
 	compare_files(olds, news, params.method, filter, params.ignore_errors)
 }
 
-/// Check out a repo to a given *commit*, *branch* or *tag*.
-/*pub fn checkout(path: &Path, refname: &str) -> Result<(), git2::Error> {
-	let repo = Repository::open(path)?;
-
-	let (object, reference) = repo.revparse_ext(refname)?;
-	repo.checkout_tree(&object, None)?;
-
-	match reference {
-		// gref is an actual reference like branches or tags
-		Some(gref) => repo.set_head(gref.name().ok_or_else(|| git2::Error::from_str("No name"))?),
-		// this is a commit, not a reference
-		None => repo.set_head_detached(object.id()),
-	}
-}*/
-
 /// Checkout and maybe pull the given refname in the given repo.
 pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
 	// Checkout
