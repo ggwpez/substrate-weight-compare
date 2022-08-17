@@ -31,12 +31,6 @@ jobs:
       - name: Format
         run: cargo +nightly fmt --all -- --check
 
-      #- uses: actions-rs/cargo@v1
-      #  name: Check
-      #  with:
-      #    command: check
-      #    args: --locked --release --all-targets --all-features
-
       - uses: actions-rs/cargo@v1
         name: Build
         with:
