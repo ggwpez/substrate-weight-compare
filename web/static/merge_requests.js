@@ -1,16 +1,4 @@
-import { default_params } from './default_params.js';
-
-// TODO move this in to a common.js
-function loading(yes) {
-    console.debug("Loading: " + yes);
-    if (yes) {
-        $("div.spanner").addClass("show");
-        $("div.overlay").addClass("show");
-    } else {
-        $("div.spanner").removeClass("show");
-        $("div.overlay").removeClass("show");
-    }
-}
+import { default_params, loading } from './common.js';
 
 function should_highlight(mr) {
 	// Does the title contain "weight"?

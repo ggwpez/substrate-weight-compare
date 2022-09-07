@@ -151,12 +151,13 @@ Note: Not all repositories are deployed to the *SWC* web service.
 ## Path Pattern
 
 Uses the [glob](https://docs.rs/glob/latest/glob/) crate to match files in the repository path with the given pattern.  
-Here are some examples for Polkadot:  
-- Weight files of all runtimes: `runtime/*/src/weights/**/*.rs`
-- All Kusama weight files: `runtime/kusama/src/weights/**/*.rs`
+Here are some examples that the web interface uses. These do not catch *all* files, which is a bug:  
+- Substrate: `frame/*/src/weights.rs`
+- Polkadot: `runtime/*/src/weights/**/*.rs`
+- Cumulus: `parachains/runtimes/assets/*/src/weights/**/*.rs`
 
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
-The `mod.rs` file is *always* excluded.  
+The `mod.rs` file is automatically excluded.  
 
 ## Pallet
 

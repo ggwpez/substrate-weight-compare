@@ -1,8 +1,4 @@
-const path_pattern_presets = {
-    "substrate": "frame/*/src/weights.rs",
-    "polkadot": "runtime/**/src/weights/**/*.rs",
-	"cumulus": "parachains/runtimes/assets/*/src/weights/*.rs",
-};
+import { path_pattern_presets } from "./common.js";
 
 // Local storage keys
 const lsk_selected_repo = "selected-repo";

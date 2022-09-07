@@ -11,7 +11,8 @@
 		<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
 
 		<link rel="stylesheet" href="/static/table.css">
-		<script src="/static/table.js"></script>
+		<script type="module" src="/static/table.js"></script>
+		<link rel="stylesheet" href="/static/loading_anim.css">
 	</head>
 	<body>
 	<div class="form-check form-switch">

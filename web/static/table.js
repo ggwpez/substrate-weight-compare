@@ -1,3 +1,5 @@
+import { loading } from './common.js';
+
 // Expose URL params as vars.
 //
 // Example: $.urlParam('var_name');
@@ -24,6 +26,7 @@ function url_redirect(arg, value) {
 }
 
 $(document).ready(function () {
+	loading(true);
 	// Setup the data table
 	var table = $('#sort_me').DataTable({
 		paging: false,
@@ -83,4 +86,5 @@ $(document).ready(function () {
 			url_redirect(checkbox, $(this).is(":checked"));
 		});
 	}
+	loading(false);
 });
