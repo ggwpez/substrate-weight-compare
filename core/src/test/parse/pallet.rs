@@ -122,3 +122,24 @@ fn parse_expression_works(#[case] input: &str, #[case] want: Term) {
 	// Eval does not panic
 	let _ = got.eval(&Scope::empty());
 }
+
+// V1.5 syntax
+#[rstest]
+// Basic arithmetic.
+#[case("Weight::from_ref_time(123 as u64)", val!(123))]
+// All together.
+#[case("Weight::from_ref_time(123 as u64)
+	// Standard Error: 1_000
+	.saturating_add(Weight::from_ref_time(7 as u64).saturating_mul(s as u64))
+	.saturating_add(T::DbWeight::get().reads(12 as u64))
+	.saturating_add(T::DbWeight::get().writes(12 as u64))
+	.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(s as u64)))",
+	add!(add!(add!(add!(val!(123), mul!(val!(7), var!("s"))), reads!(val!(12))), writes!(val!(12))), writes!(mul!(val!(1), var!("s")))))]
+fn v1_5_parse_expression_works(#[case] input: &str, #[case] want: Term) {
+	let expr: Expr = syn::parse_str(input).unwrap();
+	let got = parse_expression(&expr).unwrap();
+	assert_eq!(want, got);
+
+	// Eval does not panic
+	let _ = got.eval(&Scope::empty());
+}

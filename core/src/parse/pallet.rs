@@ -7,8 +7,8 @@ use std::{
 	path::{Path, PathBuf},
 };
 use syn::{
-	punctuated::Punctuated, Attribute, Expr, ExprMethodCall, ImplItem, ImplItemMethod, Item, Lit,
-	ReturnType, Stmt, Token, Type,
+	punctuated::Punctuated, Attribute, Expr, ExprCall, ExprMethodCall, ImplItem, ImplItemMethod,
+	Item, Lit, ReturnType, Stmt, Token, Type,
 };
 
 use crate::{
@@ -263,6 +263,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
 			let ident = path_to_string(&p.path, Some("::"));
 			Ok(Term::Var(ident.into()))
 		},
+		Expr::Call(call) => parse_call(call),
 		_ => Err("Unexpected expression".into()),
 	}
 }
@@ -306,6 +307,16 @@ fn validate_db_func(func: &Expr) -> Result<()> {
 	}
 }
 
+// V1.5 feature
+fn parse_call(call: &ExprCall) -> Result<Term> {
+	let name = function_name(call)?;
+	if name.ends_with("from_ref_time") {
+		parse_args(&call.args)
+	} else {
+		Err(format!("Unexpected call: {}", name).into())
+	}
+}
+
 // Example: receiver.saturating_mul(5 as Weight)
 fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
 	let name: &str = &call.method.to_string();
@@ -341,5 +352,12 @@ pub(crate) fn lit_to_value(lit: &Lit) -> u128 {
 	match lit {
 		Lit::Int(i) => i.base10_digits().parse().expect("Lit must be a valid int; qed"),
 		_ => unreachable!(),
+	}
+}
+
+fn function_name(call: &ExprCall) -> Result<String> {
+	match call.func.as_ref() {
+		Expr::Path(p) => Ok(path_to_string(&p.path, Some("::"))),
+		_ => Err("Unexpected function".into()),
 	}
 }
