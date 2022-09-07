@@ -195,7 +195,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
 			println!("Trying to parse {} files...", files.len());
-			let parsed = try_parse_files(&files);
+			let parsed = parse_files(&files)?;
 			println!("Parsed {} files successfully", parsed.len());
 		},
 	}
