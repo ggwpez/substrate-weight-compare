@@ -40,7 +40,12 @@ $(document).ready(function () {
             heightMatch: 'none'
         },
 		// Default sort by relative change worst to best.
-		aaSorting: [[ 4, "desc" ]]
+		aaSorting: [[ 4, "desc" ]],
+		// PDF export button is nice, but it needs context.
+		dom: 'Bfrtip',
+        buttons: [
+            'print'
+        ]
 	});
 
 	// Select the row from the URL anchor - if any.
