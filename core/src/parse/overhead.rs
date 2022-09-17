@@ -59,7 +59,7 @@ fn handle_item(item: &Item) -> Result<Weight, String> {
 /// Handles the content of the `parameter_types!` macro.
 ///
 /// Example:
-/// ```nocompile
+/// ```nocompileBlockExecutionWeight
 /// pub const BlockExecutionWeight: Weight = 5_481_991 * WEIGHT_PER_NANOS;
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
@@ -72,6 +72,7 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
 	}
 	let weight: Term = match def.expr.as_ref() {
 		Expr::Binary(bin) => bin.try_into(),
+		Expr::MethodCall(mcall) => super::pallet::parse_method_call(mcall),
 		_ => Err("Unexpected const value".into()),
 	}?;
 

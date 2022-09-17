@@ -125,9 +125,9 @@ fn parse_expression_works(#[case] input: &str, #[case] want: Term) {
 
 // V1.5 syntax
 #[rstest]
-// Basic arithmetic.
+#[case("Weight::zero()", val!(0))]
+#[case("Weight::zero().saturating_mul(Weight::from_ref_time(123))", mul!(val!(0), val!(123)))]
 #[case("Weight::from_ref_time(123 as u64)", val!(123))]
-// All together.
 #[case("Weight::from_ref_time(123 as u64)
 	// Standard Error: 1_000
 	.saturating_add(Weight::from_ref_time(7 as u64).saturating_mul(s as u64))
@@ -135,7 +135,7 @@ fn parse_expression_works(#[case] input: &str, #[case] want: Term) {
 	.saturating_add(T::DbWeight::get().writes(12 as u64))
 	.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(s as u64)))",
 	add!(add!(add!(add!(val!(123), mul!(val!(7), var!("s"))), reads!(val!(12))), writes!(val!(12))), writes!(mul!(val!(1), var!("s")))))]
-fn v1_5_parse_expression_works(#[case] input: &str, #[case] want: Term) {
+fn parse_expression_works_v15(#[case] input: &str, #[case] want: Term) {
 	let expr: Expr = syn::parse_str(input).unwrap();
 	let got = parse_expression(&expr).unwrap();
 	assert_eq!(want, got);

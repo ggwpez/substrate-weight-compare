@@ -19,6 +19,7 @@ polkadot = []
 substrate = []
 cumulus = []
 acala = []
+astar = []
 moonbeam = []
 composable = []
 

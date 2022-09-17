@@ -7,6 +7,14 @@ members = [
 	"web"
 ]
 
+
+[profile.test-release]
+inherits = "release"
+lto = "off"
+opt-level = 3
+incremental = true
+debug-asserts = true
+
 [profile.production]
 inherits = "release"
 lto = "fat"

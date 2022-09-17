@@ -101,12 +101,14 @@ macro_rules! integration_test {
 				for f in &rust_files {
 					match $crate::parse::try_parse_file(Path::new("."), f){
 						None => if pallet_files.contains(f) {
-							assert!(false, "File {:?} could not be parsed as pallet", f)
+							let err = $crate::parse::pallet::parse_file(f).unwrap_err();
+							assert!(false, "File {:?} could not be parsed as pallet: {:?}", f, err)
 						} else if overhead_files.contains(f) {
 							let err = $crate::parse::overhead::parse_file(f).unwrap_err();
 							assert!(false, "File {:?} could not be parsed as overhead: {:?}", f, err)
 						} else if storage_files.contains(f) {
-							assert!(false, "File {:?} could not be parsed as storage", f)
+							let err = $crate::parse::storage::parse_file(f).unwrap_err();
+							assert!(false, "File {:?} could not be parsed as storage: {:?}", f, err)
 						},
 						Some(ParsedFile::Pallet(_)) => if !pallet_files.contains(f) {
 							assert!(false, "File {:?} was parsed as pallet, but it was not expected to be", f)

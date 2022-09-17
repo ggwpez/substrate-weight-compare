@@ -91,6 +91,21 @@ integration_test!(
 );
 
 integration_test!(
+	astar,
+	"astar",
+	"66641ba747c467c1ad29c51e38d015747ebba7d2",
+	47,
+	7,
+	0,
+	0,
+	vec!["**/weights.rs", "**/weights/*.rs", "**/weight.rs",
+		"frame/ibc/ibc-trait/src/lib.rs"];
+	exclude=vec![],
+	vec![],
+	vec![]
+);
+
+integration_test!(
 	composable,
 	"composable",
 	"6f407847041ea170db8ddfb4770e0492e253db1f",
