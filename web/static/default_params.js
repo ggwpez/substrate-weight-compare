@@ -1,7 +1,7 @@
 const path_pattern_presets = {
     "substrate": "frame/*/src/weights.rs",
     "polkadot": "runtime/**/src/weights/**/*.rs",
-	"cumulus": "parachains/runtimes/assets/*/src/weights/*.rs",
+	"cumulus": "parachains/runtimes/**/src/weights/*.rs",
 };
 
 export function default_params(repo) {
