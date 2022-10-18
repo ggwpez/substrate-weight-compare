@@ -337,28 +337,43 @@ fn print(msg: String, verbose: bool) {
 	}
 }
 
-pub fn color_percent(p: Percent, change: &RelativeChange, no_color: bool) -> String {
-	use ansi_term::Colour;
+enum AnsiColor {
+	White,
+	Red,
+	Green,
+}
 
+pub fn color_percent(p: Percent, change: &RelativeChange, no_color: bool) -> String {
 	match change {
 		RelativeChange::Unchanged => "Unchanged".to_string(),
-		RelativeChange::Added => maybe_color(Colour::Red, "Added", no_color),
-		RelativeChange::Removed => maybe_color(Colour::Green, "Removed", no_color),
+		RelativeChange::Added => maybe_color(AnsiColor::Red, "Added", no_color),
+		RelativeChange::Removed => maybe_color(AnsiColor::Green, "Removed", no_color),
 		RelativeChange::Changed => {
 			let s = format!("{:+5.2}", p);
 			match p {
-				x if x < 0.0 => maybe_color(Colour::Green, s, no_color),
-				x if x > 0.0 => maybe_color(Colour::Red, s, no_color),
-				_ => maybe_color(Colour::White, s, no_color),
+				x if x < 0.0 => maybe_color(AnsiColor::Green, s, no_color),
+				x if x > 0.0 => maybe_color(AnsiColor::Red, s, no_color),
+				_ => maybe_color(AnsiColor::White, s, no_color),
 			}
 		},
 	}
 }
 
-fn maybe_color<S: Into<String>>(clr: ansi_term::Colour, msg: S, no_color: bool) -> String {
+impl AnsiColor {
+	fn paint(&self, s: &str) -> String {
+		match self {
+			AnsiColor::White => format!("\x1b[37m{}\x1b[0m", s),
+			AnsiColor::Red => format!("\x1b[31m{}\x1b[0m", s),
+			AnsiColor::Green => format!("\x1b[32m{}\x1b[0m", s),
+		}
+	}
+}
+
+fn maybe_color<S: Into<String>>(clr: AnsiColor, msg: S, no_color: bool) -> String {
+	let msg = msg.into();
 	if no_color {
-		msg.into()
+		msg
 	} else {
-		clr.paint(msg.into()).to_string()
+		clr.paint(&msg).to_string()
 	}
 }
