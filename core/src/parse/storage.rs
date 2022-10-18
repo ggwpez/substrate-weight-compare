@@ -21,7 +21,7 @@ pub struct Weights {
 	pub weights: RWs,
 }
 
-/// Multiplies a [`Term`] with the [`Term::StorageRead`] constant.
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_READ_VAR`] constant.
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
@@ -29,7 +29,7 @@ macro_rules! reads {
 	};
 }
 
-/// Multiplies a [`Term`] with the [`Term::StorageWrite`] constant.
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_WRITE_VAR`] constant.
 #[macro_export]
 macro_rules! writes {
 	($a:expr) => {

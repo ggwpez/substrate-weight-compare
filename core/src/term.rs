@@ -114,7 +114,7 @@ impl Term {
 	/// Returns the variables of the term that are not part of [`crate::scope::Scope`].
 	///
 	/// Lambda calculus calls such a variable *free*.
-	/// This is the inverse of [`bound_vars`].
+	/// This is the inverse of [`Self::bound_vars`].
 	pub fn free_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::default(),
@@ -129,7 +129,7 @@ impl Term {
 	/// Returns the variables of the term that are part of [`crate::scope::Scope`].
 	///
 	/// Lambda calculus calls such a variable *bound*.
-	/// This is the inverse of [`free_vars`].
+	/// This is the inverse of [`Self::free_vars`].
 	pub fn bound_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::from([var.clone().into()]),

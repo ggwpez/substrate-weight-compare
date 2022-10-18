@@ -1,5 +1,7 @@
 //! Parse and compare weight Substrate weight files.
 
+#![deny(rustdoc::broken_intra_doc_links)]
+
 use clap::Args;
 use fancy_regex::Regex;
 use git_version::git_version;
