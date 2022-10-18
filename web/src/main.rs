@@ -1,3 +1,5 @@
+#![allow(dead_code)] // The caching crate produces "unused" functions…
+
 use actix_files as fs;
 use actix_web::{
 	get,
@@ -354,7 +356,7 @@ fn do_compare_cached(
 		extrinsic: args.extrinsic,
 	};
 
-	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 200)?;
+	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 300)?;
 	diff = filter_changes(diff, &filter)?;
 	sort_changes(&mut diff);
 
