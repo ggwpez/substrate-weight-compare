@@ -45,6 +45,17 @@ swc --version
 swc-web --version
 ```
 
+# Compilation
+
+The [rust-toolchain.toml](./rust-toolchain.toml) defines the exact Rust version that the code was tested with.  
+The formatting rules are defined in [rustfmt.toml](./rustfmt.toml).
+
+```sh
+git clone https://github.com/ggwpez/substrate-weight-compare
+
+cd substrate-weight-compare/
+cargo build --profile production
+```
 # Example: Web Interface
 
 Assuming you have a Substrate compatible repository checked out in the parent directory:
@@ -154,7 +165,7 @@ Uses the [glob](https://docs.rs/glob/latest/glob/) crate to match files in the r
 Here are some examples that the web interface uses. These do not catch *all* files, which is a bug:  
 - Substrate: `frame/*/src/weights.rs`
 - Polkadot: `runtime/*/src/weights/**/*.rs`
-- Cumulus: `parachains/runtimes/assets/*/src/weights/**/*.rs`
+- Cumulus: `**/weights/**/*.rs`
 
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
 The `mod.rs` file is automatically excluded.  
