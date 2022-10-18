@@ -13,7 +13,7 @@ inherits = "release"
 lto = "off"
 opt-level = 3
 incremental = true
-debug-asserts = true
+debug-assertions = true
 
 [profile.production]
 inherits = "release"
