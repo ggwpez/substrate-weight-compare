@@ -93,7 +93,7 @@ integration_test!(
 integration_test!(
 	astar,
 	"astar",
-	"66641ba747c467c1ad29c51e38d015747ebba7d2",
+	"94a7b3f87b33f64d66123ee9acc8769c25696aa0",
 	47,
 	7,
 	0,

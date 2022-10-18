@@ -214,8 +214,8 @@ jobs:
         with:
           fetch-depth: 1
           repository: AstarNetwork/Astar
-          path: repos/acala
-          ref: c64bb09242bbb8db46ff64a97f30331a3006875e
+          path: repos/astar
+          ref: 94a7b3f87b33f64d66123ee9acc8769c25696aa0
 
       - uses: actions-rs/cargo@v1
         name: Astar Tests (version locked)
