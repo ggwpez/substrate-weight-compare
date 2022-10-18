@@ -312,7 +312,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 async fn version_badge() -> HttpResponse {
 	let svg = BadgeBuilder::new()
 		.label("Deployed")
-		.message(&*swc_core::VERSION)
+		.message(&swc_core::VERSION)
 		.color_parse("#33B5E5")
 		.build()
 		.expect("Must build svg")

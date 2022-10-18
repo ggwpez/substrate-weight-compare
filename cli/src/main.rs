@@ -98,7 +98,7 @@ struct ParseFilesCmd {
 }
 
 /// Parameters for modifying the output representation.
-#[derive(Debug, Clone, PartialEq, Args)]
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct FormatParams {
 	/// Set the format of the output.
 	#[clap(long, value_name  ="FORMAT", default_value = "human", ignore_case = true,
@@ -374,6 +374,6 @@ fn maybe_color<S: Into<String>>(clr: AnsiColor, msg: S, no_color: bool) -> Strin
 	if no_color {
 		msg
 	} else {
-		clr.paint(&msg).to_string()
+		clr.paint(&msg)
 	}
 }

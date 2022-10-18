@@ -22,7 +22,7 @@ pub type Result<T> = std::result::Result<T, String>;
 pub type ComponentName = String;
 
 /// Inclusive range of a component.
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub struct ComponentRange {
 	pub min: u32,
 	pub max: u32,

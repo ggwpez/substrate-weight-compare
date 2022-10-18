@@ -3,7 +3,7 @@ use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
 use crate::{parse::path_to_string, term::Term};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Db {
 	Parity,
 	Rocks,

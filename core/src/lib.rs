@@ -75,7 +75,7 @@ pub enum RelativeChange {
 }
 
 /// Parameters for modifying the benchmark behaviour.
-#[derive(Debug, Clone, PartialEq, Args)]
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct CompareParams {
 	#[clap(
 		long,
@@ -200,9 +200,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn s
 		.map_err(|e| format!("Path pattern error: {:?}", e))?;
 	let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(
-			format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into()
-		)
+		Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into())
 	} else {
 		Ok(files)
 	}
