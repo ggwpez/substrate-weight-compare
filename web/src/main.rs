@@ -355,7 +355,7 @@ fn do_compare_cached(
 	};
 
 	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 200)?;
-	diff = filter_changes(diff, &filter)?;
+	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
 	Ok(cached::Return::new(diff))

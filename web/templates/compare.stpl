@@ -102,6 +102,20 @@
 		</tbody>
 	</table>
 	</br>
+	<% let errors = diff.iter().filter_map(|c| c.error()).collect::<Vec<_>>(); if !errors.is_empty() { %>
+		<p>
+			<button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false" aria-controls="collapseErrors">
+				<%- errors.len() %> errors when comparing the calls.
+			</button>
+		</p>
+		<div class="collapse" id="collapseErrors">
+			<div class="card card-body text-white bg-dark">
+				<% for err in errors { %>
+					<%- format!("{}", err) %><br>
+				<% } %>
+			</div>
+		</div>
+	<% } %>
 	<table id="sort_me" class="display table">
 	<thead>
 		<tr>
@@ -119,38 +133,37 @@
 		</tr>
 	</thead>
 	<tbody>
-		<% for change in diff.iter() { %>
-
-			<tr id=<%- format!("\"{}.{}\"", &change.file, &change.name) %>>
+		<% for (info, change) in diff.iter().filter_map(|c| c.term().map(|t| (c, t))) { %>
+			<tr id=<%- format!("\"{}.{}\"", &info.file, &info.name) %>>
 				<td>
-					<%= change.file %>
+					<%= info.file %>
 				</td>
 				<td>
-					<%= change.name %>
-					<sup><a href=<%- format!("\"#{}.{}\"", &change.file, &change.name) %>>🔗</a></sup>
-				</td>
-
-				<td data-order='<%- change.change.old_v.unwrap_or_default() %>'>
-					<%= change.change.old_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
-				</td>
-				<td data-order='<%- change.change.new_v.unwrap_or_default() %>'>
-					<%= change.change.new_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
-				</td>
-				<td data-order='<%- order_percent(&change.change) %>'>
-					<%- html_color_percent(change.change.percent, change.change.change) %>
-				</td>
-				<td data-order='<%- order_abs(&change.change) %>'>
-					<%- html_color_abs(&change.change, args.unit) %>
+					<%= info.name %>
+					<sup><a href=<%- format!("\"#{}.{}\"", &info.file, &info.name) %>>🔗</a></sup>
 				</td>
 
+				<td data-order='<%- change.old_v.unwrap_or_default() %>'>
+					<%= change.old_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
+				</td>
+				<td data-order='<%- change.new_v.unwrap_or_default() %>'>
+					<%= change.new_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
+				</td>
+				<td data-order='<%- order_percent(change) %>'>
+					<%- html_color_percent(change.percent, change.change) %>
+				</td>
+				<td data-order='<%- order_abs(change) %>'>
+					<%- html_color_abs(change, args.unit) %>
+				</td>
+
 				<td>
-					<%- change.change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &info.name, &info.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%- change.change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &change.name, &change.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= format!("{:?}", &change.change.scope) %>
+					<%= format!("{:?}", &change.scope) %>
 				</td>
 			</tr>
 		<% } %>

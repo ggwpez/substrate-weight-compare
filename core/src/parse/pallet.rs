@@ -313,7 +313,7 @@ fn parse_call(call: &ExprCall) -> Result<Term> {
 	if name.ends_with("from_ref_time") {
 		parse_args(&call.args)
 	} else {
-		Err(format!("Unexpected call: {}", name).into())
+		Err(format!("Unexpected call: {}", name))
 	}
 }
 
