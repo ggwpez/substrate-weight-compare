@@ -162,35 +162,53 @@ pub fn compare_commits(
 	};
 
 	compare_files(olds, news, params.method, filter, params.ignore_errors)
+pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
+	// fetch the single branch
+	log::info!("Fetching branch {}", refname);
+	if !is_commit(refname) {
+		let output = Command::new("git")
+			.arg("fetch")
+			.arg("origin")
+			.arg(refname)
+			.current_dir(path)
+			.output()
+			.map_err(|e| format!("Failed to fetch branch: {:?}", e))?;
+		if !output.status.success() {
+			return Err(format!(
+				"Failed to fetch branch: {}",
+				String::from_utf8_lossy(&output.stderr)
+			))
+		}
+	}
+	// hard reset
+	let output = if is_commit(refname) {
+		log::info!("Resetting to branch {}", refname);
+		Command::new("git")
+			.arg("reset")
+			.arg("--hard")
+			.arg(format!("{}", refname))
+			.current_dir(path)
+			.output()
+	} else {
+		log::info!("Resetting to branch origin/{}", refname);
+		Command::new("git")
+			.arg("reset")
+			.arg("--hard")
+			.arg(format!("origin/{}", refname))
+			.current_dir(path)
+			.output()
+	}
+	.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
+
+	if !output.status.success() {
+		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)))
+	}
+	Ok(())
 }
 
-/// Checkout and maybe pull the given refname in the given repo.
-pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
-	// Checkout
-	log::info!("Checking out {} in {}", refname, path.display());
-	let mut cmd = Command::new("git");
-	cmd.arg("-C").arg(path).arg("checkout").arg(refname);
-	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
-	if !output.status.success() {
-		return Err(format!(
-			"Could not checkout: {}",
-			String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".into())
-		))
-	}
-
-	if !pull {
-		return Ok(())
-	}
-	log::info!("Pulling {}", refname);
-	// Pull
-	let mut cmd = Command::new("git");
-	cmd.arg("-C").arg(path).arg("pull");
-	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
-	if !output.status.success() {
-		return Err(format!("Could not pull: {}", output.status))
-	}
-
-	Ok(())
+/// Tries to guess whether a refname is a commit hash or not.
+fn is_commit(refname: &str) -> bool {
+	refname.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
