@@ -205,25 +205,33 @@ pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
 			))
 		}
 	}
-	// hard reset
-	let output = if is_commit(refname) {
-		log::info!("Resetting to branch {}", refname);
-		Command::new("git")
-			.arg("reset")
-			.arg("--hard")
-			.arg(refname)
-			.current_dir(path)
-			.output()
+	// try to reset with remote...
+	log::info!("Resetting to origin/{}", refname);
+	let output = Command::new("git")
+		.arg("reset")
+		.arg("--hard")
+		.arg(format!("origin/{}", refname))
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
+
+	if !output.status.success() {
+		log::warn!(
+			"Failed to reset to: origin/{} - fallback",
+			String::from_utf8_lossy(&output.stderr)
+		)
 	} else {
-		log::info!("Resetting to branch origin/{}", refname);
-		Command::new("git")
-			.arg("reset")
-			.arg("--hard")
-			.arg(format!("origin/{}", refname))
-			.current_dir(path)
-			.output()
+		return Ok(())
 	}
-	.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
+	// Try resetting without remote.
+	log::info!("Fallback: Resetting to {}", refname);
+	let output = Command::new("git")
+		.arg("reset")
+		.arg("--hard")
+		.arg(refname)
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
 
 	if !output.status.success() {
 		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)))
