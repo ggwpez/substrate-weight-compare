@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 use actix_files as fs;
 use actix_web::{
 	get,
