@@ -173,8 +173,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			let news =
 				if params.ignore_errors { try_parse_files(&new) } else { parse_files(&new)? };
 
-			let mut diff = compare_files(olds, news, params.method, &filter, params.ignore_errors)?;
-			diff = filter_changes(diff, &filter)?;
+			let mut diff = compare_files(olds, news, params.method, &filter)?;
+			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
 			print_changes(diff, cmd.verbose, format, params.unit)?;
 		},
@@ -189,7 +189,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		})) => {
 			let mut diff =
 				compare_commits(&repo, &old, &new, &params, &filter, &path_pattern, usize::MAX)?;
-			diff = filter_changes(diff, &filter)?;
+			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
 			print_changes(diff, cmd.verbose, format, params.unit)?;
 		},
@@ -239,38 +239,28 @@ fn print_changes_csv(
 	}
 	output.push('\n');
 
-	for change in per_extrinsic.iter() {
+	for (info, change) in per_extrinsic.iter().filter_map(|p| p.term().map(|t| (p, t))) {
 		let mut row = format!(
 			"{},{},{},{},{},",
-			change.file.clone(),
-			change.name.clone(),
-			change.change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
-			change.change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
-			color_percent(change.change.percent, &change.change.change, format.no_color),
+			info.file.clone(),
+			info.name.clone(),
+			change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
+			change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
+			color_percent(change.percent, &change.change, format.no_color),
 		);
 
 		if format.print_terms {
 			write!(
 				row,
 				"{},",
-				change
-					.change
-					.old
-					.as_ref()
-					.map(|t| format!("{}", t))
-					.unwrap_or_else(|| "-".into())
+				change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into())
 			)?;
 			write!(
 				row,
 				"{},",
-				change
-					.change
-					.new
-					.as_ref()
-					.map(|t| format!("{}", t))
-					.unwrap_or_else(|| "-".into())
+				change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into())
 			)?;
-			row.push_str(&format!("{:?}", &change.change.scope).replace(',', " "));
+			row.push_str(&format!("{:?}", &change.scope).replace(',', " "));
 		}
 		row.push('\n');
 		output.push_str(&row);
@@ -298,30 +288,20 @@ fn print_changes_human(
 	}
 	table.set_header(header);
 
-	for change in per_extrinsic.iter() {
+	for (info, change) in per_extrinsic.iter().filter_map(|p| p.term().map(|t| (p, t))) {
 		let mut row = vec![
-			change.file.clone(),
-			change.name.clone(),
-			change.change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
-			change.change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
-			color_percent(change.change.percent, &change.change.change, format.no_color),
+			info.file.clone(),
+			info.name.clone(),
+			change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
+			change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
+			color_percent(change.percent, &change.change, format.no_color),
 		];
 
 		if format.print_terms {
 			row.extend(vec![
-				change
-					.change
-					.old
-					.as_ref()
-					.map(|t| format!("{}", t))
-					.unwrap_or_else(|| "-".into()),
-				change
-					.change
-					.new
-					.as_ref()
-					.map(|t| format!("{}", t))
-					.unwrap_or_else(|| "-".into()),
-				format!("{:?}", &change.change.scope),
+				change.old.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()),
+				change.new.as_ref().map(|t| format!("{}", t)).unwrap_or_else(|| "-".into()),
+				format!("{:?}", &change.scope),
 			]);
 		}
 		table.add_row(row);

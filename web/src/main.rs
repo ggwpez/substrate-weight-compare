@@ -16,7 +16,10 @@ use lazy_static::{__Deref, lazy_static};
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, process::Command};
+use std::{
+	path::{Path, PathBuf},
+	process::Command,
+};
 
 use swc_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
@@ -104,6 +107,13 @@ async fn main() -> std::io::Result<()> {
 			))
 		}
 		info!("Exposing repo '{}' at '{}'", &repo_name, path.display());
+	}
+	// check that static_path is a dir
+	if !Path::new(&static_path).is_dir() {
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::Other,
+			format!("Web root path '{:?}' is not a directory", static_path),
+		))
 	}
 
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
@@ -357,7 +367,7 @@ fn do_compare_cached(
 	};
 
 	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 300)?;
-	diff = filter_changes(diff, &filter)?;
+	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
 	Ok(cached::Return::new(diff))

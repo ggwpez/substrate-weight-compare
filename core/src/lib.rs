@@ -48,7 +48,30 @@ pub struct ExtrinsicDiff {
 	pub name: ExtrinsicName,
 	pub file: String,
 
-	pub change: TermChange,
+	pub change: TermDiff,
+}
+
+#[derive(Clone)]
+pub enum TermDiff {
+	Changed(TermChange),
+	/// There was an error while comparing the old to the new version.
+	Failed(String),
+}
+
+impl ExtrinsicDiff {
+	pub fn term(&self) -> Option<&TermChange> {
+		match &self.change {
+			TermDiff::Changed(change) => Some(change),
+			TermDiff::Failed(_) => None,
+		}
+	}
+
+	pub fn error(&self) -> Option<&String> {
+		match &self.change {
+			TermDiff::Changed(_) => None,
+			TermDiff::Failed(err) => Some(err),
+		}
+	}
 }
 
 #[derive(Clone)]
@@ -138,7 +161,7 @@ pub fn compare_commits(
 		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = checkout(repo, old, params.git_pull) {
+	if let Err(err) = reset(repo, old) {
 		return Err(format!("{:?}", err).into())
 	}
 	let pattern = format!("{}/{}", repo.display(), path_pattern);
@@ -152,7 +175,7 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = checkout(repo, new, params.git_pull) {
+	if let Err(err) = reset(repo, new) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(pattern, max_files)?;
@@ -163,36 +186,64 @@ pub fn compare_commits(
 		parse_files_in_repo(repo, &paths)?
 	};
 
-	compare_files(olds, news, params.method, filter, params.ignore_errors)
+	compare_files(olds, news, params.method, filter)
 }
 
-/// Checkout and maybe pull the given refname in the given repo.
-pub fn checkout(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
-	// Checkout
-	log::info!("Checking out {} in {}", refname, path.display());
-	let mut cmd = Command::new("git");
-	cmd.arg("-C").arg(path).arg("checkout").arg(refname);
-	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
-	if !output.status.success() {
-		return Err(format!(
-			"Could not checkout: {}",
-			String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".into())
-		))
+pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
+	// fetch the single branch
+	log::info!("Fetching branch {}", refname);
+	if !is_commit(refname) {
+		let output = Command::new("git")
+			.arg("fetch")
+			.arg("origin")
+			.arg(refname)
+			.current_dir(path)
+			.output()
+			.map_err(|e| format!("Failed to fetch branch: {:?}", e))?;
+		if !output.status.success() {
+			return Err(format!(
+				"Failed to fetch branch: {}",
+				String::from_utf8_lossy(&output.stderr)
+			))
+		}
 	}
+	// try to reset with remote...
+	log::info!("Resetting to origin/{}", refname);
+	let output = Command::new("git")
+		.arg("reset")
+		.arg("--hard")
+		.arg(format!("origin/{}", refname))
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
 
-	if !pull {
+	if !output.status.success() {
+		log::warn!(
+			"Failed to reset to: origin/{} - fallback",
+			String::from_utf8_lossy(&output.stderr)
+		)
+	} else {
 		return Ok(())
 	}
-	log::info!("Pulling {}", refname);
-	// Pull
-	let mut cmd = Command::new("git");
-	cmd.arg("-C").arg(path).arg("pull");
-	let output = cmd.output().map_err(|err| format!("{:?}", err))?;
-	if !output.status.success() {
-		return Err(format!("Could not pull: {}", output.status))
-	}
+	// Try resetting without remote.
+	log::info!("Fallback: Resetting to {}", refname);
+	let output = Command::new("git")
+		.arg("reset")
+		.arg("--hard")
+		.arg(refname)
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
 
+	if !output.status.success() {
+		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)))
+	}
 	Ok(())
+}
+
+/// Tries to guess whether a refname is a commit hash or not.
+fn is_commit(refname: &str) -> bool {
+	refname.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
@@ -356,7 +407,7 @@ pub(crate) fn extend_scoped_components(
 					CompareMethod::Base => Ok(0),
 					CompareMethod::GuessWorst => Ok(100),
 					CompareMethod::ExactWorst => Err(format!(
-						"No range for component {} of extrinsic {}::{}",
+						"No range for component {} of call {}::{} - use GuessWorst instead!",
 						component, pallet, extrinsic
 					)),
 				},
@@ -400,7 +451,6 @@ pub fn compare_files(
 	news: Vec<Extrinsic>,
 	method: CompareMethod,
 	filter: &FilterParams,
-	ignore_errors: bool, // TODO this is hacky...
 ) -> Result<TotalDiff, Box<dyn std::error::Error>> {
 	let ext_regex = filter.extrinsic.as_ref().map(|s| Regex::new(s)).transpose()?;
 	let pallet_regex = filter.pallet.as_ref().map(|s| Regex::new(s)).transpose()?;
@@ -422,56 +472,54 @@ pub fn compare_files(
 		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 
-		let change = compare_extrinsics(old, new, method);
-		if change.is_err() && ignore_errors {
-			log::warn!("Error in {}", &pallet);
-			continue
-		}
-		let change = ExtrinsicDiff {
-			name: extrinsic.clone(),
-			file: pallet.clone(),
-			change: change.unwrap(),
+		let change = match compare_extrinsics(old, new, method) {
+			Err(err) => {
+				log::warn!("Parsing failed {}: {:?}", &pallet, err);
+				TermDiff::Failed(err)
+			},
+			Ok(change) => TermDiff::Changed(change),
 		};
-		diff.push(change);
+
+		diff.push(ExtrinsicDiff { name: extrinsic.clone(), file: pallet.clone(), change });
 	}
 
 	Ok(diff)
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {
-	diff.sort_by(|a, b| {
-		let ord = a.change.change.cmp(&b.change.change).reverse();
-		if ord == Ordering::Equal {
-			if a.change.percent > b.change.percent {
-				Ordering::Greater
-			} else if a.change.percent == b.change.percent {
-				Ordering::Equal
+	diff.sort_by(|a, b| match (&a.change, &b.change) {
+		(TermDiff::Failed(_), _) => Ordering::Less,
+		(_, TermDiff::Failed(_)) => Ordering::Greater,
+		(TermDiff::Changed(a), TermDiff::Changed(b)) => {
+			let ord = a.change.cmp(&b.change).reverse();
+			if ord == Ordering::Equal {
+				if a.percent > b.percent {
+					Ordering::Greater
+				} else if a.percent == b.percent {
+					Ordering::Equal
+				} else {
+					Ordering::Less
+				}
 			} else {
-				Ordering::Less
+				ord
 			}
-		} else {
-			ord
-		}
+		},
 	});
 }
 
-pub fn filter_changes(
-	diff: TotalDiff,
-	params: &FilterParams,
-) -> Result<TotalDiff, Box<dyn std::error::Error>> {
+pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	// Note: the pallet and extrinsic are already filtered in compare_files.
-
-	Ok(diff
-		.iter()
-		.filter(|extrinsic| params.included(&extrinsic.change.change))
-		.filter(|extrinsic| match extrinsic.change.change {
-			RelativeChange::Changed if extrinsic.change.percent.abs() < params.threshold => false,
-			RelativeChange::Unchanged if params.threshold >= 0.001 => false,
-
-			_ => true,
+	diff.iter()
+		.filter(|extrinsic| match extrinsic.change {
+			TermDiff::Failed(_) => true,
+			TermDiff::Changed(ref change) => match change.change {
+				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
+				RelativeChange::Unchanged if params.threshold >= 0.001 => false,
+				_ => true,
+			},
 		})
 		.cloned()
-		.collect())
+		.collect()
 }
 
 impl RelativeChange {
