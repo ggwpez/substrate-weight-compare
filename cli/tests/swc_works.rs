@@ -67,7 +67,7 @@ fn swc_compare_commits_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_contains(&out, "No changes found.");
+	assert_eq!(out.split("Unchanged").count(), 7 + 1);
 }
 
 #[test]
