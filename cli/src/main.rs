@@ -289,8 +289,8 @@ fn print_changes_human(
 	table.set_header(header);
 
 	// Print all errors
-	for (info, change) in per_extrinsic.iter().filter_map(|p| p.error().map(|t| (p, t))) {
-		let mut row =
+	for (info, _change) in per_extrinsic.iter().filter_map(|p| p.error().map(|t| (p, t))) {
+		let row =
 			vec![info.file.clone(), info.name.clone(), "-".into(), "-".into(), "ERROR".into()];
 		table.add_row(row);
 	}

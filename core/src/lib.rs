@@ -610,8 +610,9 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	// Note: the pallet and extrinsic are already filtered in compare_files.
 	diff.iter()
 		.filter(|extrinsic| match extrinsic.change {
-			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
-			TermDiff::Changed(ref change) => match change.change {
+			TermDiff::Failed(_) => true,
+			TermDiff::Warning(ref change, _) | TermDiff::Changed(ref change) => match change.change
+			{
 				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
 				RelativeChange::Unchanged if params.threshold >= 0.001 => false,
 				_ => true,
