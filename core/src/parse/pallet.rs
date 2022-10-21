@@ -29,7 +29,7 @@ pub struct ComponentRange {
 }
 pub type ComponentRanges = HashMap<ComponentName, ComponentRange>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Extrinsic {
 	pub name: ExtrinsicName,
 	pub pallet: PalletName,

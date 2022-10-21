@@ -353,17 +353,17 @@ pub fn compare_extrinsics(
 	let mut results = Vec::<TermChange>::new();
 
 	for scope in scopes.iter() {
-		if !old.map_or(true, |e| e.term.free_vars(&scope).is_empty()) {
+		if !old.map_or(true, |e| e.term.free_vars(scope).is_empty()) {
 			panic!(
 				"Free variable where there should be none: {}::{} {:?}",
 				name,
 				&pallet,
-				old.unwrap().term.free_vars(&scope)
+				old.unwrap().term.free_vars(scope)
 			);
 		}
-		assert!(new.map_or(true, |e| e.term.free_vars(&scope).is_empty()));
+		assert!(new.map_or(true, |e| e.term.free_vars(scope).is_empty()));
 		// NOTE: The maximum could be calculated right here, but for now I want the debug assert.
-		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, &scope)?);
+		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, scope)?);
 	}
 	log::trace!(target: "compare", "{}::{} Evaluated {} scopes", pallet, name, scopes.len());
 
@@ -397,8 +397,8 @@ pub(crate) fn extend_scoped_components(
 	method: CompareMethod,
 	scope: &Scope,
 ) -> Result<Vec<Scope>, String> {
-	let free_a = a.map(|e| e.term.free_vars(&scope)).unwrap_or_default();
-	let free_b = b.map(|e| e.term.free_vars(&scope)).unwrap_or_default();
+	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
+	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
 
 	let ra = a.map(|ext| ext.clone().comp_ranges.unwrap_or_default());
@@ -426,7 +426,7 @@ pub(crate) fn extend_scoped_components(
 	for i in 0..(1 << frees.len()) {
 		let mut scope = scope.clone();
 		for (c, component) in frees.iter().enumerate() {
-			let value = if i & (1 << c) == 0 { lowest[c].clone() } else { highest[c].clone() };
+			let value = if i & (1 << c) == 0 { lowest[c] } else { highest[c] };
 			scope.put_var(component, val!(value));
 		}
 		if !scope.is_empty() {

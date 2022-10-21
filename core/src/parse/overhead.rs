@@ -4,7 +4,7 @@ use crate::{parse::path_to_string, term::Term, *};
 
 pub type BlockExecutionWeight = Term;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Weight {
 	BlockExecution(Term),
 	ExtrinsicBase(Term),

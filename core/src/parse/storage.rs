@@ -9,13 +9,13 @@ pub enum Db {
 	Rocks,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RWs {
 	pub read: Term,
 	pub write: Term,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Weights {
 	pub db: Db,
 	pub weights: RWs,
