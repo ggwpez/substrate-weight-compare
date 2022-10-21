@@ -43,9 +43,7 @@ $(document).ready(function () {
 		aaSorting: [[ 4, "desc" ]],
 		// PDF export button is nice, but it needs context.
 		dom: 'Bfrtip',
-        buttons: [
-            'print'
-        ]
+        buttons: [ ]
 	});
 
 	// Select the row from the URL anchor - if any.

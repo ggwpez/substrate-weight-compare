@@ -184,6 +184,35 @@ impl Term {
 			Self::Var(var) => var.clone().into(),
 		}
 	}
+
+	pub fn visit<F>(&self, f: &mut F) -> Result<(), String>
+	where
+		F: FnMut(&Self) -> Result<(), String>,
+	{
+		f(self)?;
+		match self {
+			Self::Value(_) => Ok(()),
+			Self::Var(_) => Ok(()),
+			Self::Add(l, r) | Self::Mul(l, r) => {
+				l.visit(f)?;
+				r.visit(f)
+			},
+		}
+	}
+
+	pub fn as_value(&self) -> Option<u128> {
+		match self {
+			Self::Value(val) => Some(*val),
+			_ => None,
+		}
+	}
+
+	pub fn as_var(&self) -> Option<&str> {
+		match self {
+			Self::Var(var) => Some(var),
+			_ => None,
+		}
+	}
 }
 
 impl fmt::Display for Term {
