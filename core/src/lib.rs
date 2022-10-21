@@ -381,7 +381,7 @@ pub fn compare_extrinsics(
 		// Just pick the first one
 		Ok(results.into_iter().next().unwrap())
 	} else if all_increase_or_decrease {
-		Ok(results.into_iter().min_by(|a, b| a.change.cmp(&b.change)).unwrap())
+		Ok(results.into_iter().max_by(|a, b| a.cmp(b)).unwrap())
 	} else {
 		panic!(
 			"Inconclusive: all_increase_or_decrease: {}, all_added_or_removed: {}",
@@ -545,20 +545,24 @@ impl TermDiff {
 		match (&self, &other) {
 			(TermDiff::Failed(_), _) => Ordering::Less,
 			(_, TermDiff::Failed(_)) => Ordering::Greater,
-			(TermDiff::Changed(a), TermDiff::Changed(b)) => {
-				let ord = a.change.cmp(&b.change).reverse();
-				if ord == Ordering::Equal {
-					if a.percent > b.percent {
-						Ordering::Greater
-					} else if a.percent == b.percent {
-						Ordering::Equal
-					} else {
-						Ordering::Less
-					}
-				} else {
-					ord
-				}
-			},
+			(TermDiff::Changed(a), TermDiff::Changed(b)) => a.cmp(b),
+		}
+	}
+}
+
+impl TermChange {
+	fn cmp(&self, other: &Self) -> Ordering {
+		let ord = self.change.cmp(&other.change).reverse();
+		if ord == Ordering::Equal {
+			if self.percent > other.percent {
+				Ordering::Greater
+			} else if self.percent == other.percent {
+				Ordering::Equal
+			} else {
+				Ordering::Less
+			}
+		} else {
+			ord
 		}
 	}
 }
