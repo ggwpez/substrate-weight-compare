@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 
 use std::{
 	cmp::Ordering,
-	collections::HashSet,
+	collections::{BTreeSet, HashMap, HashSet},
 	path::{Path, PathBuf},
 	process::Command,
 };
@@ -23,7 +23,7 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, Extrinsic};
+use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, ComponentRange, Extrinsic};
 use scope::Scope;
 use term::Term;
 
@@ -345,22 +345,49 @@ pub fn compare_extrinsics(
 	new: Option<&Extrinsic>,
 	method: CompareMethod,
 ) -> Result<TermChange, String> {
-	let mut scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
-	extend_scoped_components(old, new, method, &mut scope)?;
+	let scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
+	let scopes = extend_scoped_components(old, new, method, &scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
 
-	if !old.map_or(true, |e| e.term.free_vars(&scope).is_empty()) {
+	let mut results = Vec::<TermChange>::new();
+
+	for scope in scopes.iter() {
+		if !old.map_or(true, |e| e.term.free_vars(&scope).is_empty()) {
+			panic!(
+				"Free variable where there should be none: {}::{} {:?}",
+				name,
+				&pallet,
+				old.unwrap().term.free_vars(&scope)
+			);
+		}
+		assert!(new.map_or(true, |e| e.term.free_vars(&scope).is_empty()));
+		// NOTE: The maximum could be calculated right here, but for now I want the debug assert.
+		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, &scope)?);
+	}
+	log::trace!(target: "compare", "{}::{} Evaluated {} scopes", pallet, name, scopes.len());
+
+	// Sanity check: They are either
+	// All Increase/Decrease/Unchanged OR
+	// All Added/Removed
+	let all_increase_or_decrease = results
+		.iter()
+		.all(|r| matches!(r.change, RelativeChange::Changed | RelativeChange::Unchanged));
+	let all_added_or_removed = results
+		.iter()
+		.all(|r| matches!(r.change, RelativeChange::Added | RelativeChange::Removed));
+
+	if all_added_or_removed {
+		// Just pick the first one
+		Ok(results.into_iter().next().unwrap())
+	} else if all_increase_or_decrease {
+		Ok(results.into_iter().min_by(|a, b| a.change.cmp(&b.change)).unwrap())
+	} else {
 		panic!(
-			"Free variable where there should be none: {}::{} {:?}",
-			name,
-			&pallet,
-			old.unwrap().term.free_vars(&scope)
+			"Inconclusive: all_increase_or_decrease: {}, all_added_or_removed: {}",
+			all_increase_or_decrease, all_added_or_removed
 		);
 	}
-	assert!(new.map_or(true, |e| e.term.free_vars(&scope).is_empty()));
-
-	compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, &scope)
 }
 
 // TODO handle case that both have (different) ranges.
@@ -368,10 +395,10 @@ pub(crate) fn extend_scoped_components(
 	a: Option<&Extrinsic>,
 	b: Option<&Extrinsic>,
 	method: CompareMethod,
-	scope: &mut Scope,
-) -> Result<(), String> {
-	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
-	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
+	scope: &Scope,
+) -> Result<Vec<Scope>, String> {
+	let free_a = a.map(|e| e.term.free_vars(&scope)).unwrap_or_default();
+	let free_b = b.map(|e| e.term.free_vars(&scope)).unwrap_or_default();
 	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
 
 	let ra = a.map(|ext| ext.clone().comp_ranges.unwrap_or_default());
@@ -379,48 +406,109 @@ pub(crate) fn extend_scoped_components(
 
 	let (pallet, extrinsic) = a.or(b).map(|e| (e.pallet.clone(), e.name.clone())).unwrap();
 
-	// Calculate a concrete value for each component.
-	let values = frees
-		.iter()
-		.map(|component| {
-			let v = match (
-				ra.as_ref().and_then(|r| r.get(component)),
-				rb.as_ref().and_then(|r| r.get(component)),
-			) {
-				// Only one extrinsic has a component range? Good
-				(Some(r), None) | (None, Some(r)) => Ok(match method {
-					CompareMethod::Base => r.min,
-					CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
-				}),
-				// Both extrinsics have the same range? Good
-				(Some(ra), Some(rb)) if ra == rb => Ok(match method {
-					CompareMethod::Base => ra.min,
-					CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
-				}),
-				// Both extrinsics have different ranges? Bad, use the min/max
-				(Some(ra), Some(rb)) => Ok(match method {
-					CompareMethod::Base => ra.min.min(rb.min),
-					CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
-				}),
-				// No ranges? Bad, just guess 100
-				(None, None) => match method {
-					CompareMethod::Base => Ok(0),
-					CompareMethod::GuessWorst => Ok(100),
-					CompareMethod::ExactWorst => Err(format!(
-						"No range for component {} of call {}::{} - use GuessWorst instead!",
-						component, pallet, extrinsic
-					)),
-				},
-			};
-			(component, v)
-		})
-		.collect::<Vec<_>>();
-
-	for (component, value) in values {
-		scope.put_var(component, val!(value?));
+	if frees.len() > 16 {
+		return Err(format!(
+			"Too many components to compare: {}::{} has {} components - limit is 16",
+			pallet,
+			extrinsic,
+			frees.len()
+		))
+	}
+	// Combine the maximum and minimum of each component with combinatorics.
+	let (mut lowest, mut highest) = (Vec::new(), Vec::new());
+	for free in frees.iter() {
+		lowest.push(component_value(free, &ra, &rb, CompareMethod::Base, &pallet, &extrinsic)?);
+		highest.push(component_value(free, &ra, &rb, method, &pallet, &extrinsic)?);
 	}
 
-	Ok(())
+	// cartesian product of lowest and highest
+	let mut scopes = BTreeSet::new();
+	for i in 0..(1 << frees.len()) {
+		let mut scope = scope.clone();
+		for (c, component) in frees.iter().enumerate() {
+			let value = if i & (1 << c) == 0 { lowest[c].clone() } else { highest[c].clone() };
+			scope.put_var(component, val!(value));
+		}
+		if !scope.is_empty() {
+			scopes.insert(scope);
+		}
+	}
+	Ok(scopes.into_iter().collect())
+
+	// Calculate a concrete value for each component.
+	/*let values = frees
+	.iter()
+	.map(|component| {
+		let v = match (
+			ra.as_ref().and_then(|r| r.get(component)),
+			rb.as_ref().and_then(|r| r.get(component)),
+		) {
+			// Only one extrinsic has a component range? Good
+			(Some(r), None) | (None, Some(r)) => Ok(match method {
+				CompareMethod::Base => r.min,
+				CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
+			}),
+			// Both extrinsics have the same range? Good
+			(Some(ra), Some(rb)) if ra == rb => Ok(match method {
+				CompareMethod::Base => ra.min,
+				CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
+			}),
+			// Both extrinsics have different ranges? Bad, use the min/max
+			(Some(ra), Some(rb)) => Ok(match method {
+				CompareMethod::Base => ra.min.min(rb.min),
+				CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
+			}),
+			// No ranges? Bad, just guess 100
+			(None, None) => match method {
+				CompareMethod::Base => Ok(0),
+				CompareMethod::GuessWorst => Ok(100),
+				CompareMethod::ExactWorst => Err(format!(
+					"No range for component {} of call {}::{} - use GuessWorst instead!",
+					component, pallet, extrinsic
+				)),
+			},
+		};
+		(component, v)
+	})
+	.collect::<Vec<_>>();*/
+
+	//Ok(())
+}
+
+fn component_value(
+	component: &str,
+	ra: &Option<HashMap<String, ComponentRange>>,
+	rb: &Option<HashMap<String, ComponentRange>>,
+	method: CompareMethod,
+	pallet: &str,
+	extrinsic: &str,
+) -> Result<u32, String> {
+	match (ra.as_ref().and_then(|r| r.get(component)), rb.as_ref().and_then(|r| r.get(component))) {
+		// Only one extrinsic has a component range? Good
+		(Some(r), None) | (None, Some(r)) => Ok(match method {
+			CompareMethod::Base => r.min,
+			CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
+		}),
+		// Both extrinsics have the same range? Good
+		(Some(ra), Some(rb)) if ra == rb => Ok(match method {
+			CompareMethod::Base => ra.min,
+			CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
+		}),
+		// Both extrinsics have different ranges? Bad, use the min/max
+		(Some(ra), Some(rb)) => Ok(match method {
+			CompareMethod::Base => ra.min.min(rb.min),
+			CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
+		}),
+		// No ranges? Bad, just guess 100
+		(None, None) => match method {
+			CompareMethod::Base => Ok(0),
+			CompareMethod::GuessWorst => Ok(100),
+			CompareMethod::ExactWorst => Err(format!(
+				"No range for component {} of call {}::{} - use GuessWorst instead!",
+				component, pallet, extrinsic,
+			)),
+		},
+	}
 }
 
 pub fn compare_terms(
@@ -433,6 +521,7 @@ pub fn compare_terms(
 	let new_v = new.map(|t| t.eval(scope)).transpose()?;
 	let change = RelativeChange::new(old_v, new_v);
 	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
+	log::trace!(target: "compare", "Evaluating {:?}  vs {:?} ({:?}) [{:?}]", old_v.unwrap_or_default(), new_v.unwrap_or_default(), p, &scope);
 
 	Ok(TermChange {
 		old: old.cloned(),
@@ -487,24 +576,30 @@ pub fn compare_files(
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {
-	diff.sort_by(|a, b| match (&a.change, &b.change) {
-		(TermDiff::Failed(_), _) => Ordering::Less,
-		(_, TermDiff::Failed(_)) => Ordering::Greater,
-		(TermDiff::Changed(a), TermDiff::Changed(b)) => {
-			let ord = a.change.cmp(&b.change).reverse();
-			if ord == Ordering::Equal {
-				if a.percent > b.percent {
-					Ordering::Greater
-				} else if a.percent == b.percent {
-					Ordering::Equal
+	diff.sort_by(|a, b| a.change.cmp(&b.change));
+}
+
+impl TermDiff {
+	fn cmp(&self, other: &Self) -> Ordering {
+		match (&self, &other) {
+			(TermDiff::Failed(_), _) => Ordering::Less,
+			(_, TermDiff::Failed(_)) => Ordering::Greater,
+			(TermDiff::Changed(a), TermDiff::Changed(b)) => {
+				let ord = a.change.cmp(&b.change).reverse();
+				if ord == Ordering::Equal {
+					if a.percent > b.percent {
+						Ordering::Greater
+					} else if a.percent == b.percent {
+						Ordering::Equal
+					} else {
+						Ordering::Less
+					}
 				} else {
-					Ordering::Less
+					ord
 				}
-			} else {
-				ord
-			}
-		},
-	});
+			},
+		}
+	}
 }
 
 pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {

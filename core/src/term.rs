@@ -18,7 +18,7 @@ use crate::{fmt_weight, scope::Scope};
 /// let term = add!(mul!(val!(5), val!(5)), val!(10));
 /// assert_eq!(term.eval(&Scope::empty()), Ok(35));
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Term {
 	Value(u128),
 	Var(VarValue),
@@ -27,7 +27,7 @@ pub enum Term {
 	Mul(Box<Term>, Box<Term>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, Ord, Eq)]
 /// A `VarValue` is an opaque string.
 pub struct VarValue(pub String);
 

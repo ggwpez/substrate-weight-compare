@@ -7,7 +7,7 @@ use std::collections::BTreeMap as Map;
 pub const STORAGE_READ_VAR: &str = "READ";
 pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 pub struct Scope {
 	vars: Map<String, Term>,
 }
@@ -55,6 +55,10 @@ impl Scope {
 
 	pub fn is_empty(&self) -> bool {
 		self.vars.is_empty()
+	}
+
+	pub fn as_vec(&self) -> Vec<(String, Term)> {
+		self.vars.clone().into_iter().collect()
 	}
 }
 
