@@ -54,15 +54,15 @@ pub struct ExtrinsicDiff {
 #[derive(Clone)]
 pub enum TermDiff {
 	Changed(TermChange),
-	/// There was an error while comparing the old to the new version.
+	Warning(TermChange, String),
 	Failed(String),
-	Warning(String),
 }
 
 impl ExtrinsicDiff {
 	pub fn term(&self) -> Option<&TermChange> {
 		match &self.change {
 			TermDiff::Changed(change) => Some(change),
+			TermDiff::Warning(change, _) => Some(change),
 			_ => None,
 		}
 	}
@@ -76,7 +76,7 @@ impl ExtrinsicDiff {
 
 	pub fn warning(&self) -> Option<&String> {
 		match &self.change {
-			TermDiff::Warning(warning) => Some(warning),
+			TermDiff::Warning(_, warning) => Some(warning),
 			_ => None,
 		}
 	}
@@ -530,25 +530,25 @@ pub fn compare_files(
 		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 
-		if let Some(new) = new {
-			if let Err(err) = sanity_check_term(&new.term)
-				.map_err(|e| format!("{} in {}::{}", e, new.pallet, new.name))
-			{
-				diff.push(ExtrinsicDiff {
-					name: extrinsic.clone(),
-					file: pallet.clone(),
-					change: TermDiff::Warning(err),
-				});
-				continue
-			}
-		}
-
 		let change = match compare_extrinsics(old, new, method) {
 			Err(err) => {
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)
 			},
-			Ok(change) => TermDiff::Changed(change),
+			Ok(change) =>
+				if let Some(ext) = new.or(old) {
+					if let Err(err) = sanity_check_term(&ext.term)
+						.map_err(|e| format!("{} in {}::{}", e, ext.pallet, ext.name))
+					{
+						TermDiff::Warning(change, err)
+					} else {
+						TermDiff::Changed(change)
+					}
+				} else {
+					unreachable!(
+						"We already checked that the extrinsic exists in either old or new"
+					)
+				},
 		};
 
 		diff.push(ExtrinsicDiff { name: extrinsic.clone(), file: pallet.clone(), change });
@@ -582,8 +582,8 @@ impl TermDiff {
 		match (&self, &other) {
 			(TermDiff::Failed(_), _) => Ordering::Less,
 			(_, TermDiff::Failed(_)) => Ordering::Greater,
-			(TermDiff::Warning(_), _) => Ordering::Less,
-			(_, TermDiff::Warning(_)) => Ordering::Greater,
+			(TermDiff::Warning(..), _) => Ordering::Less,
+			(_, TermDiff::Warning(..)) => Ordering::Greater,
 			(TermDiff::Changed(a), TermDiff::Changed(b)) => a.cmp(b),
 		}
 	}
@@ -610,7 +610,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	// Note: the pallet and extrinsic are already filtered in compare_files.
 	diff.iter()
 		.filter(|extrinsic| match extrinsic.change {
-			TermDiff::Failed(_) | TermDiff::Warning(_) => true,
+			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
 			TermDiff::Changed(ref change) => match change.change {
 				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
 				RelativeChange::Unchanged if params.threshold >= 0.001 => false,
