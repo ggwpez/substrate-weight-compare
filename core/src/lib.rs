@@ -538,7 +538,7 @@ pub fn compare_files(
 			Ok(change) =>
 				if let Some(ext) = new.or(old) {
 					if let Err(err) = sanity_check_term(&ext.term)
-						.map_err(|e| format!("{} in {}::{}", e, ext.pallet, ext.name))
+						.map_err(|e| format!("{}: {}::{}", e, ext.pallet, ext.name))
 					{
 						TermDiff::Warning(change, err)
 					} else {
@@ -565,12 +565,11 @@ pub fn sanity_check_term(term: &Term) -> Result<(), String> {
 			if (v.as_var() == Some("READ") || v.as_var() == Some("WRITE")) &&
 				factor.as_value().unwrap_or_default() > 50
 			{
-				return Err(format!("Value {} is unexpectedly large for {}", factor, v))
+				return Err(format!("Call has {: >5} {}", factor.as_value().unwrap_or_default(), v))
 			}
 		}
 		Ok(())
 	})
-	.map_err(|e| format!("Sanity check failed: {}", e))
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {

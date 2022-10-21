@@ -107,7 +107,7 @@
 	<% let errors = diff.iter().filter_map(|c| c.error()).collect::<Vec<_>>(); if !errors.is_empty() { %>
 		<p>
 			<button class="btn btn-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false" aria-controls="collapseErrors">
-				<%- errors.len() %> errors when comparing the calls.
+				<%- errors.len() %> errors generated
 			</button>
 		</p>
 		<div class="collapse" id="collapseErrors">
@@ -122,7 +122,7 @@
 	<% let warnings = diff.iter().filter_map(|c| c.warning()).collect::<Vec<_>>(); if !warnings.is_empty() { %>
 		<p>
 			<button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWarns" aria-expanded="false" aria-controls="collapseWarns">
-				<%- warnings.len() %> warnings when comparing the calls.
+				<%- warnings.len() %> warnings generated
 			</button>
 		</p>
 		<div class="collapse" id="collapseWarns">
