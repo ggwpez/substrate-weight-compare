@@ -434,45 +434,6 @@ pub(crate) fn extend_scoped_components(
 		}
 	}
 	Ok(scopes.into_iter().collect())
-
-	// Calculate a concrete value for each component.
-	/*let values = frees
-	.iter()
-	.map(|component| {
-		let v = match (
-			ra.as_ref().and_then(|r| r.get(component)),
-			rb.as_ref().and_then(|r| r.get(component)),
-		) {
-			// Only one extrinsic has a component range? Good
-			(Some(r), None) | (None, Some(r)) => Ok(match method {
-				CompareMethod::Base => r.min,
-				CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
-			}),
-			// Both extrinsics have the same range? Good
-			(Some(ra), Some(rb)) if ra == rb => Ok(match method {
-				CompareMethod::Base => ra.min,
-				CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
-			}),
-			// Both extrinsics have different ranges? Bad, use the min/max
-			(Some(ra), Some(rb)) => Ok(match method {
-				CompareMethod::Base => ra.min.min(rb.min),
-				CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
-			}),
-			// No ranges? Bad, just guess 100
-			(None, None) => match method {
-				CompareMethod::Base => Ok(0),
-				CompareMethod::GuessWorst => Ok(100),
-				CompareMethod::ExactWorst => Err(format!(
-					"No range for component {} of call {}::{} - use GuessWorst instead!",
-					component, pallet, extrinsic
-				)),
-			},
-		};
-		(component, v)
-	})
-	.collect::<Vec<_>>();*/
-
-	//Ok(())
 }
 
 fn component_value(

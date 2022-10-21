@@ -191,12 +191,11 @@ The evaluation method defines how the weight equation is evaluate (=calculated).
 This is a deciding factor when making a decision whether or not a weight got worse.
 
 - *Base*: Only consider the constant factor of the weight plus storage operations.
-- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.  
-Unfortunately this option currently does not mix well with the [Ignore Errors](#ignore-errors), since it will silently omit extrinsics that do not have component ranges. Use *Guess Worst* instead.
-- *Guess Worst*: Tries to apply *Exact Worst* but defaults to setting all components to 100. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
+- *Exact Worst*: Assumes both equations to be hyper-planes and finds their greatest relative increase by evaluating all corners. The runtime for `n` components is `2^n` which is hard-limited to 16 components.   
+This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.
+- *Guess Worst*: Tries to apply *Exact Worst* but assumes all components to have a maximum of 100, if no maximum was found. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
-This will be changed to include the correct values soon.
 ## Rel Threshold
 
 Filters the changes results by an absolute percentual threshold.  
