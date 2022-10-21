@@ -1,7 +1,18 @@
-const path_pattern_presets = {
+export function loading(yes) {
+    console.debug("Loading: " + yes);
+    if (yes) {
+        $("div.spanner").addClass("show");
+        $("div.overlay").addClass("show");
+    } else {
+        $("div.spanner").removeClass("show");
+        $("div.overlay").removeClass("show");
+    }
+}
+
+export const path_pattern_presets = {
     "substrate": "frame/*/src/weights.rs",
     "polkadot": "runtime/**/src/weights/**/*.rs",
-	"cumulus": "parachains/runtimes/**/src/weights/*.rs",
+	"cumulus": "**/weights/*.rs",
 };
 
 export function default_params(repo) {

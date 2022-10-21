@@ -3,25 +3,25 @@ use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
 use crate::{parse::path_to_string, term::Term};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Db {
 	Parity,
 	Rocks,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RWs {
 	pub read: Term,
 	pub write: Term,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Weights {
 	pub db: Db,
 	pub weights: RWs,
 }
 
-/// Multiplies a [`Term`] with the [`Term::StorageRead`] constant.
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_READ_VAR`] constant.
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
@@ -29,7 +29,7 @@ macro_rules! reads {
 	};
 }
 
-/// Multiplies a [`Term`] with the [`Term::StorageWrite`] constant.
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_WRITE_VAR`] constant.
 #[macro_export]
 macro_rules! writes {
 	($a:expr) => {
@@ -155,6 +155,7 @@ fn parse_expression(expr: &Expr) -> Result<Term, String> {
 		},
 		Expr::Lit(lit) => Ok(Term::Value(super::pallet::lit_to_value(&lit.lit))),
 		Expr::Path(p) => Ok(Term::Var(crate::term::VarValue(path_to_string(&p.path, Some("::"))))),
+		Expr::MethodCall(mcall) => super::pallet::parse_method_call(mcall),
 		_ => Err("Unexpected expression".into()),
 	}
 }

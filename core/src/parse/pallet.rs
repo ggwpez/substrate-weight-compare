@@ -22,14 +22,14 @@ pub type Result<T> = std::result::Result<T, String>;
 pub type ComponentName = String;
 
 /// Inclusive range of a component.
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub struct ComponentRange {
 	pub min: u32,
 	pub max: u32,
 }
 pub type ComponentRanges = HashMap<ComponentName, ComponentRange>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Extrinsic {
 	pub name: ExtrinsicName,
 	pub pallet: PalletName,
@@ -310,17 +310,29 @@ fn validate_db_func(func: &Expr) -> Result<()> {
 // V1.5 feature
 fn parse_call(call: &ExprCall) -> Result<Term> {
 	let name = function_name(call)?;
-	if name.ends_with("from_ref_time") {
+	if name.ends_with("::from_ref_time") {
 		parse_args(&call.args)
+	} else if name.ends_with("::zero") {
+		if !call.args.empty_or_trailing() {
+			return Err("Unexpected arguments for `zero`".into())
+		}
+		Ok(Term::Value(0))
 	} else {
 		Err(format!("Unexpected call: {}", name))
 	}
 }
 
 // Example: receiver.saturating_mul(5 as Weight)
-fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
+pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
 	let name: &str = &call.method.to_string();
 	match name {
+		"ref_time" => {
+			// SWC is still only using 1D weights, so just do nothing…
+			if !call.args.empty_or_trailing() {
+				return Err("Unexpected arguments on `ref_time`".into())
+			}
+			parse_expression(&call.receiver)
+		},
 		"reads" => {
 			// Can only be called on T::DbWeight::get()
 			validate_db_call(&call.receiver)?;

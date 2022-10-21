@@ -1,5 +1,7 @@
 //! Parse and compare weight Substrate weight files.
 
+#![deny(rustdoc::broken_intra_doc_links)]
+
 use clap::Args;
 use fancy_regex::Regex;
 use git_version::git_version;
@@ -7,7 +9,7 @@ use lazy_static::lazy_static;
 
 use std::{
 	cmp::Ordering,
-	collections::HashSet,
+	collections::{BTreeSet, HashMap, HashSet},
 	path::{Path, PathBuf},
 	process::Command,
 };
@@ -21,7 +23,7 @@ pub mod testing;
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, Extrinsic};
+use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, ComponentRange, Extrinsic};
 use scope::Scope;
 use term::Term;
 
@@ -52,7 +54,7 @@ pub struct ExtrinsicDiff {
 #[derive(Clone)]
 pub enum TermDiff {
 	Changed(TermChange),
-	/// There was an error while comparing the old to the new version.
+	Warning(TermChange, String),
 	Failed(String),
 }
 
@@ -60,14 +62,22 @@ impl ExtrinsicDiff {
 	pub fn term(&self) -> Option<&TermChange> {
 		match &self.change {
 			TermDiff::Changed(change) => Some(change),
-			TermDiff::Failed(_) => None,
+			TermDiff::Warning(change, _) => Some(change),
+			_ => None,
 		}
 	}
 
 	pub fn error(&self) -> Option<&String> {
 		match &self.change {
-			TermDiff::Changed(_) => None,
 			TermDiff::Failed(err) => Some(err),
+			_ => None,
+		}
+	}
+
+	pub fn warning(&self) -> Option<&String> {
+		match &self.change {
+			TermDiff::Warning(_, warning) => Some(warning),
+			_ => None,
 		}
 	}
 }
@@ -98,7 +108,7 @@ pub enum RelativeChange {
 }
 
 /// Parameters for modifying the benchmark behaviour.
-#[derive(Debug, Clone, PartialEq, Args)]
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct CompareParams {
 	#[clap(
 		long,
@@ -251,9 +261,7 @@ fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn s
 		.map_err(|e| format!("Path pattern error: {:?}", e))?;
 	let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
 	if files.len() > max_files {
-		return Err(
-			format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into()
-		)
+		Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into())
 	} else {
 		Ok(files)
 	}
@@ -345,22 +353,49 @@ pub fn compare_extrinsics(
 	new: Option<&Extrinsic>,
 	method: CompareMethod,
 ) -> Result<TermChange, String> {
-	let mut scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
-	extend_scoped_components(old, new, method, &mut scope)?;
+	let scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
+	let scopes = extend_scoped_components(old, new, method, &scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
 
-	if !old.map_or(true, |e| e.term.free_vars(&scope).is_empty()) {
+	let mut results = Vec::<TermChange>::new();
+
+	for scope in scopes.iter() {
+		if !old.map_or(true, |e| e.term.free_vars(scope).is_empty()) {
+			panic!(
+				"Free variable where there should be none: {}::{} {:?}",
+				name,
+				&pallet,
+				old.unwrap().term.free_vars(scope)
+			);
+		}
+		assert!(new.map_or(true, |e| e.term.free_vars(scope).is_empty()));
+		// NOTE: The maximum could be calculated right here, but for now I want the debug assert.
+		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, scope)?);
+	}
+	log::trace!(target: "compare", "{}::{} Evaluated {} scopes", pallet, name, scopes.len());
+
+	// Sanity check: They are either
+	// All Increase/Decrease/Unchanged OR
+	// All Added/Removed
+	let all_increase_or_decrease = results
+		.iter()
+		.all(|r| matches!(r.change, RelativeChange::Changed | RelativeChange::Unchanged));
+	let all_added_or_removed = results
+		.iter()
+		.all(|r| matches!(r.change, RelativeChange::Added | RelativeChange::Removed));
+
+	if all_added_or_removed {
+		// Just pick the first one
+		Ok(results.into_iter().next().unwrap())
+	} else if all_increase_or_decrease {
+		Ok(results.into_iter().max_by(|a, b| a.cmp(b)).unwrap())
+	} else {
 		panic!(
-			"Free variable where there should be none: {}::{} {:?}",
-			name,
-			&pallet,
-			old.unwrap().term.free_vars(&scope)
+			"Inconclusive: all_increase_or_decrease: {}, all_added_or_removed: {}",
+			all_increase_or_decrease, all_added_or_removed
 		);
 	}
-	assert!(new.map_or(true, |e| e.term.free_vars(&scope).is_empty()));
-
-	compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, &scope)
 }
 
 // TODO handle case that both have (different) ranges.
@@ -368,8 +403,8 @@ pub(crate) fn extend_scoped_components(
 	a: Option<&Extrinsic>,
 	b: Option<&Extrinsic>,
 	method: CompareMethod,
-	scope: &mut Scope,
-) -> Result<(), String> {
+	scope: &Scope,
+) -> Result<Vec<Scope>, String> {
 	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
@@ -379,48 +414,70 @@ pub(crate) fn extend_scoped_components(
 
 	let (pallet, extrinsic) = a.or(b).map(|e| (e.pallet.clone(), e.name.clone())).unwrap();
 
-	// Calculate a concrete value for each component.
-	let values = frees
-		.iter()
-		.map(|component| {
-			let v = match (
-				ra.as_ref().and_then(|r| r.get(component)),
-				rb.as_ref().and_then(|r| r.get(component)),
-			) {
-				// Only one extrinsic has a component range? Good
-				(Some(r), None) | (None, Some(r)) => Ok(match method {
-					CompareMethod::Base => r.min,
-					CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
-				}),
-				// Both extrinsics have the same range? Good
-				(Some(ra), Some(rb)) if ra == rb => Ok(match method {
-					CompareMethod::Base => ra.min,
-					CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
-				}),
-				// Both extrinsics have different ranges? Bad, use the min/max
-				(Some(ra), Some(rb)) => Ok(match method {
-					CompareMethod::Base => ra.min.min(rb.min),
-					CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
-				}),
-				// No ranges? Bad, just guess 100
-				(None, None) => match method {
-					CompareMethod::Base => Ok(0),
-					CompareMethod::GuessWorst => Ok(100),
-					CompareMethod::ExactWorst => Err(format!(
-						"No range for component {} of call {}::{} - use GuessWorst instead!",
-						component, pallet, extrinsic
-					)),
-				},
-			};
-			(component, v)
-		})
-		.collect::<Vec<_>>();
-
-	for (component, value) in values {
-		scope.put_var(component, val!(value?));
+	if frees.len() > 16 {
+		return Err(format!(
+			"Too many components to compare: {}::{} has {} components - limit is 16",
+			pallet,
+			extrinsic,
+			frees.len()
+		))
+	}
+	// Combine the maximum and minimum of each component with combinatorics.
+	let (mut lowest, mut highest) = (Vec::new(), Vec::new());
+	for free in frees.iter() {
+		lowest.push(component_value(free, &ra, &rb, CompareMethod::Base, &pallet, &extrinsic)?);
+		highest.push(component_value(free, &ra, &rb, method, &pallet, &extrinsic)?);
 	}
 
-	Ok(())
+	// cartesian product of lowest and highest
+	let mut scopes = BTreeSet::new();
+	for i in 0..(1 << frees.len()) {
+		let mut scope = scope.clone();
+		for (c, component) in frees.iter().enumerate() {
+			let value = if i & (1 << c) == 0 { lowest[c] } else { highest[c] };
+			scope.put_var(component, val!(value));
+		}
+		if !scope.is_empty() {
+			scopes.insert(scope);
+		}
+	}
+	Ok(scopes.into_iter().collect())
+}
+
+fn component_value(
+	component: &str,
+	ra: &Option<HashMap<String, ComponentRange>>,
+	rb: &Option<HashMap<String, ComponentRange>>,
+	method: CompareMethod,
+	pallet: &str,
+	extrinsic: &str,
+) -> Result<u32, String> {
+	match (ra.as_ref().and_then(|r| r.get(component)), rb.as_ref().and_then(|r| r.get(component))) {
+		// Only one extrinsic has a component range? Good
+		(Some(r), None) | (None, Some(r)) => Ok(match method {
+			CompareMethod::Base => r.min,
+			CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
+		}),
+		// Both extrinsics have the same range? Good
+		(Some(ra), Some(rb)) if ra == rb => Ok(match method {
+			CompareMethod::Base => ra.min,
+			CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
+		}),
+		// Both extrinsics have different ranges? Bad, use the min/max
+		(Some(ra), Some(rb)) => Ok(match method {
+			CompareMethod::Base => ra.min.min(rb.min),
+			CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
+		}),
+		// No ranges? Bad, just guess 100
+		(None, None) => match method {
+			CompareMethod::Base => Ok(0),
+			CompareMethod::GuessWorst => Ok(100),
+			CompareMethod::ExactWorst => Err(format!(
+				"No range for component {} of call {}::{} - use GuessWorst instead!",
+				component, pallet, extrinsic,
+			)),
+		},
+	}
 }
 
 pub fn compare_terms(
@@ -433,6 +490,7 @@ pub fn compare_terms(
 	let new_v = new.map(|t| t.eval(scope)).transpose()?;
 	let change = RelativeChange::new(old_v, new_v);
 	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
+	log::trace!(target: "compare", "Evaluating {:?}  vs {:?} ({:?}) [{:?}]", old_v.unwrap_or_default(), new_v.unwrap_or_default(), p, &scope);
 
 	Ok(TermChange {
 		old: old.cloned(),
@@ -477,7 +535,20 @@ pub fn compare_files(
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)
 			},
-			Ok(change) => TermDiff::Changed(change),
+			Ok(change) =>
+				if let Some(ext) = new.or(old) {
+					if let Err(err) = sanity_check_term(&ext.term)
+						.map_err(|e| format!("{} in {}::{}", e, ext.pallet, ext.name))
+					{
+						TermDiff::Warning(change, err)
+					} else {
+						TermDiff::Changed(change)
+					}
+				} else {
+					unreachable!(
+						"We already checked that the extrinsic exists in either old or new"
+					)
+				},
 		};
 
 		diff.push(ExtrinsicDiff { name: extrinsic.clone(), file: pallet.clone(), change });
@@ -486,32 +557,60 @@ pub fn compare_files(
 	Ok(diff)
 }
 
-pub fn sort_changes(diff: &mut TotalDiff) {
-	diff.sort_by(|a, b| match (&a.change, &b.change) {
-		(TermDiff::Failed(_), _) => Ordering::Less,
-		(_, TermDiff::Failed(_)) => Ordering::Greater,
-		(TermDiff::Changed(a), TermDiff::Changed(b)) => {
-			let ord = a.change.cmp(&b.change).reverse();
-			if ord == Ordering::Equal {
-				if a.percent > b.percent {
-					Ordering::Greater
-				} else if a.percent == b.percent {
-					Ordering::Equal
-				} else {
-					Ordering::Less
-				}
-			} else {
-				ord
+/// Checks some obvious stuff:
+/// - Does not have more than 50 reads or writes
+pub fn sanity_check_term(term: &Term) -> Result<(), String> {
+	term.visit(&mut |t| {
+		if let Term::Mul(factor, v) = t {
+			if (v.as_var() == Some("READ") || v.as_var() == Some("WRITE")) &&
+				factor.as_value().unwrap_or_default() > 50
+			{
+				return Err(format!("Value {} is unexpectedly large for {}", factor, v))
 			}
-		},
-	});
+		}
+		Ok(())
+	})
+	.map_err(|e| format!("Sanity check failed: {}", e))
+}
+
+pub fn sort_changes(diff: &mut TotalDiff) {
+	diff.sort_by(|a, b| a.change.cmp(&b.change));
+}
+
+impl TermDiff {
+	fn cmp(&self, other: &Self) -> Ordering {
+		match (&self, &other) {
+			(TermDiff::Failed(_), _) => Ordering::Less,
+			(_, TermDiff::Failed(_)) => Ordering::Greater,
+			(TermDiff::Warning(..), _) => Ordering::Less,
+			(_, TermDiff::Warning(..)) => Ordering::Greater,
+			(TermDiff::Changed(a), TermDiff::Changed(b)) => a.cmp(b),
+		}
+	}
+}
+
+impl TermChange {
+	fn cmp(&self, other: &Self) -> Ordering {
+		let ord = self.change.cmp(&other.change).reverse();
+		if ord == Ordering::Equal {
+			if self.percent > other.percent {
+				Ordering::Greater
+			} else if self.percent == other.percent {
+				Ordering::Equal
+			} else {
+				Ordering::Less
+			}
+		} else {
+			ord
+		}
+	}
 }
 
 pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	// Note: the pallet and extrinsic are already filtered in compare_files.
 	diff.iter()
 		.filter(|extrinsic| match extrinsic.change {
-			TermDiff::Failed(_) => true,
+			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
 			TermDiff::Changed(ref change) => match change.change {
 				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
 				RelativeChange::Unchanged if params.threshold >= 0.001 => false,

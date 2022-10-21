@@ -1,3 +1,5 @@
+import { loading } from './common.js';
+
 // Expose URL params as vars.
 //
 // Example: $.urlParam('var_name');
@@ -24,6 +26,7 @@ function url_redirect(arg, value) {
 }
 
 $(document).ready(function () {
+	loading(true);
 	// Setup the data table
 	var table = $('#sort_me').DataTable({
 		paging: false,
@@ -37,7 +40,10 @@ $(document).ready(function () {
             heightMatch: 'none'
         },
 		// Default sort by relative change worst to best.
-		aaSorting: [[ 4, "desc" ]]
+		aaSorting: [[ 4, "desc" ]],
+		// PDF export button is nice, but it needs context.
+		dom: 'Bfrtip',
+        buttons: [ ]
 	});
 
 	// Select the row from the URL anchor - if any.
@@ -83,4 +89,5 @@ $(document).ready(function () {
 			url_redirect(checkbox, $(this).is(":checked"));
 		});
 	}
+	loading(false);
 });

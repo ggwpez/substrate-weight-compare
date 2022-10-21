@@ -67,7 +67,7 @@ fn swc_compare_commits_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_contains(&out, "No changes found.");
+	assert_eq!(out.split("Unchanged").count(), 7 + 1);
 }
 
 #[test]
@@ -128,7 +128,9 @@ fn swc_compare_files_same_no_changes() {
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
 	let newlines = out.matches("Unchanged").count();
-	assert_eq!(newlines, 30); // There are 30 extrinsics in the file.
+	if newlines != 30 {
+		panic!("Expected 30 unchanged lines, got {}", out);
+	}
 }
 
 #[test]

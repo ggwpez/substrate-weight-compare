@@ -18,7 +18,7 @@ use crate::{fmt_weight, scope::Scope};
 /// let term = add!(mul!(val!(5), val!(5)), val!(10));
 /// assert_eq!(term.eval(&Scope::empty()), Ok(35));
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Term {
 	Value(u128),
 	Var(VarValue),
@@ -27,7 +27,7 @@ pub enum Term {
 	Mul(Box<Term>, Box<Term>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, Ord, Eq)]
 /// A `VarValue` is an opaque string.
 pub struct VarValue(pub String);
 
@@ -114,7 +114,7 @@ impl Term {
 	/// Returns the variables of the term that are not part of [`crate::scope::Scope`].
 	///
 	/// Lambda calculus calls such a variable *free*.
-	/// This is the inverse of [`bound_vars`].
+	/// This is the inverse of [`Self::bound_vars`].
 	pub fn free_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::default(),
@@ -129,7 +129,7 @@ impl Term {
 	/// Returns the variables of the term that are part of [`crate::scope::Scope`].
 	///
 	/// Lambda calculus calls such a variable *bound*.
-	/// This is the inverse of [`free_vars`].
+	/// This is the inverse of [`Self::free_vars`].
 	pub fn bound_vars(&self, scope: &Scope) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::from([var.clone().into()]),
@@ -182,6 +182,35 @@ impl Term {
 			},
 			Self::Value(val) => fmt_weight(*val),
 			Self::Var(var) => var.clone().into(),
+		}
+	}
+
+	pub fn visit<F>(&self, f: &mut F) -> Result<(), String>
+	where
+		F: FnMut(&Self) -> Result<(), String>,
+	{
+		f(self)?;
+		match self {
+			Self::Value(_) => Ok(()),
+			Self::Var(_) => Ok(()),
+			Self::Add(l, r) | Self::Mul(l, r) => {
+				l.visit(f)?;
+				r.visit(f)
+			},
+		}
+	}
+
+	pub fn as_value(&self) -> Option<u128> {
+		match self {
+			Self::Value(val) => Some(*val),
+			_ => None,
+		}
+	}
+
+	pub fn as_var(&self) -> Option<&str> {
+		match self {
+			Self::Var(var) => Some(var),
+			_ => None,
 		}
 	}
 }

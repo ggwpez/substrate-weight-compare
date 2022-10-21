@@ -45,6 +45,17 @@ swc --version
 swc-web --version
 ```
 
+# Compilation
+
+The [rust-toolchain.toml](./rust-toolchain.toml) defines the exact Rust version that the code was tested with.  
+The formatting rules are defined in [rustfmt.toml](./rustfmt.toml).
+
+```sh
+git clone https://github.com/ggwpez/substrate-weight-compare
+
+cd substrate-weight-compare/
+cargo build --profile production
+```
 # Example: Web Interface
 
 Assuming you have a Substrate compatible repository checked out in the parent directory:
@@ -151,12 +162,13 @@ Note: Not all repositories are deployed to the *SWC* web service.
 ## Path Pattern
 
 Uses the [glob](https://docs.rs/glob/latest/glob/) crate to match files in the repository path with the given pattern.  
-Here are some examples for Polkadot:  
-- Weight files of all runtimes: `runtime/*/src/weights/**/*.rs`
-- All Kusama weight files: `runtime/kusama/src/weights/**/*.rs`
+Here are some examples that the web interface uses. These do not catch *all* files, which is a bug:  
+- Substrate: `frame/*/src/weights.rs`
+- Polkadot: `runtime/*/src/weights/**/*.rs`
+- Cumulus: `**/weights/**/*.rs`
 
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
-The `mod.rs` file is *always* excluded.  
+The `mod.rs` file is automatically excluded.  
 
 ## Pallet
 
@@ -179,12 +191,11 @@ The evaluation method defines how the weight equation is evaluate (=calculated).
 This is a deciding factor when making a decision whether or not a weight got worse.
 
 - *Base*: Only consider the constant factor of the weight plus storage operations.
-- *Exact Worst*: Calculates the exact worst case weight by setting all components to their respective maximum. This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.  
-Unfortunately this option currently does not mix well with the [Ignore Errors](#ignore-errors), since it will silently omit extrinsics that do not have component ranges. Use *Guess Worst* instead.
-- *Guess Worst*: Tries to apply *Exact Worst* but defaults to setting all components to 100. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
+- *Exact Worst*: Assumes both equations to be hyper-planes and finds their greatest relative increase by evaluating all corners. The runtime for `n` components is `2^n` which is hard-limited to 16 components.   
+This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.
+- *Guess Worst*: Tries to apply *Exact Worst* but assumes all components to have a maximum of 100, if no maximum was found. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
-This will be changed to include the correct values soon.
 ## Rel Threshold
 
 Filters the changes results by an absolute percentual threshold.  

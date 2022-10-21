@@ -5,7 +5,7 @@
 
 	<!-- Dropdown autocomplete input box -->
 	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script type="module" src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 	<!-- Data tables -->
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.css"/>
@@ -17,8 +17,9 @@
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
 	<script type="module" src="/static/merge_requests.js"></script>
-	<script type="module" src="/static/default_params.js"></script>
+	<script type="module" src="/static/common.js"></script>
 	<link rel="stylesheet" href="/static/merge_requests.css">
+	<link rel="stylesheet" href="/static/loading_anim.css">
 </head>
 
 <body>

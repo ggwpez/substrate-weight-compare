@@ -11,7 +11,8 @@
 		<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/jq-3.6.0/jszip-2.5.0/dt-1.12.1/b-2.2.3/b-colvis-2.2.3/b-html5-2.2.3/b-print-2.2.3/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
 
 		<link rel="stylesheet" href="/static/table.css">
-		<script src="/static/table.js"></script>
+		<script type="module" src="/static/table.js"></script>
+		<link rel="stylesheet" href="/static/loading_anim.css">
 	</head>
 	<body>
 	<div class="form-check form-switch">
@@ -102,9 +103,10 @@
 		</tbody>
 	</table>
 	</br>
+
 	<% let errors = diff.iter().filter_map(|c| c.error()).collect::<Vec<_>>(); if !errors.is_empty() { %>
 		<p>
-			<button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false" aria-controls="collapseErrors">
+			<button class="btn btn-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false" aria-controls="collapseErrors">
 				<%- errors.len() %> errors when comparing the calls.
 			</button>
 		</p>
@@ -116,6 +118,22 @@
 			</div>
 		</div>
 	<% } %>
+
+	<% let warnings = diff.iter().filter_map(|c| c.warning()).collect::<Vec<_>>(); if !warnings.is_empty() { %>
+		<p>
+			<button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWarns" aria-expanded="false" aria-controls="collapseWarns">
+				<%- warnings.len() %> warnings when comparing the calls.
+			</button>
+		</p>
+		<div class="collapse" id="collapseWarns">
+			<div class="card card-body text-white bg-dark">
+				<% for err in warnings { %>
+					<%- format!("{}", err) %><br>
+				<% } %>
+			</div>
+		</div>
+	<% } %>
+
 	<table id="sort_me" class="display table">
 	<thead>
 		<tr>

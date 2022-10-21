@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
 
       - name: Rust Version Info
         run: |
@@ -30,12 +30,6 @@ jobs:
 
       - name: Format
         run: cargo +nightly fmt --all -- --check
-
-      #- uses: actions-rs/cargo@v1
-      #  name: Check
-      #  with:
-      #    command: check
-      #    args: --locked --release --all-targets --all-features
 
       - uses: actions-rs/cargo@v1
         name: Build
@@ -110,7 +104,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout Polkadot
         run: |
@@ -138,7 +132,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout Substrate
         uses: actions/checkout@v3
@@ -163,7 +157,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout Cumulus
         uses: actions/checkout@v3
@@ -188,7 +182,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout Acala
         uses: actions/checkout@v3
@@ -203,6 +197,31 @@ jobs:
         with:
           command: test
           args: --release --all-targets --features version-locked-tests,acala "acala::"
+  
+  astar_version_locked:
+    name: "Astar (version locked)"
+    needs: basic
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Checkout Astar
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          repository: AstarNetwork/Astar
+          path: repos/astar
+          ref: 94a7b3f87b33f64d66123ee9acc8769c25696aa0
+
+      - uses: actions-rs/cargo@v1
+        name: Astar Tests (version locked)
+        with:
+          command: test
+          args: --release --all-targets --features version-locked-tests,astar "astar::"
 
   moonbeam_version_locked:
     name: "Moonbeam (version locked)"
@@ -213,7 +232,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout Moonbeam
         uses: actions/checkout@v3
@@ -238,7 +257,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
 
       - name: Checkout ComposableFI
         uses: actions/checkout@v3

@@ -1,4 +1,5 @@
-#![allow(dead_code)]
+#![allow(dead_code)] // The caching crate produces "unused" functions…
+
 use actix_files as fs;
 use actix_web::{
 	get,
@@ -321,7 +322,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 async fn version_badge() -> HttpResponse {
 	let svg = BadgeBuilder::new()
 		.label("Deployed")
-		.message(&*swc_core::VERSION)
+		.message(&swc_core::VERSION)
 		.color_parse("#33B5E5")
 		.build()
 		.expect("Must build svg")
@@ -365,7 +366,7 @@ fn do_compare_cached(
 		extrinsic: args.extrinsic,
 	};
 
-	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 200)?;
+	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 300)?;
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
