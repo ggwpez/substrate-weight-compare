@@ -565,7 +565,7 @@ pub fn sanity_check_term(term: &Term) -> Result<(), String> {
 			if (v.as_var() == Some("READ") || v.as_var() == Some("WRITE")) &&
 				factor.as_value().unwrap_or_default() > 50
 			{
-				return Err(format!("Factor {} is unexpectedly large for {}", factor, v))
+				return Err(format!("Value {} is unexpectedly large for {}", factor, v))
 			}
 		}
 		Ok(())
