@@ -1,4 +1,6 @@
 #[cfg(test)]
+use rstest::*;
+
 use crate::{parse::pallet::*, *};
 
 #[test]
@@ -271,4 +273,24 @@ fn extend_scoped_components_works() {
 			]
 		);
 	}
+}
+
+#[rstest]
+#[case(val!(30), Ok(()))]
+#[case(var!("READ"), Ok(()))]
+#[case(mul!(var!("READ"), val!(50)), Ok(()))]
+#[case(mul!(var!("READ"), val!(50)), Ok(()))]
+#[case(mul!(var!("READ"), val!(51)), Err("Call has 51 READs"))]
+#[case(mul!(var!("WRITE"), val!(51)), Err("Call has 51 WRITEs"))]
+#[case(add!(var!("READ"), val!(51)), Ok(()))]
+#[case(add!(var!("WRITE"), val!(51)), Ok(()))]
+#[case(mul!(val!(51), var!("WRITE")), Err("Call has 51 WRITEs"))]
+#[case(mul!(val!(51), var!("READ")), Err("Call has 51 READs"))]
+#[case(mul!(var!("READ"), val!(501)), Err("Call has 501 READs"))]
+#[case(mul!(var!("WRITE"), val!(501)), Err("Call has 501 WRITEs"))]
+#[case(mul!(var!("SOMETHING"), val!(501)), Ok(()))]
+#[case(mul!(mul!(var!("READ"), val!(123)), var!("READ")), Err("Call has 123 READs"))]
+#[case(mul!(mul!(var!("READ"), val!(123)), mul!(var!("WRITE"), val!(222))), Err("Call has 222 WRITEs"))]
+fn sanity_check_term_works(#[case] term: Term, #[case] res: std::result::Result<(), &str>) {
+	assert_eq!(sanity_check_term(&term), res.map_err(Into::into), "term: {}", term);
 }

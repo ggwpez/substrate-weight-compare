@@ -560,16 +560,19 @@ pub fn compare_files(
 /// Checks some obvious stuff:
 /// - Does not have more than 50 reads or writes
 pub fn sanity_check_term(term: &Term) -> Result<(), String> {
-	term.visit(&mut |t| {
-		if let Term::Mul(factor, v) = t {
-			if (v.as_var() == Some("READ") || v.as_var() == Some("WRITE")) &&
-				factor.as_value().unwrap_or_default() > 50
-			{
-				return Err(format!("Call has {: >5} {}", factor.as_value().unwrap_or_default(), v))
-			}
+	let reads = term.find_largest_factor("READ").unwrap_or_default();
+	let writes = term.find_largest_factor("WRITE").unwrap_or_default();
+	let larger = reads.max(writes);
+
+	if larger > 50 {
+		if reads > writes {
+			Err(format!("Call has {} READs", reads))
+		} else {
+			Err(format!("Call has {} WRITEs", writes))
 		}
+	} else {
 		Ok(())
-	})
+	}
 }
 
 pub fn sort_changes(diff: &mut TotalDiff) {

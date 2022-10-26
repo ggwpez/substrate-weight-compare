@@ -185,19 +185,41 @@ impl Term {
 		}
 	}
 
-	pub fn visit<F>(&self, f: &mut F) -> Result<(), String>
+	pub fn visit<F, R>(&self, f: &mut F) -> Result<Vec<R>, String>
 	where
-		F: FnMut(&Self) -> Result<(), String>,
+		F: FnMut(&Self) -> Result<R, String>,
 	{
-		f(self)?;
+		let mut res = Vec::<R>::new();
+		res.push(f(self)?);
+
 		match self {
-			Self::Value(_) => Ok(()),
-			Self::Var(_) => Ok(()),
+			v @ Self::Value(_) => Ok(vec![f(v)?]),
+			v @ Self::Var(_) => Ok(vec![f(v)?]),
 			Self::Add(l, r) | Self::Mul(l, r) => {
-				l.visit(f)?;
-				r.visit(f)
+				res.append(&mut l.visit(f)?);
+				res.append(&mut r.visit(f)?);
+				Ok(res)
 			},
 		}
+	}
+
+	/// Returns the largest pre-factor of the variable in the term.
+	pub fn find_largest_factor(&self, var: &str) -> Option<u128> {
+		self.visit::<_, Option<u128>>(&mut |t| {
+			if let Term::Mul(l, r) = t {
+				if r.as_var() == Some(var) && l.as_value().is_some() {
+					return Ok(Some(l.as_value().unwrap()))
+				}
+				if l.as_var() == Some(var) && r.as_value().is_some() {
+					return Ok(Some(r.as_value().unwrap()))
+				}
+			}
+			Ok(None)
+		})
+		.unwrap()
+		.into_iter()
+		.flatten()
+		.max()
 	}
 
 	pub fn as_value(&self) -> Option<u128> {
