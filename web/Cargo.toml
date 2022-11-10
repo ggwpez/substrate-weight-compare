@@ -27,8 +27,12 @@ sailfish = "0.4.0"
 badge-maker = "0.2.1"
 dashmap = "5.3.3"
 cached = "0.34.0"
+fancy-regex = "0.10.0"
+html-escape = "0.2.12"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
 serial_test = "*"
 reqwest = { version = "0.11.10", default_features = false, features = ["blocking"] }
+tempfile = "3.3.0"
+rstest = { version = "0.15.0", default-features = false }

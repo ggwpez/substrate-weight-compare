@@ -10,9 +10,10 @@ export function loading(yes) {
 }
 
 export const path_pattern_presets = {
-    "substrate": "frame/*/src/weights.rs",
-    "polkadot": "runtime/**/src/weights/**/*.rs",
-	"cumulus": "**/weights/*.rs",
+    "substrate": "frame/.*/src/weights.rs",
+    "polkadot": "runtime/.*/src/weights/.*/*.rs",
+	"cumulus": ".*/weights/.*rs",
+	"chain": "pallets/*/src/weights.rs,runtimes/*/src/weights/*.rs",
 };
 
 export function default_params(repo) {

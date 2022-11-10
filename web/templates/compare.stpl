@@ -111,7 +111,7 @@
 			</button>
 		</p>
 		<div class="collapse" id="collapseErrors">
-			<div class="card card-body text-white bg-dark">
+			<div class="card card-body text-dark bg-light">
 				<% for err in errors { %>
 					<%- format!("{}", err) %><br>
 				<% } %>
@@ -126,7 +126,7 @@
 			</button>
 		</p>
 		<div class="collapse" id="collapseWarns">
-			<div class="card card-body text-white bg-dark">
+			<div class="card card-body text-dark bg-light">
 				<% for err in warnings { %>
 					<%- format!("{}", err) %><br>
 				<% } %>
@@ -175,10 +175,10 @@
 				</td>
 
 				<td>
-					<%- change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &info.name, &info.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%= format!("{:?}", &change.scope) %>

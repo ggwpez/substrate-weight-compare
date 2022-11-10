@@ -172,8 +172,7 @@ pub fn compare_commits(
 	if let Err(err) = reset(repo, old) {
 		return Err(format!("{:?}", err).into())
 	}
-	let pattern = format!("{}/{}", repo.display(), path_pattern);
-	let paths = list_files(pattern.clone(), max_files)?;
+	let paths = list_files(repo, path_pattern, max_files)?;
 	// Ignore any parsing errors.
 	let olds = if params.ignore_errors {
 		try_parse_files_in_repo(repo, &paths)
@@ -186,7 +185,7 @@ pub fn compare_commits(
 	if let Err(err) = reset(repo, new) {
 		return Err(format!("{:?}", err).into())
 	}
-	let paths = list_files(pattern, max_files)?;
+	let paths = list_files(repo, path_pattern, max_files)?;
 	// Ignore any parsing errors.
 	let news = if params.ignore_errors {
 		try_parse_files_in_repo(repo, &paths)
@@ -207,11 +206,13 @@ pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
 			.arg(refname)
 			.current_dir(path)
 			.output()
-			.map_err(|e| format!("Failed to fetch branch: {:?}", e))?;
+			.map_err(|e| format!("Failed to fetch branch {}: '{:?}'", &refname, e))?;
 		if !output.status.success() {
 			return Err(format!(
-				"Failed to fetch branch: {}",
-				String::from_utf8_lossy(&output.stderr)
+				"Failed to fetch branch '{}': {},{}",
+				&refname,
+				String::from_utf8_lossy(&output.stderr),
+				String::from_utf8_lossy(&output.stdout)
 			))
 		}
 	}
@@ -254,17 +255,32 @@ fn is_commit(refname: &str) -> bool {
 	refname.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-fn list_files(regex: String, max_files: usize) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
-	let files = glob::glob(&regex).map_err(|e| format!("Invalid path pattern: {:?}", e))?;
-	let files = files
-		.collect::<Result<Vec<_>, _>>()
-		.map_err(|e| format!("Path pattern error: {:?}", e))?;
-	let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
-	if files.len() > max_files {
-		Err(format!("Found too many files. Found: {}, Max: {}", files.len(), max_files).into())
-	} else {
-		Ok(files)
+fn list_files(
+	base_path: &Path,
+	regex: &str,
+	max_files: usize,
+) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+	let regex = regex.split(',');
+
+	let mut paths = Vec::new();
+	for regex in regex {
+		let regex = format!("{}/{}", base_path.display(), regex);
+		log::info!("Listing files matching: {:?}", &regex);
+		let files = glob::glob(&regex).map_err(|e| format!("Invalid path pattern: {:?}", e))?;
+		let files = files
+			.collect::<Result<Vec<_>, _>>()
+			.map_err(|e| format!("Path pattern error: {:?}", e))?;
+		let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
+		paths.extend(files);
+		if paths.len() > max_files {
+			return Err(
+				format!("Found too many files. Found: {}, Max: {}", paths.len(), max_files).into()
+			)
+		}
 	}
+	paths.sort();
+	paths.dedup();
+	Ok(paths)
 }
 
 #[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]

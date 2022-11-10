@@ -11,21 +11,19 @@
   
 	/**
 	 * @function darkmode
-	 * @summary: changes the theme to 'dark mode' and save settings to local stroage.
+	 * @summary: changes the theme to 'dark mode' and save settings to local storage.
 	 * Basically, replaces/toggles every CSS class that has '-light' class with '-dark'
 	 */
-	function darkMode() {
+	function darkMode() {  	
 	  document.querySelectorAll('.bg-light').forEach((element) => {
-		element.className = element.className.replace(/-light/g, '-dark');
+		element.className = element.className.replace(/bg-light/g, 'bg-dark');
 	  });
-  
 	  document.body.classList.add('bg-dark');
   
-	  if (document.body.classList.contains('text-dark')) {
-		document.body.classList.replace('text-dark', 'text-light');
-	  } else {
-		document.body.classList.add('text-light');
-	  }
+	  document.querySelectorAll('.text-dark').forEach((element) => {
+		element.className = element.className.replace(/text-dark/g, 'text-light');
+	  });
+	  document.body.classList.add('text-light');
   
 	  // Tables
 	  var tables = document.querySelectorAll('table');
@@ -47,17 +45,15 @@
 	 */
 	function lightMode() {
 	  document.querySelectorAll('.bg-dark').forEach((element) => {
-		element.className = element.className.replace(/-dark/g, '-light');
+		element.className = element.className.replace(/bg-dark/g, 'bg-light');
 	  });
-  
 	  document.body.classList.add('bg-light');
   
-	  if (document.body.classList.contains('text-light')) {
-		document.body.classList.replace('text-light', 'text-dark');
-	  } else {
-		document.body.classList.add('text-dark');
-	  }
-  
+	  document.querySelectorAll('.text-light').forEach((element) => {
+		element.className = element.className.replace(/text-light/g, 'text-dark');
+	  });
+	  document.body.classList.add('text-dark');
+
 	  // Tables
 	  var tables = document.querySelectorAll('table');
 	  for (var i = 0; i < tables.length; i++) {

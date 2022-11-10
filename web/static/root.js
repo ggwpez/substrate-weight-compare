@@ -58,10 +58,6 @@ function populate_branches(branches) {
     }
 }
 
-function load_config() {
-    var repos = [];
-}
-
 function load_branches(repo, fetch) {
     // Is the repo unknown or should be fetched?
     if (!(repo in branches) || fetch) {
@@ -160,7 +156,7 @@ $(document).ready(function () {
             url += "&path_pattern=" + path_pattern_presets[repo];
         } else {
             // Show an alert
-            alert("No path pattern for " + repo);
+            alert("No path pattern for '" + repo + "'");
             return;
         }
 
@@ -204,8 +200,10 @@ $(document).ready(function () {
 
     // Load the repo that was last selected
     var selected_repo = localStorage.getItem(lsk_selected_repo);
-    if (selected_repo) {
+    if (selected_repo && selected_repo in branches) {
         console.debug("Loading last selected repo: " + selected_repo);
         $('#repoSelect').val(selected_repo).trigger('change');
+    } else {
+        console.debug("Skipped loading of repo: " + selected_repo);
     }
 });

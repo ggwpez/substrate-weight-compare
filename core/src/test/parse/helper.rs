@@ -66,7 +66,7 @@ macro_rules! integration_test {
 				#[cfg_attr(not(all(feature = $repo, feature = "version-locked-tests")), ignore)]
 				fn num_pallet_weight_files() {
 					init();
-					assert_eq!(pallet_files().len(), NUM_PALLET_WEIGHT_FILES);
+					assert_eq!(pallet_files().len(), NUM_PALLET_WEIGHT_FILES, "Wrong number of pallet weight files found.");
 				}
 
 				/// Asserts that the correct number of storage weight files is found.

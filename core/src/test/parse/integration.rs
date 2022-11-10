@@ -119,3 +119,17 @@ integration_test!(
 	vec![],
 	vec![]
 );
+
+integration_test!(
+	nodle,
+	"chain",
+	"348a54affc9a6dcd0cc900dee9919c7a0ba98aa8",
+	54,
+	12,
+	0,
+	0,
+	vec!["pallets/*/src/weights.rs", "runtimes/*/src/weights/*.rs"];
+	exclude=vec![],
+	vec![],
+	vec![]
+);
