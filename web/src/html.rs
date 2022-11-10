@@ -6,7 +6,7 @@ use swc_core::{Percent, RelativeChange, TermChange, Unit};
 
 pub mod templates {
 	use super::*;
-	use crate::{Repo, CompareArgs};
+	use crate::{CompareArgs, Repo};
 	use sailfish::TemplateOnce;
 	use swc_core::TotalDiff;
 
