@@ -15,7 +15,7 @@ integration_test!(
 	43,
 	2,
 	2,
-	vec!["**/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
+	vec!["frame/**/src/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
 	// Keep the patterns in the most general way to catch new files.
 	vec!["**/*db_weights.rs"],
 	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]

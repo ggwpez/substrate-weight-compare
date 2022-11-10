@@ -77,7 +77,8 @@ pub struct VersionArgs {
 	is: Option<String>,
 }
 
-struct Repo {
+#[derive(Clone)]
+pub struct Repo {
 	name: String,
 	path: PathBuf,
 	organization: String,
@@ -324,7 +325,7 @@ struct MrArgs {}
 /// This endpoint is a two-in one. If no repo is passed,
 #[get("/compare-mr")]
 async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
-	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+	let repos = REPOS.iter().map(|r| r.value().clone()).collect();
 	http_200(templates::MRs::render(repos))
 }
 

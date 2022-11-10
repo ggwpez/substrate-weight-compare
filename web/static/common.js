@@ -10,9 +10,9 @@ export function loading(yes) {
 }
 
 export const path_pattern_presets = {
-    "substrate": "frame/.*/src/weights.rs",
-    "polkadot": "runtime/.*/src/weights/.*/*.rs",
-	"cumulus": ".*/weights/.*rs",
+    "substrate": "frame/**/src/weights.rs",
+    "polkadot": "runtime/*/src/weights/**/*.rs,bridges/modules/*/src/weights.rs",
+	"cumulus": "**/weights/*.rs,**/src/weights.rs",
 	"chain": "pallets/*/src/weights.rs,runtimes/*/src/weights/*.rs",
 };
 
@@ -28,6 +28,6 @@ export function default_params(repo) {
 		"path_pattern": pattern,
 		"method": "guess-worst",
 		"ignore_errors": "true",
-		"unit": "weight",
+		"unit": "time",
 	};
 };

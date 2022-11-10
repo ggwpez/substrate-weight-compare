@@ -6,7 +6,7 @@ use swc_core::{Percent, RelativeChange, TermChange, Unit};
 
 pub mod templates {
 	use super::*;
-	use crate::CompareArgs;
+	use crate::{Repo, CompareArgs};
 	use sailfish::TemplateOnce;
 	use swc_core::TotalDiff;
 
@@ -19,7 +19,7 @@ pub mod templates {
 	#[derive(TemplateOnce)]
 	#[template(path = "merge_requests.stpl")]
 	pub struct MRs {
-		repos: Vec<String>,
+		repos: Vec<Repo>,
 	}
 
 	#[derive(TemplateOnce)]
@@ -46,7 +46,7 @@ pub mod templates {
 	}
 
 	impl MRs {
-		pub fn render(repos: Vec<String>) -> String {
+		pub fn render(repos: Vec<Repo>) -> String {
 			let ctx = Self { repos };
 			ctx.render_once().expect("Must render static template; qed")
 		}

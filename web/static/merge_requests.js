@@ -27,29 +27,17 @@ $.param = function(name, def){
 	return res;
 }
 
-// Takes query name and value to redirect to.
-function url_redirect(arg, value) {
-	if (value === null || value === '' || value === undefined) {
-		console.warn(`url_redirect: invalid value ${value} for arg ${arg}`);
-		return;
-	}
-	var url = new URL(window.location);
-	url.searchParams.set(arg, value);
-	console.log("Redirecting to: " + url.toString());
-
-	window.location.href = url.toString();
-}
-
 function init_ui() {
-	// Init the selectors.
-	const selectors = ["repo"]
-	for (const selector of selectors) {
-		const id = `#select_${selector}`;
-		// Redirect on change.
-		$(id).change(function() {
-			url_redirect(selector, $(this).val());
-		});
-	}
+	// Redirect on change.
+	$(`#select_repo`).change(function() {
+		// Split and get both owner:repo
+		const splits = $(this).val().split(":");
+		var url = new URL(window.location);
+		url.searchParams.set("owner", splits[0]);
+		url.searchParams.set("repo", splits[1]);
+		console.log("Redirecting to: " + url.toString());
+		window.location.href = url.toString();
+	});
 }
 
 $(document).ready(function () {
@@ -70,7 +58,7 @@ $(document).ready(function () {
 
 	var owner = $.param('owner', 'paritytech');
 	var repo = $.param('repo', 'polkadot');
-	$('#select_repo').val(repo);
+	$('#select_repo').val(owner + ':' + repo);
 	init_ui();
 
 	var highlighted = 0;

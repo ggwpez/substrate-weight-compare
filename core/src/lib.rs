@@ -206,13 +206,11 @@ pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
 			.arg(refname)
 			.current_dir(path)
 			.output()
-			.map_err(|e| format!("Failed to fetch branch {}: '{:?}'", &refname, e))?;
+			.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
 		if !output.status.success() {
 			return Err(format!(
-				"Failed to fetch branch '{}': {},{}",
-				&refname,
+				"Failed to fetch branch: {}",
 				String::from_utf8_lossy(&output.stderr),
-				String::from_utf8_lossy(&output.stdout)
 			))
 		}
 	}

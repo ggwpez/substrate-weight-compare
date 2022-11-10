@@ -48,7 +48,7 @@
 				<div class="col">
 					Repo: <select id="select_repo">
 						<% for repo in repos.iter() { %>
-							<option value=<%= repo %>><%= repo %></option>
+							<option value=<%= format!("{}:{}", &repo.organization, &repo.name) %>><%= format!("{}:{}", &repo.organization, &repo.name) %></option>
 						<% } %>
 					</select>
 				</div>
