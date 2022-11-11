@@ -6,7 +6,7 @@ use swc_core::{Percent, RelativeChange, TermChange, Unit};
 
 pub mod templates {
 	use super::*;
-	use crate::CompareArgs;
+	use crate::{CompareArgs, Repo};
 	use sailfish::TemplateOnce;
 	use swc_core::TotalDiff;
 
@@ -19,7 +19,7 @@ pub mod templates {
 	#[derive(TemplateOnce)]
 	#[template(path = "merge_requests.stpl")]
 	pub struct MRs {
-		repos: Vec<String>,
+		repos: Vec<Repo>,
 	}
 
 	#[derive(TemplateOnce)]
@@ -27,6 +27,7 @@ pub mod templates {
 	pub struct Compare<'a> {
 		diff: &'a TotalDiff,
 		args: &'a CompareArgs,
+		organization: String,
 		repos: &'a Vec<String>,
 		was_cached: bool,
 	}
@@ -45,7 +46,7 @@ pub mod templates {
 	}
 
 	impl MRs {
-		pub fn render(repos: Vec<String>) -> String {
+		pub fn render(repos: Vec<Repo>) -> String {
 			let ctx = Self { repos };
 			ctx.render_once().expect("Must render static template; qed")
 		}
@@ -55,10 +56,11 @@ pub mod templates {
 		pub fn render(
 			diff: &'a TotalDiff,
 			args: &'a CompareArgs,
+			organization: String,
 			repos: &'a Vec<String>,
 			was_cached: bool,
 		) -> String {
-			let ctx = Self { diff, args, repos, was_cached };
+			let ctx = Self { diff, args, organization, repos, was_cached };
 			ctx.render_once().expect("Must render static template; qed")
 		}
 	}
@@ -91,8 +93,8 @@ pub(crate) fn readme_link(name: &str) -> String {
 	format!("{} <a href=\"https://github.com/ggwpez/substrate-weight-compare/#{}\" target=\"_blank\"><sup><small>HELP</small></sup></a>", name, anchor)
 }
 
-pub(crate) fn code_link(repo: &str, name: &str, file: &str, rev: &str) -> String {
-	format!("<a href=\"https://github.com/paritytech/{}/tree/{}/{}#:~:text=fn {}\" target=\"_blank\"><sup><small>CODE</small></sup></a>", repo, rev, file, name)
+pub(crate) fn code_link(repo_name: &str, org: &str, name: &str, file: &str, rev: &str) -> String {
+	format!("<a href=\"https://github.com/{}/{}/tree/{}/{}#:~:text=fn {}\" target=\"_blank\"><sup><small>CODE</small></sup></a>", &org, &repo_name, rev, file, name)
 }
 
 pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
@@ -138,7 +140,11 @@ pub(crate) fn html_color_abs(change: &TermChange, unit: Unit) -> String {
 fn order_percent(change: &TermChange) -> i128 {
 	match change.change {
 		// This only considers the first three digits of the percent since the UI only shows these.
-		RelativeChange::Changed => (change.percent * 1000.0) as i128,
+		RelativeChange::Changed => {
+			// The ordering will be wrong for very large relative changes, but still better than
+			// having them rank above 'Added'.
+			((change.percent * 1000.0) as i128).min(u32::MAX as i128)
+		},
 		RelativeChange::Unchanged => 0,
 		RelativeChange::Added => i128::MAX,
 		RelativeChange::Removed => i128::MIN,

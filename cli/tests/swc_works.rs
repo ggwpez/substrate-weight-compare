@@ -76,7 +76,7 @@ fn swc_compare_commits_same_no_changes() {
 fn swc_compare_commits_errors() {
 	let output = Command::cargo_bin("swc")
 		.unwrap()
-		.args(["compare", "commits", "--method", "base", "--path-pattern", "**/*.rs"])
+		.args(["compare", "commits", "--method", "base", "--path-pattern", ".*/.*rs"])
 		.args(["vWrong"])
 		.args(["--repo", root_dir().join("repos/polkadot").to_str().unwrap()])
 		.output()

@@ -25,3 +25,25 @@ fn path_stripping_works(
 
 	assert_eq!(output, mode.strip(repo, path))
 }
+
+#[test]
+fn fancy_regex_works() {
+	let regex =
+		fancy_regex::Regex::new(r"^(runtimes|pallets)/.*/src/weights(/.*rs|.*rs)$").unwrap();
+	let input_pallet = vec![
+		"pallets/allocations/src/weights.rs",
+		"pallets/grants/src/weights.rs",
+		"pallets/reserve/src/weights.rs",
+		"pallets/staking/src/weights.rs",
+	];
+	for input in input_pallet {
+		assert!(regex.is_match(input).unwrap());
+	}
+	let input_runtime = vec![
+		"runtimes/eden/src/weights/frame_system.rs",
+		"runtimes/eden/src/weights/pallet_multisig.rs",
+	];
+	for input in input_runtime {
+		assert!(regex.is_match(input).unwrap());
+	}
+}

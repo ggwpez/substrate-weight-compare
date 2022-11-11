@@ -15,7 +15,7 @@ integration_test!(
 	43,
 	2,
 	2,
-	vec!["**/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
+	vec!["frame/**/src/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
 	// Keep the patterns in the most general way to catch new files.
 	vec!["**/*db_weights.rs"],
 	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]
@@ -115,6 +115,20 @@ integration_test!(
 	0,
 	vec!["**/weights.rs", "**/weights/*.rs", "**/weight.rs",
 		"frame/ibc/ibc-trait/src/lib.rs"];
+	exclude=vec![],
+	vec![],
+	vec![]
+);
+
+integration_test!(
+	nodle,
+	"chain",
+	"348a54affc9a6dcd0cc900dee9919c7a0ba98aa8",
+	54,
+	12,
+	0,
+	0,
+	vec!["pallets/*/src/weights.rs", "runtimes/*/src/weights/*.rs"];
 	exclude=vec![],
 	vec![],
 	vec![]

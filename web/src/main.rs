@@ -26,6 +26,7 @@ use swc_core::{
 	TotalDiff, Unit, VERSION,
 };
 
+mod git;
 mod html;
 use html::*;
 
@@ -76,11 +77,18 @@ pub struct VersionArgs {
 	is: Option<String>,
 }
 
+#[derive(Clone)]
+pub struct Repo {
+	name: String,
+	path: PathBuf,
+	organization: String,
+}
+
 lazy_static! {
 	/// Protects each git repo from concurrent access.
 	///
-	/// Maps the name of the repo to its path.
-	static ref REPOS: DashMap<String, PathBuf> = DashMap::new();
+	/// Maps the name of the repo to its origin-name and path.
+	static ref REPOS: DashMap<String, Repo> = DashMap::new();
 	static ref CONFIG: MainCmd = MainCmd::parse();
 }
 
@@ -98,7 +106,20 @@ async fn main() -> std::io::Result<()> {
 	}
 	for repo_name in cmd.repos {
 		let path = cmd.root_path.join(&repo_name);
-		REPOS.insert(repo_name.clone(), path.clone());
+		let organization = git::get_origin_org(&path).map_err(|e| {
+			std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Failed to get origin of {}: {}", repo_name, e),
+			)
+		})?;
+		REPOS.insert(
+			repo_name.clone(),
+			Repo {
+				name: repo_name.clone(),
+				path: path.clone(),
+				organization: organization.clone(),
+			},
+		);
 		// Check if the repo directory exists.
 		if !path.exists() {
 			return Err(std::io::Error::new(
@@ -106,7 +127,7 @@ async fn main() -> std::io::Result<()> {
 				format!("Repo directory '{}' does not exist", path.display()),
 			))
 		}
-		info!("Exposing repo '{}' at '{}'", &repo_name, path.display());
+		info!("Exposing repo '{}/{}' at '{}'", &organization, &repo_name, path.display());
 	}
 	// check that static_path is a dir
 	if !Path::new(&static_path).is_dir() {
@@ -190,7 +211,7 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse query: {}", e))
 	})?;
 
-	let path = REPOS.get(&args.repo).ok_or_else(|| {
+	let repo = REPOS.get(&args.repo).ok_or_else(|| {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Unknown repo '{}'", args.repo))
 	})?;
 	if args.fetch.unwrap_or_default() {
@@ -202,21 +223,21 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 			.arg("--all")
 			.arg("--prune")
 			.arg("--tags")
-			.current_dir(path.deref())
+			.current_dir(repo.path.deref())
 			.output()
 			.map_err(|e| {
 				std::io::Error::new(
 					std::io::ErrorKind::Other,
-					format!("Failed to fetch branches: {}", e),
+					format!("Failed to fetch branches: '{}'", e),
 				)
 			})?;
 		if !output.status.success() {
 			let err = String::from_utf8(output.stderr).unwrap();
-			log::error!("Failed to fetch branches: {}", &err);
+			log::error!("Failed to fetch branches: '{}'", &err);
 
 			return Err(std::io::Error::new(
 				std::io::ErrorKind::Other,
-				format!("Failed to fetch branches: {}", &err),
+				format!("Failed to fetch branches: '{}'", &err),
 			)
 			.into())
 		}
@@ -225,7 +246,7 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 	// Spawn a git command and return all branches
 	let output = Command::new("git")
 		.args(&["ls-remote", "--tags", "--heads"])
-		.current_dir(path.deref())
+		.current_dir(repo.path.deref())
 		.output()?;
 	if !output.status.success() {
 		let err = String::from_utf8(output.stderr).unwrap();
@@ -267,13 +288,33 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 	if let Err(err) = args {
 		return http_500(templates::Error::render(&err.to_string()))
 	}
-	let args = args.unwrap().into_inner();
+	let mut args = args.unwrap().into_inner();
+	// HTML decode the new and old branch names. TODO clean this up
+	args.new = html_escape::decode_html_entities(&args.new).to_string();
+	args.old = html_escape::decode_html_entities(&args.old).to_string();
+	args.path_pattern = html_escape::decode_html_entities(&args.path_pattern).to_string();
+
 	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+	// TODO dont do two lookups here…
+	let organization = REPOS.get(&args.repo).map(|r| r.organization.clone());
+
+	if organization.is_none() {
+		return http_500(templates::Error::render(&format!(
+			"Unknown repo organization '{}'",
+			&args.repo
+		)))
+	}
 
 	match do_compare_cached(args.clone()) {
-		Ok(res) => HttpResponse::Ok()
-			.content_type("text/html; charset=utf-8")
-			.body(templates::Compare::render(&res.value, &args, &repos, res.was_cached)),
+		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(
+			templates::Compare::render(
+				&res.value,
+				&args,
+				organization.unwrap(),
+				&repos,
+				res.was_cached,
+			),
+		),
 		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
 }
@@ -284,7 +325,7 @@ struct MrArgs {}
 /// This endpoint is a two-in one. If no repo is passed,
 #[get("/compare-mr")]
 async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
-	let repos = REPOS.iter().map(|r| r.key().clone()).collect();
+	let repos = REPOS.iter().map(|r| r.value().clone()).collect();
 	http_200(templates::MRs::render(repos))
 }
 
@@ -366,7 +407,7 @@ fn do_compare_cached(
 		extrinsic: args.extrinsic,
 	};
 
-	let mut diff = compare_commits(&repo, old, new, &params, &filter, path_pattern, 300)?;
+	let mut diff = compare_commits(&repo.path, old, new, &params, &filter, path_pattern, 300)?;
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 
