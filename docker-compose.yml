@@ -1,0 +1,41 @@
+# Docker compose file thati I use on tasty.limo for deployment.
+
+version: "3"
+services:
+  swc_master:
+    container_name: swc_master
+    image: ghcr.io/ggwpez/swc:master
+    ports:
+      - "443:8080"
+    command: swc-web --root /repos/ --repos acala cumulus polkadot substrate chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    volumes:
+      - /home/vados/certs:/certs:ro
+      - /home/vados/repos:/repos
+    healthcheck:
+      test: ["CMD", "curl", "-f", "0.0.0.0:8080"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+
+  swc_dev:
+    container_name: swc_dev
+    image: ghcr.io/ggwpez/swc:dev
+    ports:
+      - "8443:8080"
+    command: swc-web --root /repos/ --repos acala substrate polkadot cumulus chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    volumes:
+      - /home/vados/certs:/certs:ro
+      - /home/vados/repos:/repos
+    healthcheck:
+      test: ["CMD", "curl", "-f", "0.0.0.0:8080"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Check every two minutes
+    command: --interval 120 swc_master swc_dev
