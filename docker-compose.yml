@@ -7,7 +7,7 @@ services:
     image: ghcr.io/ggwpez/swc:master
     ports:
       - "443:8080"
-    command: swc-web --root /repos/ --repos acala cumulus polkadot substrate chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    command: swc-web --root /repos/ --repos cumulus polkadot substrate chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos
@@ -22,7 +22,7 @@ services:
     image: ghcr.io/ggwpez/swc:dev
     ports:
       - "8443:8080"
-    command: swc-web --root /repos/ --repos acala substrate polkadot cumulus chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    command: swc-web --root /repos/ --repos substrate polkadot cumulus chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos

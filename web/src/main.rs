@@ -407,7 +407,7 @@ fn do_compare_cached(
 		extrinsic: args.extrinsic,
 	};
 
-	let mut diff = compare_commits(&repo.path, old, new, &params, &filter, path_pattern, 300)?;
+	let mut diff = compare_commits(&repo.path, old, new, &params, &filter, path_pattern, 6000)?;
 	diff = filter_changes(diff, &filter);
 	sort_changes(&mut diff);
 

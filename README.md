@@ -164,8 +164,8 @@ Note: Not all repositories are deployed to the *SWC* web service.
 Uses the [glob](https://docs.rs/glob/latest/glob/) crate to match files in the repository path with the given pattern.  
 Here are some examples that the web interface uses. These do not catch *all* files, which is a bug:  
 - Substrate: `frame/*/src/weights.rs`
-- Polkadot: `runtime/*/src/weights/**/*.rs`
-- Cumulus: `**/weights/**/*.rs`
+- Polkadot: `runtime/*/src/weights/**/*.rs,bridges/modules/*/src/weights.rs`
+- Cumulus: `**/weights/*.rs,**/src/weights.rs`
 
 `weights/**/*.rs` is preferred to `weights/*.rs` to include possible sub-folders like XCM.  
 The `mod.rs` file is automatically excluded.  
@@ -176,7 +176,6 @@ Filter by the pallets to include by using a [Regex].
 Examples:
 - `.*` would be *any* pallet.
 - `system|assets` would be the `system` and the `assets` pallet.
-- `
 
 ## Extrinsic
 
