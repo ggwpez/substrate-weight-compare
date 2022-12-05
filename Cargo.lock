@@ -315,7 +315,7 @@ dependencies = [
 
 [[package]]
 name = "autocfg"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
@@ -427,7 +427,7 @@ checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
 name = "bytestring"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86b6a75fd3048808ef06af5cd79712be8111960adaf89d90250974b38fc3928a"
 dependencies = [
@@ -873,7 +873,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "form_urlencoded"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
@@ -1836,7 +1836,7 @@ dependencies = [
 
 [[package]]
 name = "scopeguard"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
@@ -2003,7 +2003,7 @@ dependencies = [
 
 [[package]]
 name = "swc"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "assert_cmd",
  "clap 3.2.22",
@@ -2018,7 +2018,7 @@ dependencies = [
 
 [[package]]
 name = "swc_core"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "clap 3.2.22",
  "criterion",
@@ -2038,7 +2038,7 @@ dependencies = [
 
 [[package]]
 name = "swc_web"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "actix-files",
  "actix-web",
