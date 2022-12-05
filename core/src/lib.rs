@@ -221,16 +221,16 @@ pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
 		.arg("--hard")
 		.arg(format!("origin/{}", refname))
 		.current_dir(path)
-		.output()
-		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
-
-	if !output.status.success() {
-		log::warn!(
-			"Failed to reset to: origin/{} - fallback",
-			String::from_utf8_lossy(&output.stderr)
-		)
-	} else {
-		return Ok(())
+		.output();
+	// Ignore any errors and try again without `origin/` prefix.
+	match output {
+		Err(err) => log::info!("Failed to reset to origin/{}: {}", refname, err),
+		Ok(output) =>
+			if !output.status.success() {
+				log::warn!("Failed to reset to: origin/{}", String::from_utf8_lossy(&output.stderr))
+			} else {
+				return Ok(())
+			},
 	}
 	// Try resetting without remote.
 	log::info!("Fallback: Resetting to {}", refname);
