@@ -143,3 +143,31 @@ fn parse_expression_works_v15(#[case] input: &str, #[case] want: Term) {
 	// Eval does not panic
 	let _ = got.eval(&Scope::empty());
 }
+
+// Version 2.0 syntax
+#[rstest]
+#[case("Weight::from_ref_time(123)", val!(123))]
+#[case("Weight::from_ref_time(2_294_283_000)
+	.saturating_add(T::DbWeight::get().reads(389))
+	.saturating_add(T::DbWeight::get().writes(321))",
+	add!(add!(val!(2_294_283_000), reads!(val!(389))), writes!(val!(321))))]
+#[case("Weight::from_ref_time(33)
+	// Standard Error: 663
+	.saturating_add(Weight::from_ref_time(70).saturating_mul(l.into()))
+	.saturating_add(T::DbWeight::get().reads(2))
+	.saturating_add(T::DbWeight::get().writes(2))
+	.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(l.into())))",
+	add!(add!(add!(add!(val!(33), mul!(val!(70), var!("l"))), reads!(val!(2))), writes!(val!(2))), writes!(mul!(val!(1), var!("l")))))]
+#[case("Weight::from_ref_time(165_000)
+	// Standard Error: 826
+	.saturating_add(Weight::from_ref_time(339_692).saturating_mul(i.into()))
+	.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))",
+	add!(add!(val!(165_000), mul!(val!(339_692), var!("i"))), writes!(mul!(val!(1), var!("i")))))]
+fn parse_expression_works_v20(#[case] input: &str, #[case] want: Term) {
+	let expr: Expr = syn::parse_str(input).unwrap();
+	let got = parse_expression(&expr).unwrap();
+	assert_eq!(want, got);
+
+	// Eval does not panic
+	let _ = got.eval(&Scope::empty());
+}
