@@ -348,6 +348,7 @@ pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
 		"saturating_add" =>
 			Ok(Term::Add(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
 		"saturating_mul" => Ok(mul!(parse_expression(&call.receiver)?, parse_args(&call.args)?)),
+		"into" => parse_expression(&call.receiver),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
 }

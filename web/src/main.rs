@@ -105,6 +105,7 @@ async fn main() -> std::io::Result<()> {
 		))
 	}
 	for repo_name in cmd.repos {
+		// TODO check that the folder exists
 		let path = cmd.root_path.join(&repo_name);
 		let organization = git::get_origin_org(&path).map_err(|e| {
 			std::io::Error::new(
