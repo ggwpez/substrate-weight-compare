@@ -23,6 +23,8 @@ astar = []
 moonbeam = []
 composable = []
 chain = []
+# Use for tests or where you need additional convenience derives.
+bloat = []
 
 [dependencies]
 clap = { version = "3.1.12", features = ["derive"] }
@@ -41,3 +43,6 @@ syn = { version = "1.0.91", features = ["parsing", "full"] }
 criterion = { version = "0.3", features = [ "html_reports" ] }
 rstest = "0.12.0"
 serial_test = "*"
+
+# Work-around for <https://github.com/rust-lang/cargo/issues/2911>
+swc_core = { path = ".", features = ["bloat"] }
