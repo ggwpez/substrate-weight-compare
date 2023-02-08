@@ -69,7 +69,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td><%- readme_link("Unit") %></td>
+				<td><%- readme_link("Dimension") %></td>
 				<td>
 					<select id="select_unit">
 						<% for (val, repr) in swc_core::Dimension::reflect().iter() { %>

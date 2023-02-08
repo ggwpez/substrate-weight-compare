@@ -205,11 +205,11 @@ Eg: from 100 to 150 would be +50% and would be included by any threshold >=50.
 
 Filters the changes results by an absolute threshold.
 
-## Unit
+## Dimension
 
-Controls the unit of the output. Can be set to:
-- Weight: Raw weight numbers (default).
-- Time: Time each extrinsic took.
+The weight in Substrate is chromatic (two dimensional). Its dimensions are *Reference Time* and *PoV size*. The dimension can therefore be set to either *Time* or *Proof*. A good unit will then automatically be selected, for example `µs` for *Time* or `KiB` for *Proof*; depending on the size of the concrete scalars.
+- *Time*: The execution time that the call consumed on reference hardware.
+- *Proof*: The size of the Proof-of-validity (PoV) that the call produced.
 
 ## Ignore Errors
 
