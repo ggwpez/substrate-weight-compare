@@ -156,9 +156,15 @@
 				<td>
 					<%= info.file %>
 				</td>
-				<td>
+				<% if info.warning().is_some() { %>
+					<td class="text-warning">
+				<% } else { %>
+						<td>
+				<% } %>
 					<%= info.name %>
-					<sup><a href=<%- format!("\"#{}.{}\"", &info.file, &info.name) %>>🔗</a></sup>
+					<sup>
+						<a href=<%- format!("\"#{}.{}\"", &info.file, &info.name) %>>🔗</a>
+					</sup>
 				</td>
 
 				<td data-order='<%- change.old_v.unwrap_or_default() %>'>
