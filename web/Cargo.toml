@@ -14,25 +14,25 @@ polkadot = []
 [dependencies]
 swc_core = { version = "1.2.0", path = "../core" }
 
-actix-web = { version = "4.0.1", features = ["openssl"] }
-actix-files = "0.6.1"
-clap = { version = "3.1.12", features = ["derive"] }
-env_logger = "0.9.0"
+actix-web = { version = "4.3.0", features = ["openssl"] }
+actix-files = "0.6.2"
+clap = { version = "4.1.4", features = ["derive"] }
+env_logger = "0.10.0"
 lazy_static = "1.4.0"
-log = "0.4.16"
+log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "1.0.91", features = ["parsing", "full"] }
-serde = { version = "1.0.137", features = [ "derive" ] }
-sailfish = "0.4.0"
-badge-maker = "0.2.1"
-dashmap = "5.3.3"
-cached = "0.34.0"
-fancy-regex = "0.10.0"
-html-escape = "0.2.12"
+syn = { version = "1.0.107", features = ["parsing", "full"] }
+serde = { version = "1.0.152", features = [ "derive" ] }
+sailfish = "0.6.0"
+badge-maker = "0.3.1"
+dashmap = "5.4.0"
+cached = "0.42.0"
+fancy-regex = "0.11.0"
+html-escape = "0.2.13"
 
 [dev-dependencies]
-assert_cmd = "2.0.4"
+assert_cmd = "2.0.8"
 serial_test = "*"
-reqwest = { version = "0.11.10", default_features = false, features = ["blocking"] }
+reqwest = { version = "0.11.14", default-features = false, features = ["blocking"] }
 tempfile = "3.3.0"
-rstest = { version = "0.15.0", default-features = false }
+rstest = { version = "0.16.0", default-features = false }
