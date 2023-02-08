@@ -72,7 +72,7 @@
 				<td><%- readme_link("Unit") %></td>
 				<td>
 					<select id="select_unit">
-						<% for (val, repr) in swc_core::Unit::reflect().iter() { %>
+						<% for (val, repr) in swc_core::Dimension::reflect().iter() { %>
 							<option value="<%= repr %>" <%- if &args.unit == val { "selected" } else { "" } %>><%= repr %></option>
 						<% } %>
 					</select>

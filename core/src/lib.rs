@@ -288,9 +288,18 @@ pub enum CompareMethod {
 // We call this *Unit* for ease of use but it is actually a *dimension* and a unit.
 #[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub enum Unit {
-	Weight,
+pub enum Dimension {
+	/// Just a raw value without dimension.
+	///
+	/// The unit are the scientific units, e.g. `K`, `M` or `G` as powers of 10.
+	Scalar,
+
+	/// Reference time. Alias to `weight` for backwards compatibility.
+	#[serde(alias = "weight")]
 	Time,
+
+	/// Proof-of-validity (PoV) size.
+	Proof,
 }
 
 impl std::str::FromStr for CompareMethod {
@@ -320,29 +329,16 @@ impl CompareMethod {
 	}
 }
 
-impl std::str::FromStr for Unit {
+impl std::str::FromStr for Dimension {
 	type Err = String;
 
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
-			"weight" => Ok(Self::Weight),
-			"time" => Ok(Self::Time),
+			"scalar" => Ok(Self::Scalar),
+			"time" | "weight" => Ok(Self::Time),
+			"proof" => Ok(Self::Proof),
 			_ => Err(format!("Unknown method: {}", s)),
 		}
-	}
-}
-
-impl Unit {
-	pub fn all() -> Vec<Self> {
-		vec![Self::Weight, Self::Time]
-	}
-
-	pub fn variants() -> Vec<&'static str> {
-		vec!["weight", "time"]
-	}
-
-	pub fn reflect() -> Vec<(Self, &'static str)> {
-		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
 	}
 }
 
@@ -663,40 +659,69 @@ pub fn percent(old: u128, new: u128) -> Percent {
 	100.0 * (new as f64 / old as f64) - 100.0
 }
 
-pub fn fmt_weight(w: u128) -> String {
-	if w >= 1_000_000_000_000 {
-		format!("{:.2}T", w as f64 / 1_000_000_000_000f64)
-	} else if w >= 1_000_000_000 {
-		format!("{:.2}G", w as f64 / 1_000_000_000f64)
-	} else if w >= 1_000_000 {
-		format!("{:.2}M", w as f64 / 1_000_000f64)
-	} else if w >= 1_000 {
-		format!("{:.2}K", w as f64 / 1_000f64)
-	} else {
-		w.to_string()
-	}
-}
-
-/// Formats pico seconds.
-pub fn fmt_time(t: u128) -> String {
-	if t >= 1_000_000_000_000 {
-		format!("{:.2}s", t as f64 / 1_000_000_000_000f64)
-	} else if t >= 1_000_000_000 {
-		format!("{:.2}ms", t as f64 / 1_000_000_000f64)
-	} else if t >= 1_000_000 {
-		format!("{:.2}us", t as f64 / 1_000_000f64)
-	} else if t >= 1_000 {
-		format!("{:.2}ns", t as f64 / 1_000f64)
-	} else {
-		format!("{:.2}ps", t)
-	}
-}
-
-impl Unit {
+impl Dimension {
 	pub fn fmt_value(&self, v: u128) -> String {
 		match self {
-			Unit::Time => fmt_time(v),
-			Unit::Weight => fmt_weight(v),
+			Self::Scalar => Self::fmt_scalar(v),
+			Self::Time => Self::fmt_time(v),
+			Self::Proof => Self::fmt_proof(v),
 		}
+	}
+
+	pub fn fmt_scalar(w: u128) -> String {
+		if w >= 1_000_000_000_000 {
+			format!("{:.2}T", w as f64 / 1_000_000_000_000f64)
+		} else if w >= 1_000_000_000 {
+			format!("{:.2}G", w as f64 / 1_000_000_000f64)
+		} else if w >= 1_000_000 {
+			format!("{:.2}M", w as f64 / 1_000_000f64)
+		} else if w >= 1_000 {
+			format!("{:.2}K", w as f64 / 1_000f64)
+		} else {
+			w.to_string()
+		}
+	}
+
+	/// Formats pico seconds.
+	pub fn fmt_time(t: u128) -> String {
+		if t >= 1_000_000_000_000 {
+			format!("{:.2}s", t as f64 / 1_000_000_000_000f64)
+		} else if t >= 1_000_000_000 {
+			format!("{:.2}ms", t as f64 / 1_000_000_000f64)
+		} else if t >= 1_000_000 {
+			format!("{:.2}us", t as f64 / 1_000_000f64)
+		} else if t >= 1_000 {
+			format!("{:.2}ns", t as f64 / 1_000f64)
+		} else {
+			format!("{}ps", t)
+		}
+	}
+
+	pub fn fmt_proof(b: u128) -> String {
+		const BYTE_PER_KIB: u128 = 1024;
+		const BYTE_PER_MIB: u128 = BYTE_PER_KIB * 1024;
+		const BYTE_PER_GIB: u128 = BYTE_PER_MIB * 1024;
+
+		if b >= BYTE_PER_GIB {
+			format!("{:.2}GiB", b as f64 / BYTE_PER_GIB as f64)
+		} else if b >= BYTE_PER_MIB {
+			format!("{:.2}MiB", b as f64 / BYTE_PER_MIB as f64)
+		} else if b >= BYTE_PER_KIB {
+			format!("{:.2}KiB", b as f64 / BYTE_PER_KIB as f64)
+		} else {
+			format!("{}B", b)
+		}
+	}
+
+	pub fn all() -> Vec<Self> {
+		vec![Self::Scalar, Self::Time, Self::Proof]
+	}
+
+	pub fn variants() -> Vec<&'static str> {
+		vec!["scalar", "time", "proof"]
+	}
+
+	pub fn reflect() -> Vec<(Self, &'static str)> {
+		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
 	}
 }

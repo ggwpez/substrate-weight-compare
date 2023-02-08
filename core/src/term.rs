@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet as Set, fmt};
 use syn::{BinOp, ExprBinary};
 
-use crate::{fmt_weight, scope::Scope};
+use crate::scope::Scope;
 
 /// A symbolic term that can be used to express simple arithmetic.
 ///
@@ -180,7 +180,7 @@ impl Term {
 					format!("({} + {})", l.fmt_with_bracket(true), r.fmt_with_bracket(true))
 				}
 			},
-			Self::Value(val) => fmt_weight(*val),
+			Self::Value(val) => crate::Dimension::fmt_scalar(*val),
 			Self::Var(var) => var.clone().into(),
 		}
 	}

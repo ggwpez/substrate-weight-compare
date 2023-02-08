@@ -2,7 +2,7 @@
 
 use actix_web::HttpResponse;
 
-use swc_core::{Percent, RelativeChange, TermChange, Unit};
+use swc_core::{Dimension, Percent, RelativeChange, TermChange};
 
 pub mod templates {
 	use super::*;
@@ -115,7 +115,7 @@ pub(crate) fn html_color_percent(p: Percent, change: RelativeChange) -> String {
 	}
 }
 
-pub(crate) fn html_color_abs(change: &TermChange, unit: Unit) -> String {
+pub(crate) fn html_color_abs(change: &TermChange, unit: Dimension) -> String {
 	match change.change {
 		RelativeChange::Changed => {
 			let diff = change.new_v.unwrap() as i128 - change.old_v.unwrap() as i128;

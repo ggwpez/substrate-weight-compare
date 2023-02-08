@@ -22,8 +22,8 @@ use std::{
 };
 
 use swc_core::{
-	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
-	TotalDiff, Unit, VERSION,
+	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, Dimension,
+	FilterParams, TotalDiff, VERSION,
 };
 
 mod git;
@@ -67,7 +67,7 @@ pub struct CompareArgs {
 	pallet: Option<String>,
 	ignore_errors: bool,
 	threshold: u32,
-	unit: Unit,
+	unit: Dimension,
 	git_pull: Option<bool>,
 	method: CompareMethod,
 }

@@ -5,7 +5,8 @@ use std::{fmt::Write as _, path::PathBuf};
 use swc_core::{
 	compare_commits, compare_files, filter_changes,
 	parse::pallet::{parse_files, try_parse_files},
-	sort_changes, CompareParams, FilterParams, Percent, RelativeChange, TotalDiff, Unit, VERSION,
+	sort_changes, CompareParams, Dimension, FilterParams, Percent, RelativeChange, TotalDiff,
+	VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -208,7 +209,7 @@ fn print_changes(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<(), Box<dyn std::error::Error>> {
 	let output = match format.format {
 		OutputFormat::Human => print_changes_human(per_extrinsic, verbose, format, unit),
@@ -225,7 +226,7 @@ fn print_changes_csv(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
@@ -274,7 +275,7 @@ fn print_changes_human(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
