@@ -39,7 +39,7 @@ pub(crate) struct MainCmd {
 	#[clap(long = "static", short, default_value = "web/static")]
 	pub static_path: PathBuf,
 
-	#[clap(long, multiple_values = true, default_value = "polkadot")]
+	#[clap(long, num_args = 0.., default_value = "polkadot")]
 	pub repos: Vec<String>,
 
 	#[clap(long, short, default_value = "localhost")]

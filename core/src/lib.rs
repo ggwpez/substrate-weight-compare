@@ -101,7 +101,9 @@ pub struct TermChange {
 }
 
 // TODO rename
-#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(
+	Debug, serde::Deserialize, clap::ValueEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum RelativeChange {
 	Unchanged,
@@ -113,24 +115,11 @@ pub enum RelativeChange {
 /// Parameters for modifying the benchmark behaviour.
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct CompareParams {
-	#[clap(
-		long,
-		short,
-		value_name = "METHOD",
-		ignore_case = true,
-		possible_values = CompareMethod::variants(),
-	)]
+	#[clap(long, short, value_name = "METHOD", ignore_case = true)]
 	pub method: CompareMethod,
 
-	#[clap(
-		long,
-		short,
-		value_name = "UNIT",
-		ignore_case = true,
-		default_value = "weight",
-		possible_values = Unit::variants(),
-	)]
-	pub unit: Unit,
+	#[clap(long, short, value_name = "UNIT", ignore_case = true, default_value = "weight")]
+	pub unit: Dimension,
 
 	#[clap(long)]
 	pub ignore_errors: bool,
@@ -150,7 +139,7 @@ pub struct FilterParams {
 	pub threshold: Percent,
 
 	/// Only include a subset of change-types.
-	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
+	#[clap(long, ignore_case = true, num_args = 0.., value_name = "CHANGE-TYPE")]
 	pub change: Option<Vec<RelativeChange>>,
 
 	#[clap(long, ignore_case = true, value_name = "REGEX")]
@@ -285,7 +274,7 @@ fn list_files(
 	Ok(paths)
 }
 
-#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.
@@ -296,7 +285,8 @@ pub enum CompareMethod {
 	ExactWorst,
 }
 
-#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+// We call this *Unit* for ease of use but it is actually a *dimension* and a unit.
+#[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum Unit {
 	Weight,
@@ -364,7 +354,7 @@ impl FilterParams {
 
 impl std::str::FromStr for RelativeChange {
 	type Err = String;
-	// TODO try clap ArgEnum
+	// TODO try clap ValueEnum
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
 			"unchanged" => Ok(Self::Unchanged),

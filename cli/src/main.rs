@@ -53,11 +53,11 @@ struct CompareFilesCmd {
 	pub format: FormatParams,
 
 	/// The old weight files.
-	#[clap(long, required(true), multiple_values(true))]
+	#[clap(long, required(true), num_args = 0..)]
 	pub old: Vec<PathBuf>,
 
 	/// The new weight files.
-	#[clap(long, required(true), multiple_values(true))]
+	#[clap(long, required(true), num_args = 0..)]
 	pub new: Vec<PathBuf>,
 }
 
@@ -93,7 +93,7 @@ struct CompareCommitsCmd {
 #[derive(Debug, Parser)]
 struct ParseFilesCmd {
 	/// The files to parse.
-	#[clap(long, index = 1, required(true), multiple_values(true))]
+	#[clap(long, index = 1, required(true), num_args = 0..00)]
 	pub files: Vec<PathBuf>,
 }
 
@@ -101,8 +101,7 @@ struct ParseFilesCmd {
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct FormatParams {
 	/// Set the format of the output.
-	#[clap(long, value_name  ="FORMAT", default_value = "human", ignore_case = true,
-possible_values = OutputFormat::variants())]
+	#[clap(long, value_name = "FORMAT", default_value = "human", ignore_case = true)]
 	pub format: OutputFormat,
 
 	/// Include weight terms in the console output.
@@ -116,7 +115,9 @@ possible_values = OutputFormat::variants())]
 	no_color: bool,
 }
 
-#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(
+	Debug, serde::Deserialize, clap::ValueEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum OutputFormat {
 	/// Full human readable output.
