@@ -38,11 +38,11 @@
 				</td>
 			</tr>
 			<tr>
-				<td>Old Commit</td>
+				<td>Old Commit/Branch</td>
 				<td><input id="input_old" type="text" value="<%= args.old %>"></td>
 			</tr>
 			<tr>
-				<td>New Commit</td>
+				<td>New Commit/Branch</td>
 				<td><input id="input_new" type="text" value="<%= args.new %>"></td>
 			</tr>
 			<tr>
@@ -72,8 +72,9 @@
 				<td><%- readme_link("Unit") %></td>
 				<td>
 					<select id="select_unit">
-						<option value="weight" <%- if args.unit == Unit::Weight { "selected" } else { "" } %>>Weight</option>
-						<option value="time" <%- if args.unit == Unit::Time { "selected" } else { "" } %>>Time</option>
+						<% for (val, repr) in swc_core::Unit::reflect().iter() { %>
+							<option value="<%= repr %>" <%- if &args.unit == val { "selected" } else { "" } %>><%= repr %></option>
+						<% } %>
 					</select>
 				</td>
 			</tr>
@@ -82,9 +83,9 @@
 
 				<td>
 					<select id="select_method">
-						<option value="base"  <%- if args.method == swc_core::CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="guess-worst" <%- if args.method == swc_core::CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
-						<option value="exact-worst" <%- if args.method == swc_core::CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
+						<% for (val, repr) in swc_core::CompareMethod::reflect().iter() { %>
+							<option value="<%= repr %>" <%- if &args.method == val { "selected" } else { "" } %>><%= repr %></option>
+						<% } %>
 					</select>
 				</td>
 			</tr>

@@ -317,8 +317,16 @@ impl std::str::FromStr for CompareMethod {
 }
 
 impl CompareMethod {
+	pub fn all() -> Vec<Self> {
+		vec![Self::Base, Self::GuessWorst, Self::ExactWorst]
+	}
+
 	pub fn variants() -> Vec<&'static str> {
 		vec!["base", "guess-worst", "exact-worst"]
+	}
+
+	pub fn reflect() -> Vec<(Self, &'static str)> {
+		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
 	}
 }
 
@@ -335,8 +343,16 @@ impl std::str::FromStr for Unit {
 }
 
 impl Unit {
+	pub fn all() -> Vec<Self> {
+		vec![Self::Weight, Self::Time]
+	}
+
 	pub fn variants() -> Vec<&'static str> {
 		vec!["weight", "time"]
+	}
+
+	pub fn reflect() -> Vec<(Self, &'static str)> {
+		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
 	}
 }
 
