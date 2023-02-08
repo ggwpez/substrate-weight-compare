@@ -582,7 +582,7 @@ pub fn sanity_check_term(term: &Term) -> Result<(), String> {
 	let writes = term.find_largest_factor("WRITE").unwrap_or_default();
 	let larger = reads.max(writes);
 
-	if larger > 50 {
+	if larger > 1000 {
 		if reads > writes {
 			Err(format!("Call has {} READs", reads))
 		} else {
@@ -633,7 +633,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
 			TermDiff::Changed(ref change) => match change.change {
 				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
-				RelativeChange::Unchanged if params.threshold >= 0.001 => false,
+				RelativeChange::Unchanged if params.threshold >= 0.000001 => false,
 				_ => true,
 			},
 		})

@@ -294,3 +294,47 @@ fn extend_scoped_components_works() {
 fn sanity_check_term_works(#[case] term: Term, #[case] res: std::result::Result<(), &str>) {
 	assert_eq!(sanity_check_term(&term), res.map_err(Into::into), "term: {}", term);
 }
+
+#[rstest]
+#[case(10, 11, 9., true)]
+#[case(10, 11, 11., false)]
+#[case(673, 673, 10., false)]
+#[case(100, 200, 10., true)]
+#[case(100, 200, 100., true)]
+#[case(100, 200, 101., false)]
+fn filter_rel_threshold_works(
+	#[case] old: u128,
+	#[case] new: u128,
+	#[case] threshold: f64,
+	#[case] kept: bool,
+) {
+	let diffs = vec![ExtrinsicDiff {
+		name: String::new(),
+		file: String::new(),
+		change: TermDiff::Changed(mocked_change(old, new)),
+	}];
+	let params = FilterParams { threshold, ..Default::default() };
+
+	assert_eq!(
+		filter_changes(diffs.clone(), &params).is_empty(),
+		!kept,
+		"old: {}, new: {}, threshold: {}, diffs: {:?}",
+		old,
+		new,
+		threshold,
+		diffs
+	);
+}
+
+fn mocked_change(old: u128, new: u128) -> TermChange {
+	TermChange {
+		old: None,
+		old_v: Some(old),
+		new: None,
+		new_v: Some(new),
+		scope: Scope::empty(),
+		percent: percent(old, new),
+		change: RelativeChange::Changed,
+		method: CompareMethod::GuessWorst,
+	}
+}
