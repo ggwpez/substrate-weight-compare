@@ -44,6 +44,7 @@ pub type Percent = f64;
 pub const WEIGHT_PER_NANOS: u128 = 1_000;
 
 #[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub struct ExtrinsicDiff {
 	pub name: ExtrinsicName,
 	pub file: String,
@@ -52,6 +53,7 @@ pub struct ExtrinsicDiff {
 }
 
 #[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub enum TermDiff {
 	Changed(TermChange),
 	Warning(TermChange, String),
@@ -82,8 +84,9 @@ impl ExtrinsicDiff {
 	}
 }
 
-#[derive(Clone)]
 // Uses options since extrinsics can be added or removed and any time.
+#[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub struct TermChange {
 	pub old: Option<Term>,
 	pub old_v: Option<u128>,
@@ -140,6 +143,7 @@ pub struct CompareParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Args)]
+#[cfg_attr(feature = "bloat", derive(Default))]
 pub struct FilterParams {
 	/// Minimal magnitude of a relative change to be relevant.
 	#[clap(long, value_name = "PERCENT", default_value = "5")]

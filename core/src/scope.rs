@@ -8,6 +8,7 @@ pub const STORAGE_READ_VAR: &str = "READ";
 pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
+#[cfg_attr(feature = "bloat", derive(Default))]
 pub struct Scope {
 	vars: Map<String, Term>,
 }
