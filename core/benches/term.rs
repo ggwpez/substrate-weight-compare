@@ -2,7 +2,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
-use swc_core::{add, scope::Scope, term::*, val, var};
+use swc_core::{add, scope::SimpleScope, scalar, var};
 
 fn bench_term_add(c: &mut Criterion) {
 	let mut group = c.benchmark_group("Term");
@@ -13,7 +13,7 @@ fn bench_term_add(c: &mut Criterion) {
 	for _ in 0..heigh {
 		term = add!(term.clone(), term);
 	}
-	let scope = Scope::empty().with_var("x", scalar!(245234)).with_var("y", scalar!(245231));
+	let scope = SimpleScope::empty().with_var("x", scalar!(245234)).with_var("y", scalar!(245231));
 
 	group.throughput(Throughput::Elements(size as u64));
 	group.bench_function("Add", |b| b.iter(|| term.eval(&scope).expect("must work")));

@@ -249,7 +249,7 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 
 	// Spawn a git command and return all branches
 	let output = Command::new("git")
-		.args(&["ls-remote", "--tags", "--heads"])
+		.args(["ls-remote", "--tags", "--heads"])
 		.current_dir(repo.path.deref())
 		.output()?;
 	if !output.status.success() {
