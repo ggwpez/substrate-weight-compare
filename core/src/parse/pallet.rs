@@ -506,7 +506,7 @@ fn extract_arg(args: &Punctuated<Expr, Token![,]>) -> Result<&Expr> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}
-	args.first().ok_or("Empty args".into())
+	args.first().ok_or_else(|| "Empty args".into())
 }
 
 fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
