@@ -3,14 +3,15 @@ use std::{collections::HashMap, path::PathBuf};
 use syn::*;
 
 use crate::{
-	traits::Weight,
-	add, cmul, creads, cval, cadd, cvar, cwrites, scalar, mul,
+	add, cadd, cmul, creads, cval, cvar, cwrites, mul,
 	parse::pallet::{
-		parse_content, parse_expression, parse_scalar_expression, parse_file, ChromaticExtrinsic, ComponentRange, GenericExtrinsic,
+		parse_content, parse_expression, parse_file, parse_scalar_expression, ChromaticExtrinsic,
+		ComponentRange, GenericExtrinsic,
 	},
-	reads,
+	reads, scalar,
 	scope::{GenericScope, *},
-	term::{SimpleTerm, ChromaticTerm, GenericTerm},
+	term::{ChromaticTerm, GenericTerm, SimpleTerm},
+	traits::Weight,
 	val, var, writes,
 };
 
@@ -60,7 +61,8 @@ fn parse_function_v1_works(#[case] input: String) {
     	Weight::from_ref_time(5)
 	}
 }",
-	5, 0
+	5,
+	0
 )]
 #[case(
 	"impl WeightInfo for () {
@@ -68,7 +70,8 @@ fn parse_function_v1_works(#[case] input: String) {
     	Weight::from_proof_size(5)
 	}
 }",
-	0, 5
+	0,
+	5
 )]
 #[case(
 	"impl<T: frame_system::Config> my_pallet::WeightInfo for WeightInfo<T> {
@@ -76,7 +79,8 @@ fn parse_function_v1_works(#[case] input: String) {
     	Weight::from_parts(5, 0)
 	}
 }",
-	5, 0
+	5,
+	0
 )]
 #[case(
 	"impl<T: frame_system::Config> my_pallet::WeightInfo for WeightInfo<T> {

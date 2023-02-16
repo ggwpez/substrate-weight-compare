@@ -7,8 +7,12 @@ use crate::{parse::pallet::*, scope::*, term::*, *};
 fn extend_scoped_components_works() {
 	// One component without range
 	{
-		let a =
-			SimpleExtrinsic { name: "".into(), pallet: "".into(), term: var!("a"), comp_ranges: None };
+		let a = SimpleExtrinsic {
+			name: "".into(),
+			pallet: "".into(),
+			term: var!("a"),
+			comp_ranges: None,
+		};
 		let base = SimpleScope::empty();
 
 		// base
@@ -140,10 +144,18 @@ fn extend_scoped_components_works() {
 	}
 	// Two components without ranges
 	{
-		let a =
-			SimpleExtrinsic { name: "".into(), pallet: "".into(), term: var!("a"), comp_ranges: None };
-		let b =
-			SimpleExtrinsic { name: "".into(), pallet: "".into(), term: var!("b"), comp_ranges: None };
+		let a = SimpleExtrinsic {
+			name: "".into(),
+			pallet: "".into(),
+			term: var!("a"),
+			comp_ranges: None,
+		};
+		let b = SimpleExtrinsic {
+			name: "".into(),
+			pallet: "".into(),
+			term: var!("b"),
+			comp_ranges: None,
+		};
 		let base = SimpleScope::empty();
 
 		// base

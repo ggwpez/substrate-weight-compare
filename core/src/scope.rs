@@ -1,7 +1,7 @@
 //! Provides a scope for evaluating [`Term`]s.
 
 use crate::{
-	term::{SimpleTerm, ChromaticTerm},
+	term::{ChromaticTerm, SimpleTerm},
 	WEIGHT_PER_NANOS,
 };
 use core::fmt::Display;

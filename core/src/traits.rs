@@ -80,9 +80,6 @@ impl core::fmt::Display for Weight {
 
 impl Weight {
 	pub fn mul_scalar(&self, other: u128) -> Self {
-		Self {
-			time: self.time * other,
-			proof: self.proof * other,
-		}
+		Self { time: self.time * other, proof: self.proof * other }
 	}
 }

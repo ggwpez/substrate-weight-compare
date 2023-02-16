@@ -158,7 +158,8 @@ impl SimpleTerm {
 
 	pub fn into_chromatic(self, unit: crate::Dimension) -> ChromaticTerm {
 		match self {
-			Self::Value(x) | Self::Scalar(x) => ChromaticTerm::Value(Self::scalar_into_term(x, unit)),
+			Self::Value(x) | Self::Scalar(x) =>
+				ChromaticTerm::Value(Self::scalar_into_term(x, unit)),
 			Self::Add(x, y) => ChromaticTerm::Add(
 				Box::new(x.into_chromatic(unit)),
 				Box::new(y.into_chromatic(unit)),
@@ -173,8 +174,8 @@ impl SimpleTerm {
 
 	fn scalar_into_term(s: u128, unit: crate::Dimension) -> Weight {
 		match unit {
-			crate::Dimension::Time => Weight{ time: s, proof: 0 },
-			crate::Dimension::Proof => Weight{ proof: s, time: 0 },
+			crate::Dimension::Time => Weight { time: s, proof: 0 },
+			crate::Dimension::Proof => Weight { proof: s, time: 0 },
 		}
 	}
 }
@@ -360,10 +361,10 @@ impl ChromaticTerm {
 		self.for_values(|t| match t {
 			Self::Value(Weight { time, .. }) if unit == crate::Dimension::Time =>
 				Ok(SimpleTerm::Value(*time)),
-				Self::Value(Weight { proof, .. }) if unit == crate::Dimension::Proof =>
+			Self::Value(Weight { proof, .. }) if unit == crate::Dimension::Proof =>
 				Ok(SimpleTerm::Value(*proof)),
-				Self::Scalar(val) => Ok(SimpleTerm::Scalar(*val)),
-				Self::Var(var) => Ok(SimpleTerm::Var(var.clone().into())),
+			Self::Scalar(val) => Ok(SimpleTerm::Scalar(*val)),
+			Self::Var(var) => Ok(SimpleTerm::Var(var.clone().into())),
 			_ => unreachable!(),
 		})
 	}

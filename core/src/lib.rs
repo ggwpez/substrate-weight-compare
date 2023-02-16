@@ -26,10 +26,10 @@ mod test;
 
 use parse::pallet::{
 	parse_files_in_repo, try_parse_files_in_repo, ChromaticExtrinsic, ComponentRange,
+	SimpleExtrinsic,
 };
 use scope::SimpleScope;
 use term::SimpleTerm;
-use parse::pallet::SimpleExtrinsic;
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.

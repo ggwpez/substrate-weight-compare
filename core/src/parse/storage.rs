@@ -33,10 +33,7 @@ macro_rules! reads {
 #[macro_export]
 macro_rules! creads {
 	($a:expr) => {
-		GenericTerm::Mul(
-			$a.into(),
-			GenericTerm::Var($crate::scope::STORAGE_READ_VAR.into()).into(),
-		)
+		GenericTerm::Mul($a.into(), GenericTerm::Var($crate::scope::STORAGE_READ_VAR.into()).into())
 	};
 }
 

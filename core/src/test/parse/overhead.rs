@@ -2,10 +2,9 @@ use rstest::*;
 use std::path::PathBuf;
 
 use crate::{
-	cmul,
+	cmul, cval, cvar,
 	parse::overhead::{parse_file, Weight},
 	term::*,
-	cval, cvar,
 };
 
 // Parses hard-coded Storage weight files correctly.

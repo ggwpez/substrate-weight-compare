@@ -1,6 +1,10 @@
 use syn::ItemConst;
 
-use crate::{parse::path_to_string, term::{ChromaticTerm, SimpleTerm}, *};
+use crate::{
+	parse::path_to_string,
+	term::{ChromaticTerm, SimpleTerm},
+	*,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Weight {

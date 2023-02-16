@@ -1,4 +1,9 @@
-use crate::{creads, reads, writes, term::GenericTerm, term::SimpleTerm, traits::*, cwrites, ExtrinsicName, PalletName};
+use crate::{
+	creads, cwrites, reads,
+	term::{GenericTerm, SimpleTerm},
+	traits::*,
+	writes, ExtrinsicName, PalletName,
+};
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
@@ -103,7 +108,8 @@ pub fn try_parse_files(paths: &[PathBuf]) -> Vec<ChromaticExtrinsic> {
 }
 
 pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<ChromaticExtrinsic>> {
-	let ast = syn::parse_file(&content).map_err(|e| format!("syn refused to parse content: {:?}: {}", content, e))?;
+	let ast = syn::parse_file(&content)
+		.map_err(|e| format!("syn refused to parse content: {:?}: {}", content, e))?;
 	for item in ast.items {
 		if let Ok(weights) = handle_item(pallet.clone(), &item) {
 			return Ok(weights)
@@ -146,7 +152,7 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Chromat
 			// TODO validate the trait type.
 			let mut weights = Vec::new();
 			for f in &imp.items {
-				if let ImplItem::Method(m) = f{
+				if let ImplItem::Method(m) = f {
 					let (ext_name, term, comp_ranges) = handle_method(m)?;
 
 					weights.push(ChromaticExtrinsic {
@@ -235,7 +241,9 @@ fn parse_component_attrs(attrs: &Vec<Attribute>) -> Result<Option<ComponentRange
 	}
 }
 
-fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, ChromaticTerm, Option<ComponentRanges>)> {
+fn handle_method(
+	m: &ImplItemMethod,
+) -> Result<(ExtrinsicName, ChromaticTerm, Option<ComponentRanges>)> {
 	let name = m.sig.ident.to_string();
 	// Check the return type to end with `Weight`.
 	if let ReturnType::Type(_, i) = &m.sig.output {
@@ -284,9 +292,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<ChromaticTerm> {
 			Ok(ChromaticTerm::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_call(call),
-		e => {
-			Err(format!("Unexpected expression in pallet expr: {:?}", e).into())
-		},
+		e => Err(format!("Unexpected expression in pallet expr: {:?}", e).into()),
 	}
 }
 
@@ -366,7 +372,8 @@ fn parse_call(call: &ExprCall) -> Result<ChromaticTerm> {
 fn parse_scalar_call(call: &ExprCall) -> Result<SimpleTerm> {
 	let name = function_name(call)?;
 	if name.ends_with("::from_ref_time") {
-		// NOTE: This returns a `Scalar` instead of `Value`… not great but will work since we normally want to multiply it.
+		// NOTE: This returns a `Scalar` instead of `Value`… not great but will work since we
+		// normally want to multiply it.
 		parse_scalar_args(&call.args)
 	} else if name.ends_with("::zero") {
 		if !call.args.empty_or_trailing() {
@@ -448,9 +455,14 @@ pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<ChromaticTerm> 
 			let writes = parse_rw_args(&call.args)?;
 			Ok(cwrites!(writes))
 		},
-		"saturating_add" =>
-			Ok(ChromaticTerm::Add(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
-		"saturating_mul" => Ok(ChromaticTerm::Mul(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
+		"saturating_add" => Ok(ChromaticTerm::Add(
+			parse_expression(&call.receiver)?.into(),
+			parse_args(&call.args)?.into(),
+		)),
+		"saturating_mul" => Ok(ChromaticTerm::Mul(
+			parse_expression(&call.receiver)?.into(),
+			parse_args(&call.args)?.into(),
+		)),
 		"into" => parse_expression(&call.receiver),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
@@ -478,9 +490,14 @@ pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<GenericT
 			let writes = parse_scalar_args(&call.args)?;
 			Ok(writes!(writes))
 		},
-		"saturating_add" =>
-			Ok(GenericTerm::Add(parse_scalar_expression(&call.receiver)?.into(), parse_scalar_args(&call.args)?.into())),
-		"saturating_mul" => Ok(GenericTerm::Mul(parse_scalar_expression(&call.receiver)?.into(), parse_scalar_args(&call.args)?.into())),
+		"saturating_add" => Ok(GenericTerm::Add(
+			parse_scalar_expression(&call.receiver)?.into(),
+			parse_scalar_args(&call.args)?.into(),
+		)),
+		"saturating_mul" => Ok(GenericTerm::Mul(
+			parse_scalar_expression(&call.receiver)?.into(),
+			parse_scalar_args(&call.args)?.into(),
+		)),
 		"into" => parse_scalar_expression(&call.receiver),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
