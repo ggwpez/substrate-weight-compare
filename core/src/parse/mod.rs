@@ -15,7 +15,7 @@ pub mod storage;
 use std::{io::Read, path::Path};
 
 pub enum ParsedFile {
-	Pallet(Vec<pallet::Extrinsic>),
+	Pallet(Vec<pallet::ChromaticExtrinsic>),
 	Storage(storage::Weights),
 	Overhead(overhead::Weight),
 }

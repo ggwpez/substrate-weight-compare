@@ -21,7 +21,7 @@ fn swc_web_help_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert!(out.contains("Print help information"));
+	assert!(out.contains("Print help"));
 }
 
 #[test]

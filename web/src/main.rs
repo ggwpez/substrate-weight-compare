@@ -94,6 +94,9 @@ lazy_static! {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+	if std::env::var("RUST_BACKTRACE").is_err() {
+		std::env::set_var("RUST_BACKTRACE", "1");
+	}
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 	let cmd = CONFIG.clone();
 	let static_path = cmd.static_path.into_os_string();

@@ -188,7 +188,7 @@
 					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= format!("{:?}", &change.scope) %>
+					<%= format!("{}", &change.scope) %>
 				</td>
 			</tr>
 		<% } %>

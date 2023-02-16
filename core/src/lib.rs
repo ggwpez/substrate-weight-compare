@@ -19,13 +19,17 @@ pub mod parse;
 pub mod scope;
 pub mod term;
 pub mod testing;
+pub mod traits;
 
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, ComponentRange, Extrinsic};
-use scope::Scope;
-use term::Term;
+use parse::pallet::{
+	parse_files_in_repo, try_parse_files_in_repo, ChromaticExtrinsic, ComponentRange,
+};
+use scope::SimpleScope;
+use term::SimpleTerm;
+use parse::pallet::SimpleExtrinsic;
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
@@ -88,13 +92,13 @@ impl ExtrinsicDiff {
 #[derive(Clone)]
 #[cfg_attr(feature = "bloat", derive(Debug))]
 pub struct TermChange {
-	pub old: Option<Term>,
+	pub old: Option<SimpleTerm>,
 	pub old_v: Option<u128>,
 
-	pub new: Option<Term>,
+	pub new: Option<SimpleTerm>,
 	pub new_v: Option<u128>,
 
-	pub scope: Scope,
+	pub scope: SimpleScope,
 	pub percent: Percent,
 	pub change: RelativeChange,
 	pub method: CompareMethod,
@@ -118,7 +122,7 @@ pub struct CompareParams {
 	#[clap(long, short, value_name = "METHOD", ignore_case = true)]
 	pub method: CompareMethod,
 
-	#[clap(long, short, value_name = "UNIT", ignore_case = true, default_value = "weight")]
+	#[clap(long, short, value_name = "UNIT", ignore_case = true, default_value = "time")]
 	pub unit: Dimension,
 
 	#[clap(long)]
@@ -186,7 +190,7 @@ pub fn compare_commits(
 		parse_files_in_repo(repo, &paths)?
 	};
 
-	compare_files(olds, news, params.method, filter)
+	compare_files(olds, news, params, filter)
 }
 
 pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
@@ -289,11 +293,6 @@ pub enum CompareMethod {
 #[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum Dimension {
-	/// Just a raw value without dimension.
-	///
-	/// The unit are the scientific units, e.g. `K`, `M` or `G` as powers of 10.
-	Scalar,
-
 	/// Reference time. Alias to `weight` for backwards compatibility.
 	#[serde(alias = "weight")]
 	Time,
@@ -334,7 +333,6 @@ impl std::str::FromStr for Dimension {
 
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
-			"scalar" => Ok(Self::Scalar),
 			"time" | "weight" => Ok(Self::Time),
 			"proof" => Ok(Self::Proof),
 			_ => Err(format!("Unknown method: {}", s)),
@@ -369,12 +367,18 @@ impl RelativeChange {
 }
 
 pub fn compare_extrinsics(
-	old: Option<&Extrinsic>,
-	new: Option<&Extrinsic>,
-	method: CompareMethod,
+	old: Option<&SimpleExtrinsic>,
+	new: Option<&SimpleExtrinsic>,
+	params: &CompareParams,
 ) -> Result<TermChange, String> {
-	let scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
-	let scopes = extend_scoped_components(old, new, method, &scope)?;
+	let mut scope = scope::SimpleScope::empty();
+	if params.unit == Dimension::Time {
+		scope = scope
+			.with_storage_weights(SimpleTerm::Scalar(25_000_000), SimpleTerm::Scalar(100_000_000));
+	} else {
+		scope = scope.with_storage_weights(SimpleTerm::Scalar(0), SimpleTerm::Scalar(0));
+	}
+	let scopes = extend_scoped_components(old, new, params.method, &scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
 
@@ -391,7 +395,12 @@ pub fn compare_extrinsics(
 		}
 		assert!(new.map_or(true, |e| e.term.free_vars(scope).is_empty()));
 		// NOTE: The maximum could be calculated right here, but for now I want the debug assert.
-		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, scope)?);
+		results.push(compare_terms(
+			old.map(|o| &o.term),
+			new.map(|n| &n.term),
+			params.method,
+			scope,
+		)?);
 	}
 	log::trace!(target: "compare", "{}::{} Evaluated {} scopes", pallet, name, scopes.len());
 
@@ -420,11 +429,11 @@ pub fn compare_extrinsics(
 
 // TODO handle case that both have (different) ranges.
 pub(crate) fn extend_scoped_components(
-	a: Option<&Extrinsic>,
-	b: Option<&Extrinsic>,
+	a: Option<&SimpleExtrinsic>,
+	b: Option<&SimpleExtrinsic>,
 	method: CompareMethod,
-	scope: &Scope,
-) -> Result<Vec<Scope>, String> {
+	scope: &SimpleScope,
+) -> Result<Vec<SimpleScope>, String> {
 	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
@@ -455,7 +464,7 @@ pub(crate) fn extend_scoped_components(
 		let mut scope = scope.clone();
 		for (c, component) in frees.iter().enumerate() {
 			let value = if i & (1 << c) == 0 { lowest[c] } else { highest[c] };
-			scope.put_var(component, val!(value));
+			scope.put_var(component, SimpleTerm::Scalar(value as u128));
 		}
 		if !scope.is_empty() {
 			scopes.insert(scope);
@@ -501,10 +510,10 @@ fn component_value(
 }
 
 pub fn compare_terms(
-	old: Option<&Term>,
-	new: Option<&Term>,
+	old: Option<&SimpleTerm>,
+	new: Option<&SimpleTerm>,
 	method: CompareMethod,
-	scope: &Scope,
+	scope: &SimpleScope,
 ) -> Result<TermChange, String> {
 	let old_v = old.map(|t| t.eval(scope)).transpose()?;
 	let new_v = new.map(|t| t.eval(scope)).transpose()?;
@@ -525,18 +534,28 @@ pub fn compare_terms(
 }
 
 pub fn compare_files(
-	olds: Vec<Extrinsic>,
-	news: Vec<Extrinsic>,
-	method: CompareMethod,
+	olds: Vec<ChromaticExtrinsic>,
+	news: Vec<ChromaticExtrinsic>,
+	params: &CompareParams,
 	filter: &FilterParams,
 ) -> Result<TotalDiff, Box<dyn std::error::Error>> {
 	let ext_regex = filter.extrinsic.as_ref().map(|s| Regex::new(s)).transpose()?;
 	let pallet_regex = filter.pallet.as_ref().map(|s| Regex::new(s)).transpose()?;
+	// Split them into their correct dimension.
+	let olds = olds
+		.into_iter()
+		.map(|e| e.map_term(|t| t.simplify(params.unit).expect("Must simplify term")))
+		.collect::<Vec<_>>();
+	let news = news
+		.into_iter()
+		.map(|e| e.map_term(|t| t.simplify(params.unit).expect("Must simplify term")))
+		.collect::<Vec<_>>();
 
 	let mut diff = TotalDiff::new();
 	let old_names = olds.iter().cloned().map(|e| (e.pallet, e.name));
 	let new_names = news.iter().cloned().map(|e| (e.pallet, e.name));
 	let names = old_names.chain(new_names).collect::<std::collections::BTreeSet<_>>();
+	log::trace!("Comparing {} terms", olds.len());
 
 	for (pallet, extrinsic) in names {
 		if !pallet_regex.as_ref().map_or(true, |r| r.is_match(&pallet).unwrap_or_default()) {
@@ -549,8 +568,9 @@ pub fn compare_files(
 
 		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
+		log::trace!("Comparing {}::{}", pallet, extrinsic);
 
-		let change = match compare_extrinsics(old, new, method) {
+		let change = match compare_extrinsics(old, new, &params) {
 			Err(err) => {
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)
@@ -578,8 +598,8 @@ pub fn compare_files(
 }
 
 /// Checks some obvious stuff:
-/// - Does not have more than 50 reads or writes
-pub fn sanity_check_term(term: &Term) -> Result<(), String> {
+/// - Does not have more than 1000 reads or writes
+pub fn sanity_check_term(term: &SimpleTerm) -> Result<(), String> {
 	let reads = term.find_largest_factor("READ").unwrap_or_default();
 	let writes = term.find_largest_factor("WRITE").unwrap_or_default();
 	let larger = reads.max(writes);
@@ -662,7 +682,6 @@ pub fn percent(old: u128, new: u128) -> Percent {
 impl Dimension {
 	pub fn fmt_value(&self, v: u128) -> String {
 		match self {
-			Self::Scalar => Self::fmt_scalar(v),
 			Self::Time => Self::fmt_time(v),
 			Self::Proof => Self::fmt_proof(v),
 		}
@@ -693,7 +712,7 @@ impl Dimension {
 		} else if t >= 1_000 {
 			format!("{:.2}ns", t as f64 / 1_000f64)
 		} else {
-			format!("{}ps", t)
+			format!("{:.2}ps", t)
 		}
 	}
 
@@ -714,11 +733,11 @@ impl Dimension {
 	}
 
 	pub fn all() -> Vec<Self> {
-		vec![Self::Scalar, Self::Time, Self::Proof]
+		vec![Self::Time, Self::Proof]
 	}
 
 	pub fn variants() -> Vec<&'static str> {
-		vec!["scalar", "time", "proof"]
+		vec!["time", "proof"]
 	}
 
 	pub fn reflect() -> Vec<(Self, &'static str)> {

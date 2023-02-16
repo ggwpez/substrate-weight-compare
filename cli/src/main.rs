@@ -27,6 +27,7 @@ enum SubCommand {
 	Parse(ParseCmd),
 }
 
+/// Compare weight files.
 #[derive(Debug, clap::Subcommand)]
 enum CompareCmd {
 	Files(CompareFilesCmd),
@@ -39,6 +40,7 @@ enum ParseCmd {
 	Files(ParseFilesCmd),
 }
 
+/// Compare a local set of weight files.
 #[derive(Debug, Parser)]
 struct CompareFilesCmd {
 	#[allow(missing_docs)]
@@ -62,6 +64,7 @@ struct CompareFilesCmd {
 	pub new: Vec<PathBuf>,
 }
 
+/// Compare weight files across commits.
 #[derive(Debug, Parser)]
 struct CompareCommitsCmd {
 	#[allow(missing_docs)]
@@ -175,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			let news =
 				if params.ignore_errors { try_parse_files(&new) } else { parse_files(&new)? };
 
-			let mut diff = compare_files(olds, news, params.method, &filter)?;
+			let mut diff = compare_files(olds, news, &params, &filter)?;
 			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
 			print_changes(diff, cmd.verbose, format, params.unit)?;

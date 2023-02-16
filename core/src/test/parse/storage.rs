@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::{
 	parse::storage::{parse_file, Db, RWs, Weights},
-	term::Term,
+	term::SimpleTerm as Term,
 };
 
 /// Parses hard-coded DB weight files correctly.
@@ -25,8 +25,8 @@ fn parses_weight_files(
 }
 
 fn make_weights(read: u128, write: u128, db: Db, per_nanos: bool) -> Weights {
-	let mut read = Term::Value(read);
-	let mut write = Term::Value(write);
+	let mut read = Term::Scalar(read);
+	let mut write = Term::Scalar(write);
 
 	if per_nanos {
 		read = Term::Mul(read.into(), Term::Var("constants::WEIGHT_PER_NANOS".into()).into());

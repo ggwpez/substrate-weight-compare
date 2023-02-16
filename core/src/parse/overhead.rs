@@ -1,13 +1,11 @@
 use syn::ItemConst;
 
-use crate::{parse::path_to_string, term::Term, *};
-
-pub type BlockExecutionWeight = Term;
+use crate::{parse::path_to_string, term::{ChromaticTerm, SimpleTerm}, *};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Weight {
-	BlockExecution(Term),
-	ExtrinsicBase(Term),
+	BlockExecution(ChromaticTerm),
+	ExtrinsicBase(ChromaticTerm),
 }
 
 pub fn parse_file(file: &Path) -> Result<Weight, String> {
@@ -70,11 +68,12 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
 	if type_name != "Weight" {
 		return Err(format!("Unexpected const type: {}", type_name))
 	}
-	let weight: Term = match def.expr.as_ref() {
+	let weight: SimpleTerm = match def.expr.as_ref() {
 		Expr::Binary(bin) => bin.try_into(),
-		Expr::MethodCall(mcall) => super::pallet::parse_method_call(mcall),
+		Expr::MethodCall(mcall) => super::pallet::parse_scalar_method_call(mcall),
 		_ => Err("Unexpected const value".into()),
 	}?;
+	let weight = weight.into_chromatic(crate::Dimension::Time);
 
 	match name.as_str() {
 		"BlockExecutionWeight" => Ok(Weight::BlockExecution(weight)),

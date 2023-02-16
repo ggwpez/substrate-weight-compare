@@ -1,44 +1,56 @@
 //! Provides a scope for evaluating [`Term`]s.
 
-use crate::{term::Term, val, WEIGHT_PER_NANOS};
+use crate::{
+	term::{SimpleTerm, ChromaticTerm},
+	WEIGHT_PER_NANOS,
+};
+use core::fmt::Display;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap as Map;
 
 pub const STORAGE_READ_VAR: &str = "READ";
 pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 #[cfg_attr(feature = "bloat", derive(Default))]
-pub struct Scope {
-	vars: Map<String, Term>,
+pub struct GenericScope<T> {
+	vars: Map<String, T>,
 }
 
-impl Scope {
+pub type SimpleScope = GenericScope<SimpleTerm>;
+pub type ChromaticScope = GenericScope<ChromaticTerm>;
+
+impl SimpleScope {
+	pub fn from_substrate() -> Self {
+		(Self { vars: Map::default() })
+			.with_var("WEIGHT_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
+			.with_var("constants::WEIGHT_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
+	}
+
+	pub fn with_storage_weights(self, read: SimpleTerm, write: SimpleTerm) -> Self {
+		self.with_var(STORAGE_READ_VAR, read).with_var(STORAGE_WRITE_VAR, write)
+	}
+}
+
+impl<T> GenericScope<T>
+where
+	T: Clone,
+{
 	pub fn empty() -> Self {
 		Self { vars: Map::default() }
 	}
 
-	pub fn from_substrate() -> Self {
-		(Self { vars: Map::default() })
-			.with_var("WEIGHT_PER_NANOS", val!(WEIGHT_PER_NANOS))
-			.with_var("constants::WEIGHT_PER_NANOS", val!(WEIGHT_PER_NANOS))
-	}
-
-	pub fn put_var(&mut self, name: &str, value: Term) {
+	pub fn put_var(&mut self, name: &str, value: T) {
 		self.vars.insert(name.into(), value);
 	}
 
-	pub fn with_var(&self, name: &str, value: Term) -> Self {
+	pub fn with_var(&self, name: &str, value: T) -> Self {
 		let mut ret = self.clone();
 		ret.vars.insert(name.into(), value);
 		ret
 	}
 
-	pub fn with_storage_weights(self, read: Term, write: Term) -> Self {
-		self.with_var(STORAGE_READ_VAR, read).with_var(STORAGE_WRITE_VAR, write)
-	}
-
-	pub fn get(&self, name: &str) -> Option<Term> {
+	pub fn get(&self, name: &str) -> Option<T> {
 		self.vars.get(&name.to_string()).cloned()
 	}
 
@@ -58,13 +70,12 @@ impl Scope {
 		self.vars.is_empty()
 	}
 
-	pub fn as_vec(&self) -> Vec<(String, Term)> {
+	pub fn as_vec(&self) -> Vec<(String, T)> {
 		self.vars.clone().into_iter().collect()
 	}
 }
 
-use std::fmt::Debug;
-impl Debug for Scope {
+impl<T: Display> Display for GenericScope<T> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let s = self
 			.vars
