@@ -17,7 +17,6 @@ use syn::{
 };
 
 use crate::{
-	mul,
 	parse::{path_to_string, PathStripping},
 	term::ChromaticTerm,
 };
@@ -270,7 +269,7 @@ fn handle_method(
 	let weight = match parse_expression(expr) {
 		Ok(w) => w,
 		// TODO only do this in V1 compatibility mode.
-		Err(err) => parse_scalar_expression(expr)?.into_chromatic(crate::Dimension::Time),
+		Err(_err) => parse_scalar_expression(expr)?.into_chromatic(crate::Dimension::Time),
 	};
 	// We later on check that the number of weight components matches
 	// the number of components in the term. This cannot be done here
@@ -292,7 +291,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<ChromaticTerm> {
 			Ok(ChromaticTerm::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_call(call),
-		e => Err(format!("Unexpected expression in pallet expr: {:?}", e).into()),
+		e => Err(format!("Unexpected expression in pallet expr: {:?}", e)),
 	}
 }
 
@@ -307,7 +306,7 @@ pub(crate) fn parse_scalar_expression(expr: &Expr) -> Result<GenericTerm<u128>> 
 			Ok(GenericTerm::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_scalar_call(call),
-		e => Err(format!("Expected scalar but got: {:?}", e).into()),
+		e => Err(format!("Expected scalar but got: {:?}", e)),
 	}
 }
 
@@ -503,7 +502,7 @@ pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<GenericT
 	}
 }
 
-fn extract_arg<'a>(args: &'a Punctuated<Expr, Token![,]>) -> Result<&'a Expr> {
+fn extract_arg(args: &Punctuated<Expr, Token![,]>) -> Result<&Expr> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}

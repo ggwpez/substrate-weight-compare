@@ -570,7 +570,7 @@ pub fn compare_files(
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		log::trace!("Comparing {}::{}", pallet, extrinsic);
 
-		let change = match compare_extrinsics(old, new, &params) {
+		let change = match compare_extrinsics(old, new, params) {
 			Err(err) => {
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)

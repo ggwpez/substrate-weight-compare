@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use crate::{
 	cmul, cval, cvar,
 	parse::overhead::{parse_file, Weight},
-	term::*,
 };
 
 // Parses hard-coded Storage weight files correctly.

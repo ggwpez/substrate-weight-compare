@@ -72,7 +72,7 @@ impl PartialEq for VarValue {
 #[macro_export]
 macro_rules! scalar {
 	($a:expr) => {
-		crate::term::GenericTerm::Scalar($a as u128)
+		$crate::term::GenericTerm::Scalar($a as u128)
 	};
 }
 
@@ -80,14 +80,14 @@ macro_rules! scalar {
 #[macro_export]
 macro_rules! val {
 	($a:expr) => {
-		crate::term::SimpleTerm::Value($a as u128)
+		$crate::term::SimpleTerm::Value($a as u128)
 	};
 }
 
 #[macro_export]
 macro_rules! cval {
 	($a:expr) => {
-		crate::term::GenericTerm::Value($a)
+		$crate::term::GenericTerm::Value($a)
 	};
 }
 
@@ -95,7 +95,7 @@ macro_rules! cval {
 #[macro_export]
 macro_rules! var {
 	($a:expr) => {
-		crate::term::SimpleTerm::Var($a.into())
+		$crate::term::SimpleTerm::Var($a.into())
 	};
 }
 
@@ -103,7 +103,7 @@ macro_rules! var {
 #[macro_export]
 macro_rules! cvar {
 	($a:expr) => {
-		crate::term::GenericTerm::Var($a.into())
+		$crate::term::GenericTerm::Var($a.into())
 	};
 }
 
@@ -111,7 +111,7 @@ macro_rules! cvar {
 #[macro_export]
 macro_rules! add {
 	($a:expr, $b:expr) => {
-		crate::term::SimpleTerm::Add($a.into(), $b.into())
+		$crate::term::SimpleTerm::Add($a.into(), $b.into())
 	};
 }
 
@@ -119,7 +119,7 @@ macro_rules! add {
 #[macro_export]
 macro_rules! cadd {
 	($a:expr, $b:expr) => {
-		crate::term::ChromaticTerm::Add($a.into(), $b.into())
+		$crate::term::ChromaticTerm::Add($a.into(), $b.into())
 	};
 }
 
@@ -127,7 +127,7 @@ macro_rules! cadd {
 #[macro_export]
 macro_rules! mul {
 	($a:expr, $b:expr) => {
-		crate::term::SimpleTerm::Mul($a.into(), $b.into())
+		$crate::term::SimpleTerm::Mul($a.into(), $b.into())
 	};
 }
 
@@ -135,7 +135,7 @@ macro_rules! mul {
 #[macro_export]
 macro_rules! cmul {
 	($a:expr, $b:expr) => {
-		crate::term::ChromaticTerm::Mul($a.into(), $b.into())
+		$crate::term::ChromaticTerm::Mul($a.into(), $b.into())
 	};
 }
 
@@ -364,7 +364,7 @@ impl ChromaticTerm {
 			Self::Value(Weight { proof, .. }) if unit == crate::Dimension::Proof =>
 				Ok(SimpleTerm::Value(*proof)),
 			Self::Scalar(val) => Ok(SimpleTerm::Scalar(*val)),
-			Self::Var(var) => Ok(SimpleTerm::Var(var.clone().into())),
+			Self::Var(var) => Ok(SimpleTerm::Var(var.clone())),
 			_ => unreachable!(),
 		})
 	}

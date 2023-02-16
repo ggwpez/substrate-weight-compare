@@ -54,9 +54,9 @@ impl From<(u128, u128)> for Weight {
 	}
 }
 
-impl Into<(u128, u128)> for Weight {
-	fn into(self) -> (u128, u128) {
-		(self.time, self.proof)
+impl From<Weight> for (u128, u128) {
+	fn from(val: Weight) -> Self {
+		(val.time, val.proof)
 	}
 }
 

@@ -3,10 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use syn::*;
 
 use crate::{
-	add, cadd, cmul, creads, cval, cvar, cwrites, mul,
+	add, creads, cwrites, mul,
 	parse::pallet::{
 		parse_content, parse_expression, parse_file, parse_scalar_expression, ChromaticExtrinsic,
-		ComponentRange, GenericExtrinsic,
+		ComponentRange,
 	},
 	reads, scalar,
 	scope::{GenericScope, *},
