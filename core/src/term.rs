@@ -184,6 +184,22 @@ impl<T> GenericTerm<T>
 where
 	T: Clone + core::fmt::Display + One + Zero + PartialEq + Eq + ValueFormatter,
 {
+	pub fn is_const_zero(&self) -> bool {
+		match self {
+			Self::Value(x) => x == &T::zero(),
+			Self::Scalar(x) => *x == 0,
+			_ => false,
+		}
+	}
+
+	pub fn is_const_one(&self) -> bool {
+		match self {
+			Self::Value(x) => x == &T::one(),
+			Self::Scalar(x) => *x == 1,
+			_ => false,
+		}
+	}
+
 	/// Returns the variables of the term that are not part of [`crate::scope::Scope`].
 	///
 	/// Lambda calculus calls such a variable *free*.
@@ -229,37 +245,75 @@ where
 		equation.join(", ")
 	}
 
+	pub fn into_substituted(self, var: &str, term: &GenericTerm<T>) -> Self {
+		let mut s = self;
+		s.substitute(var, term);
+		s
+	}
+
+	pub fn substitute(&mut self, var: &str, term: &GenericTerm<T>) {
+		match self {
+			Self::Var(v) if v.0 == var => *self = term.clone(),
+			Self::Var(_) => {},
+			Self::Scalar(_) => {},
+			Self::Value(_) => {},
+			Self::Mul(l, r) | Self::Add(l, r) => {
+				l.substitute(var, term);
+				r.substitute(var, term);
+			},
+		}
+	}
+
 	fn fmt_with_bracket(&self, has_bracket: bool) -> String {
+		self.maybe_fmt_with_bracket(has_bracket).unwrap_or("0".to_string())
+	}
+
+	fn maybe_fmt_with_bracket(&self, has_bracket: bool) -> Option<String> {
 		match self {
 			Self::Mul(l, r) => {
 				// Omit `1 *` and `* 1`.
-				if GenericTerm::<T>::Scalar(One::one()) == **l {
-					r.fmt_with_bracket(has_bracket)
-				} else if GenericTerm::<T>::Scalar(One::one()) == **r {
-					l.fmt_with_bracket(has_bracket)
+				if l.is_const_one() {
+					r.maybe_fmt_with_bracket(has_bracket)
+				} else if r.is_const_one() {
+					l.maybe_fmt_with_bracket(has_bracket)
+				} else if r.is_const_zero() || l.is_const_zero() {
+					None
 				} else {
-					format!("{} * {}", l.fmt_with_bracket(false), r.fmt_with_bracket(false))
+					match (l.maybe_fmt_with_bracket(false), r.maybe_fmt_with_bracket(false)) {
+						(Some(l), Some(r)) => Some(format!("{} * {}", l, r)),
+						(Some(l), None) => Some(l),
+						(None, Some(r)) => Some(r),
+						(None, None) => None,
+					}
 				}
 			},
 			Self::Add(l, r) => {
 				// Omit `0 +` and `+ 0`.
-				if GenericTerm::<T>::Scalar(Zero::zero()) == **l ||
-					GenericTerm::<T>::Value(Zero::zero()) == **l
-				{
-					r.fmt_with_bracket(has_bracket)
-				} else if GenericTerm::<T>::Scalar(Zero::zero()) == **r ||
-					GenericTerm::<T>::Value(Zero::zero()) == **r
-				{
-					l.fmt_with_bracket(has_bracket)
+				if l.is_const_zero() && r.is_const_zero() {
+					None
+				} else if l.is_const_zero() {
+					r.maybe_fmt_with_bracket(has_bracket)
+				} else if r.is_const_zero() {
+					l.maybe_fmt_with_bracket(has_bracket)
 				} else if has_bracket {
-					format!("{} + {}", l.fmt_with_bracket(true), r.fmt_with_bracket(true))
+					match (l.maybe_fmt_with_bracket(true), r.maybe_fmt_with_bracket(true)) {
+						(Some(l), Some(r)) => Some(format!("{} + {}", l, r)),
+						(Some(l), None) => Some(l),
+						(None, Some(r)) => Some(r),
+						(None, None) => None,
+					}
 				} else {
-					format!("({} + {})", l.fmt_with_bracket(true), r.fmt_with_bracket(true))
+					match (l.maybe_fmt_with_bracket(true), r.maybe_fmt_with_bracket(true)) {
+						(Some(l), Some(r)) => Some(format!("({} + {})", l, r)),
+						(Some(l), None) => Some(l),
+						(None, Some(r)) => Some(r),
+						(None, None) => None,
+					}
 				}
 			},
-			Self::Value(val) => val.format_scalar(),
-			Self::Scalar(val) => crate::Dimension::fmt_scalar(*val),
-			Self::Var(var) => var.clone().into(),
+			Self::Value(val) => Some(val.format_scalar()),
+			Self::Scalar(val) => Some(crate::Dimension::fmt_scalar(*val)),
+			Self::Var(var) => Some(var.clone().into()),
 		}
 	}
 

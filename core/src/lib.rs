@@ -367,8 +367,8 @@ impl RelativeChange {
 }
 
 pub fn compare_extrinsics(
-	old: Option<&SimpleExtrinsic>,
-	new: Option<&SimpleExtrinsic>,
+	mut old: Option<SimpleExtrinsic>,
+	mut new: Option<SimpleExtrinsic>,
 	params: &CompareParams,
 ) -> Result<TermChange, String> {
 	let mut scope = scope::SimpleScope::empty();
@@ -377,7 +377,26 @@ pub fn compare_extrinsics(
 			.with_storage_weights(SimpleTerm::Scalar(25_000_000), SimpleTerm::Scalar(100_000_000));
 	} else {
 		scope = scope.with_storage_weights(SimpleTerm::Scalar(0), SimpleTerm::Scalar(0));
+		// OMG this code is stupid... but since READ and WRITE done incur proof size cost, we ignore
+		// them.
+		old = old.map(|mut o| {
+			o.term.substitute("READ", &scalar!(0));
+			o
+		});
+		old = old.map(|mut o| {
+			o.term.substitute("WRITE", &scalar!(0));
+			o
+		});
+		new = new.map(|mut o| {
+			o.term.substitute("READ", &scalar!(0));
+			o
+		});
+		new = new.map(|mut o| {
+			o.term.substitute("WRITE", &scalar!(0));
+			o
+		});
 	}
+	let (new, old) = (new.as_ref(), old.as_ref());
 	let scopes = extend_scoped_components(old, new, params.method, &scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
@@ -386,7 +405,7 @@ pub fn compare_extrinsics(
 
 	for scope in scopes.iter() {
 		if !old.map_or(true, |e| e.term.free_vars(scope).is_empty()) {
-			panic!(
+			unreachable!(
 				"Free variable where there should be none: {}::{} {:?}",
 				name,
 				&pallet,
@@ -420,7 +439,7 @@ pub fn compare_extrinsics(
 	} else if all_increase_or_decrease {
 		Ok(results.into_iter().max_by(|a, b| a.cmp(b)).unwrap())
 	} else {
-		panic!(
+		unreachable!(
 			"Inconclusive: all_increase_or_decrease: {}, all_added_or_removed: {}",
 			all_increase_or_decrease, all_added_or_removed
 		);
@@ -570,7 +589,7 @@ pub fn compare_files(
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		log::trace!("Comparing {}::{}", pallet, extrinsic);
 
-		let change = match compare_extrinsics(old, new, params) {
+		let change = match compare_extrinsics(old.cloned(), new.cloned(), params) {
 			Err(err) => {
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)

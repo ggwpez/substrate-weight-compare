@@ -41,6 +41,8 @@ fn term_find_largest_factor_works(#[case] term: SimpleTerm, #[case] largest: Opt
 #[case(add!(var!("x"), scalar!(0)), "x")]
 #[case(mul!(var!("x"), scalar!(123)), "x * 123")]
 #[case(mul!(var!("x"), scalar!(1)), "x")]
+#[case(add!(add!(scalar!(0), scalar!(0)), scalar!(0)), "0")]
+#[case(add!(add!(scalar!(0), scalar!(0)), add!(scalar!(0), scalar!(0))), "0")]
 // TODO test rounding
 #[case(add!(scalar!(12_680_000), add!(
 	mul!(scalar!(4_410_000), var!("c")),
@@ -49,6 +51,12 @@ fn term_find_largest_factor_works(#[case] term: SimpleTerm, #[case] largest: Opt
 "12.68M + 4.41M * c + READ + WRITE")]
 #[case(mul!(var!("m"), var!("READ")), "m * READ")]
 #[case(mul!(mul!(scalar!(1), var!("m")), var!("READ")), "m * READ")]
+#[case(add!(add!(add!(add!(scalar!(9909), mul!(scalar!(0), var!("l"))), mul!(scalar!(0), var!("s"))), mul!(scalar!(3), var!("READ"))), mul!(scalar!(3), var!("WRITE"))), "9.91K + 3 * READ + 3 * WRITE")]
 fn term_fmt_with_brackets_works(#[case] term: SimpleTerm, #[case] expected: &str) {
 	assert_eq!(format!("{}", term), expected);
 }
+
+/*#[case(scalar!(123), scalar!(123))]
+fn test_substitute_works(#[case] term: SimpleTern, #[case] expected: SimpleTerm) {
+	term
+}*/
