@@ -76,7 +76,7 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
 			let simple: SimpleTerm = bin.try_into()?;
 			Ok(simple.into_chromatic(crate::Dimension::Time))
 		},
-		e => super::pallet::parse_expression(&e),
+		e => super::pallet::parse_expression(e),
 	}?;
 
 	match name.as_str() {
