@@ -1,6 +1,6 @@
 use crate::{
 	creads, cwrites, reads,
-	term::{GenericTerm, SimpleTerm},
+	term::{Term, SimpleTerm},
 	traits::*,
 	writes, ExtrinsicName, PalletName,
 };
@@ -295,15 +295,15 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<ChromaticTerm> {
 	}
 }
 
-pub(crate) fn parse_scalar_expression(expr: &Expr) -> Result<GenericTerm<u128>> {
+pub(crate) fn parse_scalar_expression(expr: &Expr) -> Result<Term<u128>> {
 	match expr {
 		Expr::Cast(cast) => parse_scalar_expression(&cast.expr),
 		Expr::Paren(expr) => parse_scalar_expression(&expr.expr),
-		Expr::Lit(lit) => Ok(GenericTerm::Scalar(lit_to_value(&lit.lit))),
+		Expr::Lit(lit) => Ok(Term::Scalar(lit_to_value(&lit.lit))),
 		Expr::MethodCall(call) => parse_scalar_method_call(call),
 		Expr::Path(p) => {
 			let ident = path_to_string(&p.path, Some("::"));
-			Ok(GenericTerm::Var(ident.into()))
+			Ok(Term::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_scalar_call(call),
 		e => Err(format!("Expected scalar but got: {:?}", e)),
@@ -468,7 +468,7 @@ pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<ChromaticTerm> 
 }
 
 // Example: receiver.saturating_mul(5 as Weight)
-pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<GenericTerm<u128>> {
+pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<Term<u128>> {
 	let name: &str = &call.method.to_string();
 	match name {
 		"ref_time" => {
@@ -489,11 +489,11 @@ pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<GenericT
 			let writes = parse_scalar_args(&call.args)?;
 			Ok(writes!(writes))
 		},
-		"saturating_add" => Ok(GenericTerm::Add(
+		"saturating_add" => Ok(Term::Add(
 			parse_scalar_expression(&call.receiver)?.into(),
 			parse_scalar_args(&call.args)?.into(),
 		)),
-		"saturating_mul" => Ok(GenericTerm::Mul(
+		"saturating_mul" => Ok(Term::Mul(
 			parse_scalar_expression(&call.receiver)?.into(),
 			parse_scalar_args(&call.args)?.into(),
 		)),
@@ -514,7 +514,7 @@ fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
 	parse_expression(arg)
 }
 
-fn parse_scalar_args(args: &Punctuated<Expr, Token![,]>) -> Result<GenericTerm<u128>> {
+fn parse_scalar_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term<u128>> {
 	let arg = extract_arg(args)?;
 	parse_scalar_expression(arg)
 }

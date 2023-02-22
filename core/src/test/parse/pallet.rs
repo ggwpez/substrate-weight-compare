@@ -9,8 +9,8 @@ use crate::{
 		ComponentRange,
 	},
 	reads, scalar,
-	scope::{GenericScope, *},
-	term::{ChromaticTerm, GenericTerm, SimpleTerm},
+	scope::{Scope, *},
+	term::{ChromaticTerm, Term, SimpleTerm},
 	traits::Weight,
 	val, var, writes,
 };
@@ -48,7 +48,7 @@ fn parse_function_v1_works(#[case] input: String) {
 	let want = vec![ChromaticExtrinsic {
 		name: "ext".into(),
 		pallet: "".into(),
-		term: GenericTerm::Value((5, 0).into()),
+		term: Term::Value((5, 0).into()),
 		comp_ranges: None,
 	}];
 	assert_eq!(want, got);
@@ -103,7 +103,7 @@ fn parse_chromatic_function_works(#[case] input: String, #[case] t: u64, #[case]
 	let want = vec![ChromaticExtrinsic {
 		name: "ext".into(),
 		pallet: "".into(),
-		term: GenericTerm::Value((t as u128, p as u128).into()),
+		term: Term::Value((t as u128, p as u128).into()),
 		comp_ranges: None,
 	}];
 	assert_eq!(want, got);
@@ -132,7 +132,7 @@ fn parse_component_range_works(#[case] input: String) {
 	let want = vec![ChromaticExtrinsic {
 		name: "ext".into(),
 		pallet: "".into(),
-		term: GenericTerm::Value((5, 0).into()),
+		term: Term::Value((5, 0).into()),
 		comp_ranges: Some(ranges),
 	}];
 	assert_eq!(want, got);
@@ -187,7 +187,7 @@ fn parse_expression_works(#[case] input: &str, #[case] want: SimpleTerm) {
 	assert_eq!(want, got);
 
 	// Eval does not panic
-	let _ = got.eval(&GenericScope::empty());
+	let _ = got.eval(&Scope::empty());
 }
 
 // V1.5 syntax
@@ -212,23 +212,23 @@ fn parse_expression_works_v15(#[case] input: &str, #[case] want: SimpleTerm) {
 }
 
 #[rstest]
-#[case("Weight::from_ref_time(123)", GenericTerm::Value((123, 0).into()))]
-#[case("Weight::from_proof_size(123)", GenericTerm::Value((0, 123).into()))]
-#[case("Weight::from_parts(123, 321)", GenericTerm::Value((123, 321).into()))]
+#[case("Weight::from_ref_time(123)", Term::Value((123, 0).into()))]
+#[case("Weight::from_proof_size(123)", Term::Value((0, 123).into()))]
+#[case("Weight::from_parts(123, 321)", Term::Value((123, 321).into()))]
 #[case("Weight::from_parts(48_314_000, 2603)
-	.saturating_add(RocksDbWeight::get().reads(1_u64))", GenericTerm::Add(
-		Box::new(GenericTerm::Value((48_314_000, 2603).into())),
-		Box::new(creads!(GenericTerm::Scalar(1))),
+	.saturating_add(RocksDbWeight::get().reads(1_u64))", Term::Add(
+		Box::new(Term::Value((48_314_000, 2603).into())),
+		Box::new(creads!(Term::Scalar(1))),
 	))]
 #[case("Weight::from_parts(33_236_000, 3054)
 	.saturating_add(T::DbWeight::get().reads(2_u64))
 	.saturating_add(T::DbWeight::get().writes(5_u64))",
-	GenericTerm::Add(
-		Box::new(GenericTerm::Add(
-			Box::new(GenericTerm::Value((33_236_000, 3054).into())),
-			Box::new(creads!(GenericTerm::Scalar(2))),
+	Term::Add(
+		Box::new(Term::Add(
+			Box::new(Term::Value((33_236_000, 3054).into())),
+			Box::new(creads!(Term::Scalar(2))),
 		)),
-		Box::new(cwrites!(GenericTerm::Scalar(5))),
+		Box::new(cwrites!(Term::Scalar(5))),
 	))
 ]
 #[case("Weight::from_parts(890_989_741, 69146)
@@ -236,26 +236,26 @@ fn parse_expression_works_v15(#[case] input: &str, #[case] want: SimpleTerm) {
 .saturating_add(Weight::from_ref_time(4_920_413).saturating_mul(s.into()))
 .saturating_add(RocksDbWeight::get().reads(1_u64))
 .saturating_add(RocksDbWeight::get().writes(1_u64))",
-	GenericTerm::Add(
-		Box::new(GenericTerm::Add(
-			Box::new(GenericTerm::Add(
-				Box::new(GenericTerm::Value((890_989_741, 69146).into())),
-				Box::new(GenericTerm::Mul(
-					Box::new(GenericTerm::Value((4_920_413, 0).into())),
-					Box::new(GenericTerm::Var("s".into())),
+	Term::Add(
+		Box::new(Term::Add(
+			Box::new(Term::Add(
+				Box::new(Term::Value((890_989_741, 69146).into())),
+				Box::new(Term::Mul(
+					Box::new(Term::Value((4_920_413, 0).into())),
+					Box::new(Term::Var("s".into())),
 				)),
 			)),
-			Box::new(creads!(GenericTerm::Scalar(1))),
+			Box::new(creads!(Term::Scalar(1))),
 		)),
-		Box::new(cwrites!(GenericTerm::Scalar(1))),
+		Box::new(cwrites!(Term::Scalar(1))),
 	))]
 #[case("Weight::from_parts(10, 20)
 	.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(s.into())))",
-	GenericTerm::Add(
-		Box::new(GenericTerm::Value((10, 20).into())),
-		Box::new(cwrites!(GenericTerm::Mul(
-			Box::new(GenericTerm::Value(Weight{time: 1, proof: 0})),
-			Box::new(GenericTerm::Var("s".into())),
+	Term::Add(
+		Box::new(Term::Value((10, 20).into())),
+		Box::new(cwrites!(Term::Mul(
+			Box::new(Term::Value(Weight{time: 1, proof: 0})),
+			Box::new(Term::Var("s".into())),
 		))),
 ))]
 fn chromatic_syntax(#[case] input: &str, #[case] want: ChromaticTerm) {
@@ -264,5 +264,5 @@ fn chromatic_syntax(#[case] input: &str, #[case] want: ChromaticTerm) {
 	assert_eq!(want, got);
 
 	// Eval does not panic
-	let _ = got.eval(&GenericScope::empty());
+	let _ = got.eval(&Scope::empty());
 }

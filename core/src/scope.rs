@@ -1,4 +1,4 @@
-//! Provides a scope for evaluating [`Term`]s.
+//! Provides a scope for evaluating [`crate::term::Term`]s.
 
 use crate::{
 	term::{ChromaticTerm, SimpleTerm},
@@ -13,12 +13,12 @@ pub const STORAGE_WRITE_VAR: &str = "WRITE";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 #[cfg_attr(feature = "bloat", derive(Default))]
-pub struct GenericScope<T> {
+pub struct Scope<T> {
 	vars: Map<String, T>,
 }
 
-pub type SimpleScope = GenericScope<SimpleTerm>;
-pub type ChromaticScope = GenericScope<ChromaticTerm>;
+pub type SimpleScope = Scope<SimpleTerm>;
+pub type ChromaticScope = Scope<ChromaticTerm>;
 
 impl SimpleScope {
 	pub fn from_substrate() -> Self {
@@ -34,7 +34,7 @@ impl SimpleScope {
 	}
 }
 
-impl<T> GenericScope<T>
+impl<T> Scope<T>
 where
 	T: Clone,
 {
@@ -77,7 +77,7 @@ where
 	}
 }
 
-impl<T: Display> Display for GenericScope<T> {
+impl<T: Display> Display for Scope<T> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let s = self
 			.vars

@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet as Set, fmt};
 use syn::{BinOp, ExprBinary};
 
-use crate::{scope::GenericScope, traits::*};
+use crate::{scope::Scope, traits::*};
 
 /// A symbolic term that can be used to express simple arithmetic.
 ///
 /// Can only be evaluated to a concrete value within a [`crate::scope::Scope`].
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
-pub enum GenericTerm<T> {
+pub enum Term<T> {
 	Value(T),
 	Scalar(u128),
 	Var(VarValue),
@@ -21,8 +21,8 @@ pub enum GenericTerm<T> {
 	Mul(Box<Self>, Box<Self>),
 }
 
-pub type SimpleTerm = GenericTerm<u128>;
-pub type ChromaticTerm = GenericTerm<Weight>;
+pub type SimpleTerm = Term<u128>;
+pub type ChromaticTerm = Term<Weight>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, Ord, Eq)]
 /// A `VarValue` is an opaque string.
@@ -64,7 +64,7 @@ impl PartialEq for VarValue {
 #[macro_export]
 macro_rules! scalar {
 	($a:expr) => {
-		$crate::term::GenericTerm::Scalar($a as u128)
+		$crate::term::Term::Scalar($a as u128)
 	};
 }
 
@@ -79,7 +79,7 @@ macro_rules! val {
 #[macro_export]
 macro_rules! cval {
 	($a:expr) => {
-		$crate::term::GenericTerm::Value($a)
+		$crate::term::Term::Value($a)
 	};
 }
 
@@ -95,7 +95,7 @@ macro_rules! var {
 #[macro_export]
 macro_rules! cvar {
 	($a:expr) => {
-		$crate::term::GenericTerm::Var($a.into())
+		$crate::term::Term::Var($a.into())
 	};
 }
 
@@ -172,7 +172,7 @@ impl SimpleTerm {
 	}
 }
 
-impl<T> GenericTerm<T>
+impl<T> Term<T>
 where
 	T: Clone + core::fmt::Display + One + Zero + PartialEq + Eq + ValueFormatter,
 {
@@ -196,7 +196,7 @@ where
 	///
 	/// Lambda calculus calls such a variable *free*.
 	/// This is the inverse of [`Self::bound_vars`].
-	pub fn free_vars(&self, scope: &GenericScope<GenericTerm<T>>) -> Set<String> {
+	pub fn free_vars(&self, scope: &Scope<Term<T>>) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::default(),
 			Self::Var(var) => Set::from([var.clone().into()]),
@@ -211,7 +211,7 @@ where
 	///
 	/// Lambda calculus calls such a variable *bound*.
 	/// This is the inverse of [`Self::free_vars`].
-	pub fn bound_vars(&self, scope: &GenericScope<GenericTerm<T>>) -> Set<String> {
+	pub fn bound_vars(&self, scope: &Scope<Term<T>>) -> Set<String> {
 		match self {
 			Self::Var(var) if scope.get(var).is_some() => Set::from([var.clone().into()]),
 			Self::Var(_var) => Set::default(),
@@ -222,7 +222,7 @@ where
 		}
 	}
 
-	pub fn fmt_equation(&self, scope: &GenericScope<GenericTerm<T>>) -> String {
+	pub fn fmt_equation(&self, scope: &Scope<Term<T>>) -> String {
 		let bounds = self.bound_vars(scope);
 		let frees = self.free_vars(scope);
 
@@ -237,13 +237,13 @@ where
 		equation.join(", ")
 	}
 
-	pub fn into_substituted(self, var: &str, term: &GenericTerm<T>) -> Self {
+	pub fn into_substituted(self, var: &str, term: &Term<T>) -> Self {
 		let mut s = self;
 		s.substitute(var, term);
 		s
 	}
 
-	pub fn substitute(&mut self, var: &str, term: &GenericTerm<T>) {
+	pub fn substitute(&mut self, var: &str, term: &Term<T>) {
 		match self {
 			Self::Var(v) if v.0 == var => *self = term.clone(),
 			Self::Var(_) => {},
@@ -331,7 +331,7 @@ where
 	/// Returns the largest pre-factor of the variable in the term.
 	pub fn find_largest_factor(&self, var: &str) -> Option<u128> {
 		self.visit::<_, Option<u128>>(&mut |t| {
-			if let GenericTerm::<T>::Mul(l, r) = t {
+			if let Term::<T>::Mul(l, r) = t {
 				if r.as_var() == Some(var) && l.as_scalar().is_some() {
 					return Ok(Some(l.as_scalar().unwrap()))
 				}
@@ -433,7 +433,7 @@ impl ChromaticTerm {
 	}
 }
 
-impl<T> fmt::Display for GenericTerm<T>
+impl<T> fmt::Display for Term<T>
 where
 	T: Clone + core::fmt::Display + One + Zero + PartialEq + Eq + ValueFormatter,
 {
