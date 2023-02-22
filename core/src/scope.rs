@@ -24,7 +24,9 @@ impl SimpleScope {
 	pub fn from_substrate() -> Self {
 		(Self { vars: Map::default() })
 			.with_var("WEIGHT_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
+			.with_var("WEIGHT_REF_TIME_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
 			.with_var("constants::WEIGHT_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
+			.with_var("constants::WEIGHT_REF_TIME_PER_NANOS", SimpleTerm::Scalar(WEIGHT_PER_NANOS))
 	}
 
 	pub fn with_storage_weights(self, read: SimpleTerm, write: SimpleTerm) -> Self {

@@ -11,14 +11,6 @@ use crate::{scope::GenericScope, traits::*};
 /// A symbolic term that can be used to express simple arithmetic.
 ///
 /// Can only be evaluated to a concrete value within a [`crate::scope::Scope`].
-///
-/// ```rust
-/// use crate::{add, mul, val, scope::Scope, term::Term};
-///
-/// // 5 * 5 + 10 == 35
-/// let term = add!(mul!(scalar!(5), scalar!(5)), scalar!(10));
-/// assert_eq!(term.eval(&Scope::empty()), Ok(35));
-/// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 pub enum GenericTerm<T> {
 	Value(T),

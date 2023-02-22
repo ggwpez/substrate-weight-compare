@@ -32,7 +32,6 @@ fn handle_item(item: &Item) -> Result<Weight, String> {
 		// The current Substrate template has a useless `constants` mod.
 		Item::Mod(m) => {
 			if m.ident == "constants" {
-				log::debug!("Found consts module");
 				if let Some((_, content)) = m.content.as_ref() {
 					for item in content {
 						let res = handle_item(item);
@@ -61,7 +60,7 @@ fn handle_item(item: &Item) -> Result<Weight, String> {
 /// Handles the content of the `parameter_types!` macro.
 ///
 /// Example:
-/// ```nocompileBlockExecutionWeight
+/// ```nocompile
 /// pub const BlockExecutionWeight: Weight = 5_481_991 * WEIGHT_PER_NANOS;
 /// ```
 fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
@@ -72,12 +71,13 @@ fn parse_macro(tokens: proc_macro2::TokenStream) -> Result<Weight, String> {
 	if type_name != "Weight" {
 		return Err(format!("Unexpected const type: {}", type_name))
 	}
-	let weight: SimpleTerm = match def.expr.as_ref() {
-		Expr::Binary(bin) => bin.try_into(),
-		Expr::MethodCall(mcall) => super::pallet::parse_scalar_method_call(mcall),
-		_ => Err("Unexpected const value".into()),
+	let weight: ChromaticTerm = match def.expr.as_ref() {
+		Expr::Binary(bin) => {
+			let simple: SimpleTerm = bin.try_into()?;
+			Ok(simple.into_chromatic(crate::Dimension::Time))
+		},
+		e => super::pallet::parse_expression(&e),
 	}?;
-	let weight = weight.into_chromatic(crate::Dimension::Time);
 
 	match name.as_str() {
 		"BlockExecutionWeight" => Ok(Weight::BlockExecution(weight)),

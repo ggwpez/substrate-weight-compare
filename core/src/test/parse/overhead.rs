@@ -15,3 +15,13 @@ fn parses_weight_files(#[case] file: PathBuf, #[case] want: Weight) {
 
 	assert_eq!(want, got);
 }
+
+/// Parses hard-coded Storage weight files correctly.
+#[rstest]
+#[case("../test_data/chromatic/extrinsic_weights.rs.txt", Weight::ExtrinsicBase(cmul!(cvar!("WEIGHT_REF_TIME_PER_NANOS"), cval!((99_840, 0).into()))))]
+#[case("../test_data/chromatic/block_weights.rs.txt", Weight::BlockExecution(cmul!(cvar!("WEIGHT_REF_TIME_PER_NANOS"), cval!((381_015, 0).into()))))]
+fn parses_chromatic_weight_files(#[case] file: PathBuf, #[case] want: Weight) {
+	let got = parse_file(&file).unwrap();
+
+	assert_eq!(want, got);
+}

@@ -8,7 +8,21 @@ use crate::integration_test;
 // - Add a feature to the Cargo.toml and try it!
 
 integration_test!(
-	substrate,
+	substrate_v2,
+	"substrate",
+	"ea182669e111d819b2f4539749b86edee4944168",
+	1594,
+	48,
+	2,
+	2,
+	vec!["frame/**/src/weights.rs"]; exclude=vec!["frame/support/src/weights.rs"],
+	// Keep the patterns in the most general way to catch new files.
+	vec!["**/*db_weights.rs"],
+	vec!["**/block_weights.rs", "**/extrinsic_weights.rs"]
+);
+
+integration_test!(
+	substrate_v1,
 	"substrate",
 	"1fd71c7845d6c28c532795ec79106d959dd1fe30",
 	1438,
