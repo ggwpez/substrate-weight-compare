@@ -643,8 +643,9 @@ impl TermDiff {
 		match (&self, &other) {
 			(TermDiff::Failed(_), _) => Ordering::Less,
 			(_, TermDiff::Failed(_)) => Ordering::Greater,
-			(TermDiff::Warning(..), _) => Ordering::Less,
-			(_, TermDiff::Warning(..)) => Ordering::Greater,
+			(TermDiff::Warning(a, _), TermDiff::Changed(b)) => a.cmp(b),
+			(TermDiff::Changed(a), TermDiff::Warning(b, _)) => a.cmp(b),
+			(TermDiff::Warning(a, _), TermDiff::Warning(b, _)) => a.cmp(b),
 			(TermDiff::Changed(a), TermDiff::Changed(b)) => a.cmp(b),
 		}
 	}
@@ -655,11 +656,11 @@ impl TermChange {
 		let ord = self.change.cmp(&other.change).reverse();
 		if ord == Ordering::Equal {
 			if self.percent > other.percent {
-				Ordering::Greater
+				Ordering::Less
 			} else if self.percent == other.percent {
 				Ordering::Equal
 			} else {
-				Ordering::Less
+				Ordering::Greater
 			}
 		} else {
 			ord
@@ -671,11 +672,17 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 	// Note: the pallet and extrinsic are already filtered in compare_files.
 	diff.iter()
 		.filter(|extrinsic| match extrinsic.change {
-			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
-			TermDiff::Changed(ref change) => match change.change {
-				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
-				RelativeChange::Unchanged if params.threshold >= 0.000001 => false,
-				_ => true,
+			TermDiff::Failed(_) => true,
+			TermDiff::Warning(ref change, ..) | TermDiff::Changed(ref change) => {
+				if !params.included(&change.change) {
+					return false
+				}
+
+				match change.change {
+					RelativeChange::Changed if change.percent.abs() < params.threshold => false,
+					RelativeChange::Unchanged if params.threshold >= 0.000001 => false,
+					_ => true,
+				}
 			},
 		})
 		.cloned()

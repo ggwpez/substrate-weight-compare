@@ -87,7 +87,7 @@ struct CompareCommitsCmd {
 	#[clap(name = "NEW-COMMIT", index = 2, default_value = "master")]
 	pub new: String,
 
-	#[clap(long, default_value = "repos/polkadot")]
+	#[clap(long, default_value = ".")]
 	pub repo: PathBuf,
 
 	#[clap(long)]
