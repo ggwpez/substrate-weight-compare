@@ -49,10 +49,7 @@ macro_rules! writes {
 #[macro_export]
 macro_rules! cwrites {
 	($a:expr) => {
-		Term::Mul(
-			$a.into(),
-			Term::Var($crate::scope::STORAGE_WRITE_VAR.into()).into(),
-		)
+		Term::Mul($a.into(), Term::Var($crate::scope::STORAGE_WRITE_VAR.into()).into())
 	};
 }
 

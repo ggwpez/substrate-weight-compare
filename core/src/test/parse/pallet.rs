@@ -10,7 +10,7 @@ use crate::{
 	},
 	reads, scalar,
 	scope::{Scope, *},
-	term::{ChromaticTerm, Term, SimpleTerm},
+	term::{ChromaticTerm, SimpleTerm, Term},
 	traits::Weight,
 	val, var, writes,
 };

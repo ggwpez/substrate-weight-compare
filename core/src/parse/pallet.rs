@@ -1,6 +1,6 @@
 use crate::{
 	creads, cwrites, reads,
-	term::{Term, SimpleTerm},
+	term::{SimpleTerm, Term},
 	traits::*,
 	writes, ExtrinsicName, PalletName,
 };
