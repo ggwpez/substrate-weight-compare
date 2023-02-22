@@ -64,7 +64,7 @@ $(document).ready(function () {
 	var highlighted = 0;
 	// Request the GitHub API to list all merge requests
 	// for the given repository and owner.
-	$.getJSON(`https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30&sort=updated&direction=desc`, function(data) {
+	$.getJSON(`https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=100&sort=updated&direction=desc`, function(data) {
 	// Use this pre-downloaded data for testing:
 	//$.getJSON(`static/dummy-mrs.json`, function(data) {
 		// Sort the data by the last push date. This is kind of bad but the table
