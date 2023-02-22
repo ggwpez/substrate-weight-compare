@@ -181,6 +181,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			let mut diff = compare_files(olds, news, &params, &filter)?;
 			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
+			diff.reverse();
 			print_changes(diff, cmd.verbose, format, params.unit)?;
 		},
 		SubCommand::Compare(CompareCmd::Commits(CompareCommitsCmd {
@@ -196,6 +197,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 				compare_commits(&repo, &old, &new, &params, &filter, &path_pattern, usize::MAX)?;
 			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
+			diff.reverse();
 			print_changes(diff, cmd.verbose, format, params.unit)?;
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {

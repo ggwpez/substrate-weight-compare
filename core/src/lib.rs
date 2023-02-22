@@ -285,7 +285,7 @@ pub enum CompareMethod {
 	Base,
 	/// The worst case weight by setting all variables to 100.
 	GuessWorst,
-
+	/// Try to find the worst case increase. Errors if it cannot be found.
 	ExactWorst,
 }
 
@@ -656,11 +656,11 @@ impl TermChange {
 		let ord = self.change.cmp(&other.change).reverse();
 		if ord == Ordering::Equal {
 			if self.percent > other.percent {
-				Ordering::Less
+				Ordering::Greater
 			} else if self.percent == other.percent {
 				Ordering::Equal
 			} else {
-				Ordering::Greater
+				Ordering::Less
 			}
 		} else {
 			ord
