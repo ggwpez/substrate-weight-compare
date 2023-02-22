@@ -211,6 +211,8 @@ The weight in Substrate is chromatic (two dimensional). Its dimensions are *Refe
 - *Time*: The execution time that the call consumed on reference hardware.
 - *Proof*: The size of the Proof-of-validity (PoV) that the call produced.
 
+The relevant MR is [substrate#11637](https://github.com/paritytech/substrate/pull/11637) which requires integration the weight template for your project to emit chromatic weights.
+
 ## Ignore Errors
 
 Silently ignore parse errors. This is useful when using inclusive path patterns.

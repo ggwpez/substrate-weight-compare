@@ -25,7 +25,7 @@
 		<tbody>
 			<tr>
 				<td>Version</td>
-				<td><%= swc_core::VERSION.clone() %></td>
+				<td><a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank"><%= swc_core::VERSION.clone() %></a></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Repository") %></td>
