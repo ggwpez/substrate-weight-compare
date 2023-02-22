@@ -12,7 +12,7 @@ swc_core = { version = "1.2.0", path = "../core" }
 
 env_logger = "0.10.0"
 log = "0.4.17"
-clap = { version = "4.1.4", features = ["derive"] }
+clap = { version = "4.1.6", features = ["derive"] }
 syn = { version = "1.0.107", features = ["parsing", "full"] }
 comfy-table = { version = "6.1.4", default-features = false }
 serde = { version = "1.0.152", features = [ "derive" ] }
