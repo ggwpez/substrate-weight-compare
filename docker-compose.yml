@@ -1,4 +1,7 @@
-# Docker compose file thati I use on tasty.limo for deployment.
+# Example docker file that is deployed to https://weights.tasty.limo.
+# For adotion you can change the username from `vados` to your own and get some certs.
+# Branch `master` is deployed to 443 and `dev` to 8443.
+# The docker watchtower tries to update the container images every two minutes.
 
 version: "3"
 services:
@@ -7,7 +10,9 @@ services:
     image: ghcr.io/ggwpez/swc:master
     ports:
       - "443:8080"
-    command: swc-web --root /repos/ --repos cumulus polkadot substrate chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    command: >
+      sh -c "git config --global --add safe.directory '*' && 
+      swc-web --root /repos/ --repos substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos
@@ -22,7 +27,9 @@ services:
     image: ghcr.io/ggwpez/swc:dev
     ports:
       - "8443:8080"
-    command: swc-web --root /repos/ --repos substrate polkadot cumulus chain --endpoint "0.0.0.0" --cert /certs/cert.pem --key /certs/key.pem
+    command: >
+      sh -c "git config --global --add safe.directory '*' && 
+      swc-web --root /repos/ --repos acala substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos
