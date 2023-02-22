@@ -19,13 +19,17 @@ pub mod parse;
 pub mod scope;
 pub mod term;
 pub mod testing;
+pub mod traits;
 
 #[cfg(test)]
 mod test;
 
-use parse::pallet::{parse_files_in_repo, try_parse_files_in_repo, ComponentRange, Extrinsic};
-use scope::Scope;
-use term::Term;
+use parse::pallet::{
+	parse_files_in_repo, try_parse_files_in_repo, ChromaticExtrinsic, ComponentRange,
+	SimpleExtrinsic,
+};
+use scope::SimpleScope;
+use term::SimpleTerm;
 
 lazy_static! {
 	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
@@ -44,6 +48,7 @@ pub type Percent = f64;
 pub const WEIGHT_PER_NANOS: u128 = 1_000;
 
 #[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub struct ExtrinsicDiff {
 	pub name: ExtrinsicName,
 	pub file: String,
@@ -52,6 +57,7 @@ pub struct ExtrinsicDiff {
 }
 
 #[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub enum TermDiff {
 	Changed(TermChange),
 	Warning(TermChange, String),
@@ -82,23 +88,26 @@ impl ExtrinsicDiff {
 	}
 }
 
-#[derive(Clone)]
 // Uses options since extrinsics can be added or removed and any time.
+#[derive(Clone)]
+#[cfg_attr(feature = "bloat", derive(Debug))]
 pub struct TermChange {
-	pub old: Option<Term>,
+	pub old: Option<SimpleTerm>,
 	pub old_v: Option<u128>,
 
-	pub new: Option<Term>,
+	pub new: Option<SimpleTerm>,
 	pub new_v: Option<u128>,
 
-	pub scope: Scope,
+	pub scope: SimpleScope,
 	pub percent: Percent,
 	pub change: RelativeChange,
 	pub method: CompareMethod,
 }
 
 // TODO rename
-#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(
+	Debug, serde::Deserialize, clap::ValueEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum RelativeChange {
 	Unchanged,
@@ -110,24 +119,11 @@ pub enum RelativeChange {
 /// Parameters for modifying the benchmark behaviour.
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct CompareParams {
-	#[clap(
-		long,
-		short,
-		value_name = "METHOD",
-		ignore_case = true,
-		possible_values = CompareMethod::variants(),
-	)]
+	#[clap(long, short, value_name = "METHOD", ignore_case = true)]
 	pub method: CompareMethod,
 
-	#[clap(
-		long,
-		short,
-		value_name = "UNIT",
-		ignore_case = true,
-		default_value = "weight",
-		possible_values = Unit::variants(),
-	)]
-	pub unit: Unit,
+	#[clap(long, short, value_name = "UNIT", ignore_case = true, default_value = "time")]
+	pub unit: Dimension,
 
 	#[clap(long)]
 	pub ignore_errors: bool,
@@ -140,13 +136,14 @@ pub struct CompareParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Args)]
+#[cfg_attr(feature = "bloat", derive(Default))]
 pub struct FilterParams {
 	/// Minimal magnitude of a relative change to be relevant.
 	#[clap(long, value_name = "PERCENT", default_value = "5")]
 	pub threshold: Percent,
 
 	/// Only include a subset of change-types.
-	#[clap(long, ignore_case = true, multiple_values = true, value_name = "CHANGE-TYPE")]
+	#[clap(long, ignore_case = true, num_args = 0.., value_name = "CHANGE-TYPE")]
 	pub change: Option<Vec<RelativeChange>>,
 
 	#[clap(long, ignore_case = true, value_name = "REGEX")]
@@ -193,7 +190,7 @@ pub fn compare_commits(
 		parse_files_in_repo(repo, &paths)?
 	};
 
-	compare_files(olds, news, params.method, filter)
+	compare_files(olds, news, params, filter)
 }
 
 pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
@@ -281,7 +278,7 @@ fn list_files(
 	Ok(paths)
 }
 
-#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.
@@ -292,11 +289,16 @@ pub enum CompareMethod {
 	ExactWorst,
 }
 
-#[derive(serde::Deserialize, clap::ArgEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+// We call this *Unit* for ease of use but it is actually a *dimension* and a unit.
+#[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub enum Unit {
-	Weight,
+pub enum Dimension {
+	/// Reference time. Alias to `weight` for backwards compatibility.
+	#[serde(alias = "weight")]
 	Time,
+
+	/// Proof-of-validity (PoV) size.
+	Proof,
 }
 
 impl std::str::FromStr for CompareMethod {
@@ -313,26 +315,28 @@ impl std::str::FromStr for CompareMethod {
 }
 
 impl CompareMethod {
+	pub fn all() -> Vec<Self> {
+		vec![Self::Base, Self::GuessWorst, Self::ExactWorst]
+	}
+
 	pub fn variants() -> Vec<&'static str> {
 		vec!["base", "guess-worst", "exact-worst"]
 	}
+
+	pub fn reflect() -> Vec<(Self, &'static str)> {
+		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
+	}
 }
 
-impl std::str::FromStr for Unit {
+impl std::str::FromStr for Dimension {
 	type Err = String;
 
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
-			"weight" => Ok(Self::Weight),
-			"time" => Ok(Self::Time),
+			"time" | "weight" => Ok(Self::Time),
+			"proof" => Ok(Self::Proof),
 			_ => Err(format!("Unknown method: {}", s)),
 		}
-	}
-}
-
-impl Unit {
-	pub fn variants() -> Vec<&'static str> {
-		vec!["weight", "time"]
 	}
 }
 
@@ -344,7 +348,7 @@ impl FilterParams {
 
 impl std::str::FromStr for RelativeChange {
 	type Err = String;
-	// TODO try clap ArgEnum
+	// TODO try clap ValueEnum
 	fn from_str(s: &str) -> Result<Self, String> {
 		match s {
 			"unchanged" => Ok(Self::Unchanged),
@@ -363,12 +367,37 @@ impl RelativeChange {
 }
 
 pub fn compare_extrinsics(
-	old: Option<&Extrinsic>,
-	new: Option<&Extrinsic>,
-	method: CompareMethod,
+	mut old: Option<SimpleExtrinsic>,
+	mut new: Option<SimpleExtrinsic>,
+	params: &CompareParams,
 ) -> Result<TermChange, String> {
-	let scope = scope::Scope::empty().with_storage_weights(val!(25_000_000), val!(100_000_000));
-	let scopes = extend_scoped_components(old, new, method, &scope)?;
+	let mut scope = scope::SimpleScope::empty();
+	if params.unit == Dimension::Time {
+		scope = scope
+			.with_storage_weights(SimpleTerm::Scalar(25_000_000), SimpleTerm::Scalar(100_000_000));
+	} else {
+		scope = scope.with_storage_weights(SimpleTerm::Scalar(0), SimpleTerm::Scalar(0));
+		// OMG this code is stupid... but since READ and WRITE done incur proof size cost, we ignore
+		// them.
+		old = old.map(|mut o| {
+			o.term.substitute("READ", &scalar!(0));
+			o
+		});
+		old = old.map(|mut o| {
+			o.term.substitute("WRITE", &scalar!(0));
+			o
+		});
+		new = new.map(|mut o| {
+			o.term.substitute("READ", &scalar!(0));
+			o
+		});
+		new = new.map(|mut o| {
+			o.term.substitute("WRITE", &scalar!(0));
+			o
+		});
+	}
+	let (new, old) = (new.as_ref(), old.as_ref());
+	let scopes = extend_scoped_components(old, new, params.method, &scope)?;
 	let name = old.map(|o| o.name.clone()).or_else(|| new.map(|n| n.name.clone())).unwrap();
 	let pallet = old.map(|o| o.pallet.clone()).or_else(|| new.map(|n| n.pallet.clone())).unwrap();
 
@@ -376,7 +405,7 @@ pub fn compare_extrinsics(
 
 	for scope in scopes.iter() {
 		if !old.map_or(true, |e| e.term.free_vars(scope).is_empty()) {
-			panic!(
+			unreachable!(
 				"Free variable where there should be none: {}::{} {:?}",
 				name,
 				&pallet,
@@ -385,7 +414,12 @@ pub fn compare_extrinsics(
 		}
 		assert!(new.map_or(true, |e| e.term.free_vars(scope).is_empty()));
 		// NOTE: The maximum could be calculated right here, but for now I want the debug assert.
-		results.push(compare_terms(old.map(|e| &e.term), new.map(|e| &e.term), method, scope)?);
+		results.push(compare_terms(
+			old.map(|o| &o.term),
+			new.map(|n| &n.term),
+			params.method,
+			scope,
+		)?);
 	}
 	log::trace!(target: "compare", "{}::{} Evaluated {} scopes", pallet, name, scopes.len());
 
@@ -405,7 +439,7 @@ pub fn compare_extrinsics(
 	} else if all_increase_or_decrease {
 		Ok(results.into_iter().max_by(|a, b| a.cmp(b)).unwrap())
 	} else {
-		panic!(
+		unreachable!(
 			"Inconclusive: all_increase_or_decrease: {}, all_added_or_removed: {}",
 			all_increase_or_decrease, all_added_or_removed
 		);
@@ -414,11 +448,11 @@ pub fn compare_extrinsics(
 
 // TODO handle case that both have (different) ranges.
 pub(crate) fn extend_scoped_components(
-	a: Option<&Extrinsic>,
-	b: Option<&Extrinsic>,
+	a: Option<&SimpleExtrinsic>,
+	b: Option<&SimpleExtrinsic>,
 	method: CompareMethod,
-	scope: &Scope,
-) -> Result<Vec<Scope>, String> {
+	scope: &SimpleScope,
+) -> Result<Vec<SimpleScope>, String> {
 	let free_a = a.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let free_b = b.map(|e| e.term.free_vars(scope)).unwrap_or_default();
 	let frees = free_a.union(&free_b).cloned().collect::<HashSet<_>>();
@@ -449,7 +483,7 @@ pub(crate) fn extend_scoped_components(
 		let mut scope = scope.clone();
 		for (c, component) in frees.iter().enumerate() {
 			let value = if i & (1 << c) == 0 { lowest[c] } else { highest[c] };
-			scope.put_var(component, val!(value));
+			scope.put_var(component, SimpleTerm::Scalar(value as u128));
 		}
 		if !scope.is_empty() {
 			scopes.insert(scope);
@@ -495,10 +529,10 @@ fn component_value(
 }
 
 pub fn compare_terms(
-	old: Option<&Term>,
-	new: Option<&Term>,
+	old: Option<&SimpleTerm>,
+	new: Option<&SimpleTerm>,
 	method: CompareMethod,
-	scope: &Scope,
+	scope: &SimpleScope,
 ) -> Result<TermChange, String> {
 	let old_v = old.map(|t| t.eval(scope)).transpose()?;
 	let new_v = new.map(|t| t.eval(scope)).transpose()?;
@@ -519,18 +553,28 @@ pub fn compare_terms(
 }
 
 pub fn compare_files(
-	olds: Vec<Extrinsic>,
-	news: Vec<Extrinsic>,
-	method: CompareMethod,
+	olds: Vec<ChromaticExtrinsic>,
+	news: Vec<ChromaticExtrinsic>,
+	params: &CompareParams,
 	filter: &FilterParams,
 ) -> Result<TotalDiff, Box<dyn std::error::Error>> {
 	let ext_regex = filter.extrinsic.as_ref().map(|s| Regex::new(s)).transpose()?;
 	let pallet_regex = filter.pallet.as_ref().map(|s| Regex::new(s)).transpose()?;
+	// Split them into their correct dimension.
+	let olds = olds
+		.into_iter()
+		.map(|e| e.map_term(|t| t.simplify(params.unit).expect("Must simplify term")))
+		.collect::<Vec<_>>();
+	let news = news
+		.into_iter()
+		.map(|e| e.map_term(|t| t.simplify(params.unit).expect("Must simplify term")))
+		.collect::<Vec<_>>();
 
 	let mut diff = TotalDiff::new();
 	let old_names = olds.iter().cloned().map(|e| (e.pallet, e.name));
 	let new_names = news.iter().cloned().map(|e| (e.pallet, e.name));
 	let names = old_names.chain(new_names).collect::<std::collections::BTreeSet<_>>();
+	log::trace!("Comparing {} terms", olds.len());
 
 	for (pallet, extrinsic) in names {
 		if !pallet_regex.as_ref().map_or(true, |r| r.is_match(&pallet).unwrap_or_default()) {
@@ -543,8 +587,9 @@ pub fn compare_files(
 
 		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
 		let old = olds.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
+		log::trace!("Comparing {}::{}", pallet, extrinsic);
 
-		let change = match compare_extrinsics(old, new, method) {
+		let change = match compare_extrinsics(old.cloned(), new.cloned(), params) {
 			Err(err) => {
 				log::warn!("Parsing failed {}: {:?}", &pallet, err);
 				TermDiff::Failed(err)
@@ -572,13 +617,13 @@ pub fn compare_files(
 }
 
 /// Checks some obvious stuff:
-/// - Does not have more than 50 reads or writes
-pub fn sanity_check_term(term: &Term) -> Result<(), String> {
+/// - Does not have more than 1000 reads or writes
+pub fn sanity_check_term(term: &SimpleTerm) -> Result<(), String> {
 	let reads = term.find_largest_factor("READ").unwrap_or_default();
 	let writes = term.find_largest_factor("WRITE").unwrap_or_default();
 	let larger = reads.max(writes);
 
-	if larger > 50 {
+	if larger > 1000 {
 		if reads > writes {
 			Err(format!("Call has {} READs", reads))
 		} else {
@@ -629,7 +674,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 			TermDiff::Failed(_) | TermDiff::Warning(..) => true,
 			TermDiff::Changed(ref change) => match change.change {
 				RelativeChange::Changed if change.percent.abs() < params.threshold => false,
-				RelativeChange::Unchanged if params.threshold >= 0.001 => false,
+				RelativeChange::Unchanged if params.threshold >= 0.000001 => false,
 				_ => true,
 			},
 		})
@@ -653,40 +698,68 @@ pub fn percent(old: u128, new: u128) -> Percent {
 	100.0 * (new as f64 / old as f64) - 100.0
 }
 
-pub fn fmt_weight(w: u128) -> String {
-	if w >= 1_000_000_000_000 {
-		format!("{:.2}T", w as f64 / 1_000_000_000_000f64)
-	} else if w >= 1_000_000_000 {
-		format!("{:.2}G", w as f64 / 1_000_000_000f64)
-	} else if w >= 1_000_000 {
-		format!("{:.2}M", w as f64 / 1_000_000f64)
-	} else if w >= 1_000 {
-		format!("{:.2}K", w as f64 / 1_000f64)
-	} else {
-		w.to_string()
-	}
-}
-
-/// Formats pico seconds.
-pub fn fmt_time(t: u128) -> String {
-	if t >= 1_000_000_000_000 {
-		format!("{:.2}s", t as f64 / 1_000_000_000_000f64)
-	} else if t >= 1_000_000_000 {
-		format!("{:.2}ms", t as f64 / 1_000_000_000f64)
-	} else if t >= 1_000_000 {
-		format!("{:.2}us", t as f64 / 1_000_000f64)
-	} else if t >= 1_000 {
-		format!("{:.2}ns", t as f64 / 1_000f64)
-	} else {
-		format!("{:.2}ps", t)
-	}
-}
-
-impl Unit {
+impl Dimension {
 	pub fn fmt_value(&self, v: u128) -> String {
 		match self {
-			Unit::Time => fmt_time(v),
-			Unit::Weight => fmt_weight(v),
+			Self::Time => Self::fmt_time(v),
+			Self::Proof => Self::fmt_proof(v),
 		}
+	}
+
+	pub fn fmt_scalar(w: u128) -> String {
+		if w >= 1_000_000_000_000 {
+			format!("{:.2}T", w as f64 / 1_000_000_000_000f64)
+		} else if w >= 1_000_000_000 {
+			format!("{:.2}G", w as f64 / 1_000_000_000f64)
+		} else if w >= 1_000_000 {
+			format!("{:.2}M", w as f64 / 1_000_000f64)
+		} else if w >= 1_000 {
+			format!("{:.2}K", w as f64 / 1_000f64)
+		} else {
+			w.to_string()
+		}
+	}
+
+	/// Formats pico seconds.
+	pub fn fmt_time(t: u128) -> String {
+		if t >= 1_000_000_000_000 {
+			format!("{:.2}s", t as f64 / 1_000_000_000_000f64)
+		} else if t >= 1_000_000_000 {
+			format!("{:.2}ms", t as f64 / 1_000_000_000f64)
+		} else if t >= 1_000_000 {
+			format!("{:.2}us", t as f64 / 1_000_000f64)
+		} else if t >= 1_000 {
+			format!("{:.2}ns", t as f64 / 1_000f64)
+		} else {
+			format!("{:.2}ps", t)
+		}
+	}
+
+	pub fn fmt_proof(b: u128) -> String {
+		const BYTE_PER_KIB: u128 = 1024;
+		const BYTE_PER_MIB: u128 = BYTE_PER_KIB * 1024;
+		const BYTE_PER_GIB: u128 = BYTE_PER_MIB * 1024;
+
+		if b >= BYTE_PER_GIB {
+			format!("{:.2}GiB", b as f64 / BYTE_PER_GIB as f64)
+		} else if b >= BYTE_PER_MIB {
+			format!("{:.2}MiB", b as f64 / BYTE_PER_MIB as f64)
+		} else if b >= BYTE_PER_KIB {
+			format!("{:.2}KiB", b as f64 / BYTE_PER_KIB as f64)
+		} else {
+			format!("{}B", b)
+		}
+	}
+
+	pub fn all() -> Vec<Self> {
+		vec![Self::Time, Self::Proof]
+	}
+
+	pub fn variants() -> Vec<&'static str> {
+		vec!["time", "proof"]
+	}
+
+	pub fn reflect() -> Vec<(Self, &'static str)> {
+		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
 	}
 }

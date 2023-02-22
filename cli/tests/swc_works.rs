@@ -19,7 +19,7 @@ fn swc_help_works() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_contains(&out, "Print help information");
+	assert_contains(&out, "Tries to parse all files in the given file list or folder");
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn swc_compare_commits_same_no_changes() {
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_eq!(out.split("Unchanged").count(), 7 + 1);
+	assert_eq!(out, "No changes found.");
 }
 
 #[test]

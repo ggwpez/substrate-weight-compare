@@ -8,7 +8,7 @@ use std::{path::Path, process::Command};
 /// Yes this is inflexible and depends on GitHub - whatever it works.
 pub fn get_origin_org(repo: &Path) -> Result<String, String> {
 	let output = Command::new("git")
-		.args(&["remote", "get-url", "origin"])
+		.args(["remote", "get-url", "origin"])
 		.current_dir(repo)
 		.output()
 		.map_err(|e| format!("Failed to get origin url: {}", e))?;
@@ -37,10 +37,10 @@ mod tests {
 		// Create a temporary directory.
 		let tmp = tempfile::tempdir().unwrap();
 		// Create a new git repo in the temporary directory.
-		Command::new("git").args(&["init"]).current_dir(tmp.path()).output().unwrap();
+		Command::new("git").args(["init"]).current_dir(tmp.path()).output().unwrap();
 		// Set the origin to a dummy URL.
 		Command::new("git")
-			.args(&["remote", "add", "origin", url])
+			.args(["remote", "add", "origin", url])
 			.current_dir(tmp.path())
 			.output()
 			.unwrap();

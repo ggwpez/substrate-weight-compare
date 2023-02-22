@@ -5,7 +5,8 @@ use std::{fmt::Write as _, path::PathBuf};
 use swc_core::{
 	compare_commits, compare_files, filter_changes,
 	parse::pallet::{parse_files, try_parse_files},
-	sort_changes, CompareParams, FilterParams, Percent, RelativeChange, TotalDiff, Unit, VERSION,
+	sort_changes, CompareParams, Dimension, FilterParams, Percent, RelativeChange, TotalDiff,
+	VERSION,
 };
 
 #[derive(Debug, Parser)]
@@ -26,6 +27,7 @@ enum SubCommand {
 	Parse(ParseCmd),
 }
 
+/// Compare weight files.
 #[derive(Debug, clap::Subcommand)]
 enum CompareCmd {
 	Files(CompareFilesCmd),
@@ -38,6 +40,7 @@ enum ParseCmd {
 	Files(ParseFilesCmd),
 }
 
+/// Compare a local set of weight files.
 #[derive(Debug, Parser)]
 struct CompareFilesCmd {
 	#[allow(missing_docs)]
@@ -53,14 +56,15 @@ struct CompareFilesCmd {
 	pub format: FormatParams,
 
 	/// The old weight files.
-	#[clap(long, required(true), multiple_values(true))]
+	#[clap(long, required(true), num_args = 0..)]
 	pub old: Vec<PathBuf>,
 
 	/// The new weight files.
-	#[clap(long, required(true), multiple_values(true))]
+	#[clap(long, required(true), num_args = 0..)]
 	pub new: Vec<PathBuf>,
 }
 
+/// Compare weight files across commits.
 #[derive(Debug, Parser)]
 struct CompareCommitsCmd {
 	#[allow(missing_docs)]
@@ -93,7 +97,7 @@ struct CompareCommitsCmd {
 #[derive(Debug, Parser)]
 struct ParseFilesCmd {
 	/// The files to parse.
-	#[clap(long, index = 1, required(true), multiple_values(true))]
+	#[clap(long, index = 1, required(true), num_args = 0..00)]
 	pub files: Vec<PathBuf>,
 }
 
@@ -101,8 +105,7 @@ struct ParseFilesCmd {
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 pub struct FormatParams {
 	/// Set the format of the output.
-	#[clap(long, value_name  ="FORMAT", default_value = "human", ignore_case = true,
-possible_values = OutputFormat::variants())]
+	#[clap(long, value_name = "FORMAT", default_value = "human", ignore_case = true)]
 	pub format: OutputFormat,
 
 	/// Include weight terms in the console output.
@@ -116,7 +119,9 @@ possible_values = OutputFormat::variants())]
 	no_color: bool,
 }
 
-#[derive(Debug, serde::Deserialize, clap::ArgEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy)]
+#[derive(
+	Debug, serde::Deserialize, clap::ValueEnum, Clone, Eq, Ord, PartialEq, PartialOrd, Copy,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum OutputFormat {
 	/// Full human readable output.
@@ -173,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			let news =
 				if params.ignore_errors { try_parse_files(&new) } else { parse_files(&new)? };
 
-			let mut diff = compare_files(olds, news, params.method, &filter)?;
+			let mut diff = compare_files(olds, news, &params, &filter)?;
 			diff = filter_changes(diff, &filter);
 			sort_changes(&mut diff);
 			print_changes(diff, cmd.verbose, format, params.unit)?;
@@ -207,7 +212,7 @@ fn print_changes(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<(), Box<dyn std::error::Error>> {
 	let output = match format.format {
 		OutputFormat::Human => print_changes_human(per_extrinsic, verbose, format, unit),
@@ -224,7 +229,7 @@ fn print_changes_csv(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
@@ -273,7 +278,7 @@ fn print_changes_human(
 	per_extrinsic: TotalDiff,
 	verbose: bool,
 	format: FormatParams,
-	unit: Unit,
+	unit: Dimension,
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);

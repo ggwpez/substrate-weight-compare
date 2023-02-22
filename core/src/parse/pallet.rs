@@ -1,4 +1,9 @@
-use crate::{reads, writes, ExtrinsicName, PalletName};
+use crate::{
+	creads, cwrites, reads,
+	term::{SimpleTerm, Term},
+	traits::*,
+	writes, ExtrinsicName, PalletName,
+};
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
@@ -12,9 +17,8 @@ use syn::{
 };
 
 use crate::{
-	mul,
 	parse::{path_to_string, PathStripping},
-	term::Term,
+	term::ChromaticTerm,
 };
 
 pub type Result<T> = std::result::Result<T, String>;
@@ -30,28 +34,43 @@ pub struct ComponentRange {
 pub type ComponentRanges = HashMap<ComponentName, ComponentRange>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Extrinsic {
+pub struct GenericExtrinsic<T> {
 	pub name: ExtrinsicName,
 	pub pallet: PalletName,
 
-	pub term: Term,
+	pub term: T,
 	/// Min and max value that each weight component can have.
 	pub comp_ranges: Option<ComponentRanges>,
 }
 
-pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<Extrinsic>> {
+pub type ChromaticExtrinsic = GenericExtrinsic<ChromaticTerm>;
+pub type SimpleExtrinsic = GenericExtrinsic<SimpleTerm>;
+
+impl<T> GenericExtrinsic<T> {
+	pub fn map_term<F>(self, f: impl Fn(T) -> F) -> GenericExtrinsic<F> {
+		GenericExtrinsic {
+			term: f(self.term),
+			name: self.name,
+			pallet: self.pallet,
+			comp_ranges: self.comp_ranges,
+			// ..self is experimental between different types.
+		}
+	}
+}
+
+pub fn parse_file_in_repo(repo: &Path, file: &Path) -> Result<Vec<ChromaticExtrinsic>> {
 	let content = super::read_file(file)?;
 	let name = PathStripping::RepoRelative.strip(repo, file);
 	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
 }
 
-pub fn parse_file(file: &Path) -> Result<Vec<Extrinsic>> {
+pub fn parse_file(file: &Path) -> Result<Vec<ChromaticExtrinsic>> {
 	let content = super::read_file(file)?;
 	let name = PathStripping::FileName.strip(Path::new("."), file);
 	parse_content(name, content).map_err(|e| format!("{}: {}", file.display(), e))
 }
 
-pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<ChromaticExtrinsic>> {
 	let mut res = Vec::new();
 	for path in paths {
 		res.extend(parse_file_in_repo(repo, path)?);
@@ -59,7 +78,7 @@ pub fn parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Result<Vec<Extrins
 	Ok(res)
 }
 
-pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
+pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<ChromaticExtrinsic>> {
 	let mut res = Vec::new();
 	for path in paths {
 		res.extend(parse_file(path)?);
@@ -67,7 +86,7 @@ pub fn parse_files(paths: &[PathBuf]) -> Result<Vec<Extrinsic>> {
 	Ok(res)
 }
 
-pub fn try_parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic> {
+pub fn try_parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Vec<ChromaticExtrinsic> {
 	let mut res = Vec::new();
 	for path in paths {
 		if let Ok(parsed) = parse_file_in_repo(repo, path) {
@@ -77,7 +96,7 @@ pub fn try_parse_files_in_repo(repo: &Path, paths: &[PathBuf]) -> Vec<Extrinsic>
 	res
 }
 
-pub fn try_parse_files(paths: &[PathBuf]) -> Vec<Extrinsic> {
+pub fn try_parse_files(paths: &[PathBuf]) -> Vec<ChromaticExtrinsic> {
 	let mut res = Vec::new();
 	for path in paths {
 		if let Ok(parsed) = parse_file(path) {
@@ -87,8 +106,9 @@ pub fn try_parse_files(paths: &[PathBuf]) -> Vec<Extrinsic> {
 	res
 }
 
-pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsic>> {
-	let ast = syn::parse_file(&content).map_err(|e| format!("syn refused to parse: {}", e))?;
+pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<ChromaticExtrinsic>> {
+	let ast = syn::parse_file(&content)
+		.map_err(|e| format!("syn refused to parse content: {:?}: {}", content, e))?;
 	for item in ast.items {
 		if let Ok(weights) = handle_item(pallet.clone(), &item) {
 			return Ok(weights)
@@ -98,7 +118,7 @@ pub fn parse_content(pallet: PalletName, content: String) -> Result<Vec<Extrinsi
 	Err("Could not find a weight implementation in the passed file".into())
 }
 
-pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrinsic>> {
+pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<ChromaticExtrinsic>> {
 	match item {
 		Item::Impl(imp) => {
 			match imp.self_ty.as_ref() {
@@ -134,7 +154,7 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Extrins
 				if let ImplItem::Method(m) = f {
 					let (ext_name, term, comp_ranges) = handle_method(m)?;
 
-					weights.push(Extrinsic {
+					weights.push(ChromaticExtrinsic {
 						name: ext_name,
 						pallet: pallet.clone(),
 						term,
@@ -220,7 +240,9 @@ fn parse_component_attrs(attrs: &Vec<Attribute>) -> Result<Option<ComponentRange
 	}
 }
 
-fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term, Option<ComponentRanges>)> {
+fn handle_method(
+	m: &ImplItemMethod,
+) -> Result<(ExtrinsicName, ChromaticTerm, Option<ComponentRanges>)> {
 	let name = m.sig.ident.to_string();
 	// Check the return type to end with `Weight`.
 	if let ReturnType::Type(_, i) = &m.sig.output {
@@ -240,9 +262,14 @@ fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term, Option<Comp
 	}
 	let stmt = m.block.stmts.first().unwrap();
 
-	let weight = match stmt {
-		Stmt::Expr(expr) => parse_expression(expr)?,
+	let expr = match stmt {
+		Stmt::Expr(expr) => expr,
 		_ => unreachable!("Expected expression"),
+	};
+	let weight = match parse_expression(expr) {
+		Ok(w) => w,
+		// TODO only do this in V1 compatibility mode.
+		Err(_err) => parse_scalar_expression(expr)?.into_chromatic(crate::Dimension::Time),
 	};
 	// We later on check that the number of weight components matches
 	// the number of components in the term. This cannot be done here
@@ -252,19 +279,34 @@ fn handle_method(m: &ImplItemMethod) -> Result<(ExtrinsicName, Term, Option<Comp
 	Ok((name, weight, comp_ranges))
 }
 
-pub(crate) fn parse_expression(expr: &Expr) -> Result<Term> {
+pub(crate) fn parse_expression(expr: &Expr) -> Result<ChromaticTerm> {
 	match expr {
 		Expr::Paren(expr) => parse_expression(&expr.expr),
 		// TODO check cast
 		Expr::Cast(cast) => parse_expression(&cast.expr),
 		Expr::MethodCall(call) => parse_method_call(call),
-		Expr::Lit(lit) => Ok(Term::Value(lit_to_value(&lit.lit))),
+		//Expr::Lit(lit) => Ok(ChromaticTerm::Value(lit_to_value(&lit.lit))),
+		Expr::Path(p) => {
+			let ident = path_to_string(&p.path, Some("::"));
+			Ok(ChromaticTerm::Var(ident.into()))
+		},
+		Expr::Call(call) => parse_call(call),
+		e => Err(format!("Unexpected expression in pallet expr: {:?}", e)),
+	}
+}
+
+pub(crate) fn parse_scalar_expression(expr: &Expr) -> Result<Term<u128>> {
+	match expr {
+		Expr::Cast(cast) => parse_scalar_expression(&cast.expr),
+		Expr::Paren(expr) => parse_scalar_expression(&expr.expr),
+		Expr::Lit(lit) => Ok(Term::Scalar(lit_to_value(&lit.lit))),
+		Expr::MethodCall(call) => parse_scalar_method_call(call),
 		Expr::Path(p) => {
 			let ident = path_to_string(&p.path, Some("::"));
 			Ok(Term::Var(ident.into()))
 		},
-		Expr::Call(call) => parse_call(call),
-		_ => Err("Unexpected expression".into()),
+		Expr::Call(call) => parse_scalar_call(call),
+		e => Err(format!("Expected scalar but got: {:?}", e)),
 	}
 }
 
@@ -307,58 +349,174 @@ fn validate_db_func(func: &Expr) -> Result<()> {
 	}
 }
 
-// V1.5 feature
-fn parse_call(call: &ExprCall) -> Result<Term> {
+fn parse_call(call: &ExprCall) -> Result<ChromaticTerm> {
 	let name = function_name(call)?;
 	if name.ends_with("::from_ref_time") {
-		parse_args(&call.args)
+		parse_ref_time_args(&call.args)
+	} else if name.ends_with("::from_proof_size") {
+		parse_proof_size_args(&call.args)
+	} else if name.ends_with("::from_parts") {
+		parse_parts_args(&call.args)
 	} else if name.ends_with("::zero") {
 		if !call.args.empty_or_trailing() {
 			return Err("Unexpected arguments for `zero`".into())
 		}
-		Ok(Term::Value(0))
+		Ok(ChromaticTerm::Value(Zero::zero()))
 	} else {
 		Err(format!("Unexpected call: {}", name))
 	}
 }
 
+// v1.5 syntax
+fn parse_scalar_call(call: &ExprCall) -> Result<SimpleTerm> {
+	let name = function_name(call)?;
+	if name.ends_with("::from_ref_time") {
+		// NOTE: This returns a `Scalar` instead of `Value`… not great but will work since we
+		// normally want to multiply it.
+		parse_scalar_args(&call.args)
+	} else if name.ends_with("::zero") {
+		if !call.args.empty_or_trailing() {
+			return Err("Unexpected arguments for `zero`".into())
+		}
+		Ok(SimpleTerm::Value(Zero::zero()))
+	} else {
+		Err(format!("Unexpected call: {}", name))
+	}
+}
+
+pub(crate) fn parse_parts_args(args: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
+	if args.len() != 2 {
+		return Err(format!("Expected two arguments for `from_parts`, got {}", args.len()))
+	}
+	match (&args[0], &args[1]) {
+		(Expr::Lit(lit), Expr::Lit(lit2)) => {
+			let n = lit_to_value(&lit.lit);
+			let d = lit_to_value(&lit2.lit);
+			Ok(ChromaticTerm::Value((n, d).into()))
+		},
+		_ => Err("Expected literal arguments for `from_parts`".into()),
+	}
+}
+
+pub(crate) fn parse_ref_time_args(expr: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
+	let arg = extract_arg(expr)?;
+	parse_ref_time(arg)
+}
+
+pub(crate) fn parse_ref_time(expr: &Expr) -> Result<ChromaticTerm> {
+	Ok(parse_scalar_expression(expr)?.into_chromatic(crate::Dimension::Time))
+}
+
+pub(crate) fn parse_proof_size_args(expr: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
+	let arg = extract_arg(expr)?;
+	parse_proof_size(arg)
+}
+
+pub(crate) fn parse_proof_size(expr: &Expr) -> Result<ChromaticTerm> {
+	Ok(parse_scalar_expression(expr)?.into_chromatic(crate::Dimension::Proof))
+}
+
+pub(crate) fn parse_rw_args(expr: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
+	let arg = extract_arg(expr)?;
+	parse_rw(arg)
+}
+
+pub(crate) fn parse_rw(expr: &Expr) -> Result<ChromaticTerm> {
+	match expr {
+		Expr::Lit(lit) => Ok(ChromaticTerm::Scalar(lit_to_value(&lit.lit))),
+		expr => {
+			// Substrates Reads/Writes only consider ref time.
+			parse_scalar_expression(expr).map(|t| t.into_chromatic(crate::Dimension::Time))
+		},
+	}
+}
+
 // Example: receiver.saturating_mul(5 as Weight)
-pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<Term> {
+pub(crate) fn parse_method_call(call: &ExprMethodCall) -> Result<ChromaticTerm> {
 	let name: &str = &call.method.to_string();
 	match name {
-		"ref_time" => {
-			// SWC is still only using 1D weights, so just do nothing…
-			if !call.args.empty_or_trailing() {
-				return Err("Unexpected arguments on `ref_time`".into())
-			}
-			parse_expression(&call.receiver)
-		},
+		//"ref_time" => {
+		//	// SWC is still only using 1D weights, so just do nothing…
+		//	if !call.args.empty_or_trailing() {
+		//		return Err("Unexpected arguments on `ref_time`".into())
+		//	}
+		//	parse_expression(&call.receiver)
+		//},
 		"reads" => {
 			// Can only be called on T::DbWeight::get()
 			validate_db_call(&call.receiver)?;
-			let reads = parse_args(&call.args)?;
-			Ok(reads!(reads))
+			let reads = parse_rw_args(&call.args)?;
+			Ok(creads!(reads))
 		},
 		"writes" => {
 			// Can only be called on T::DbWeight::get()
 			validate_db_call(&call.receiver)?;
-			let writes = parse_args(&call.args)?;
-			Ok(writes!(writes))
+			let writes = parse_rw_args(&call.args)?;
+			Ok(cwrites!(writes))
 		},
-		"saturating_add" =>
-			Ok(Term::Add(parse_expression(&call.receiver)?.into(), parse_args(&call.args)?.into())),
-		"saturating_mul" => Ok(mul!(parse_expression(&call.receiver)?, parse_args(&call.args)?)),
+		"saturating_add" => Ok(ChromaticTerm::Add(
+			parse_expression(&call.receiver)?.into(),
+			parse_args(&call.args)?.into(),
+		)),
+		"saturating_mul" => Ok(ChromaticTerm::Mul(
+			parse_expression(&call.receiver)?.into(),
+			parse_args(&call.args)?.into(),
+		)),
 		"into" => parse_expression(&call.receiver),
 		_ => Err(format!("Unknown function: {}", name)),
 	}
 }
 
-fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term> {
+// Example: receiver.saturating_mul(5 as Weight)
+pub(crate) fn parse_scalar_method_call(call: &ExprMethodCall) -> Result<Term<u128>> {
+	let name: &str = &call.method.to_string();
+	match name {
+		"ref_time" => {
+			if !call.args.empty_or_trailing() {
+				return Err("Unexpected arguments on `ref_time`".into())
+			}
+			parse_scalar_expression(&call.receiver)
+		},
+		"reads" => {
+			// Can only be called on T::DbWeight::get()
+			validate_db_call(&call.receiver)?;
+			let reads = parse_scalar_args(&call.args)?;
+			Ok(reads!(reads))
+		},
+		"writes" => {
+			// Can only be called on T::DbWeight::get()
+			validate_db_call(&call.receiver)?;
+			let writes = parse_scalar_args(&call.args)?;
+			Ok(writes!(writes))
+		},
+		"saturating_add" => Ok(Term::Add(
+			parse_scalar_expression(&call.receiver)?.into(),
+			parse_scalar_args(&call.args)?.into(),
+		)),
+		"saturating_mul" => Ok(Term::Mul(
+			parse_scalar_expression(&call.receiver)?.into(),
+			parse_scalar_args(&call.args)?.into(),
+		)),
+		"into" => parse_scalar_expression(&call.receiver),
+		_ => Err(format!("Unknown function: {}", name)),
+	}
+}
+
+fn extract_arg(args: &Punctuated<Expr, Token![,]>) -> Result<&Expr> {
 	if args.len() != 1 {
 		return Err(format!("Expected one argument, got {}", args.len()))
 	}
-	let args = args.first().ok_or("Empty args")?;
-	parse_expression(args)
+	args.first().ok_or_else(|| "Empty args".into())
+}
+
+fn parse_args(args: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
+	let arg = extract_arg(args)?;
+	parse_expression(arg)
+}
+
+fn parse_scalar_args(args: &Punctuated<Expr, Token![,]>) -> Result<Term<u128>> {
+	let arg = extract_arg(args)?;
+	parse_scalar_expression(arg)
 }
 
 pub(crate) fn lit_to_value(lit: &Lit) -> u128 {

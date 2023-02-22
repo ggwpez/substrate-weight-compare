@@ -22,8 +22,8 @@ use std::{
 };
 
 use swc_core::{
-	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, FilterParams,
-	TotalDiff, Unit, VERSION,
+	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, Dimension,
+	FilterParams, TotalDiff, VERSION,
 };
 
 mod git;
@@ -39,7 +39,7 @@ pub(crate) struct MainCmd {
 	#[clap(long = "static", short, default_value = "web/static")]
 	pub static_path: PathBuf,
 
-	#[clap(long, multiple_values = true, default_value = "polkadot")]
+	#[clap(long, num_args = 0.., default_value = "polkadot")]
 	pub repos: Vec<String>,
 
 	#[clap(long, short, default_value = "localhost")]
@@ -67,7 +67,7 @@ pub struct CompareArgs {
 	pallet: Option<String>,
 	ignore_errors: bool,
 	threshold: u32,
-	unit: Unit,
+	unit: Dimension,
 	git_pull: Option<bool>,
 	method: CompareMethod,
 }
@@ -94,6 +94,9 @@ lazy_static! {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+	if std::env::var("RUST_BACKTRACE").is_err() {
+		std::env::set_var("RUST_BACKTRACE", "1");
+	}
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 	let cmd = CONFIG.clone();
 	let static_path = cmd.static_path.into_os_string();
@@ -246,7 +249,7 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 
 	// Spawn a git command and return all branches
 	let output = Command::new("git")
-		.args(&["ls-remote", "--tags", "--heads"])
+		.args(["ls-remote", "--tags", "--heads"])
 		.current_dir(repo.path.deref())
 		.output()?;
 	if !output.status.success() {

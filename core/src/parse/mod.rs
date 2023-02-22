@@ -15,7 +15,7 @@ pub mod storage;
 use std::{io::Read, path::Path};
 
 pub enum ParsedFile {
-	Pallet(Vec<pallet::Extrinsic>),
+	Pallet(Vec<pallet::ChromaticExtrinsic>),
 	Storage(storage::Weights),
 	Overhead(overhead::Weight),
 }
@@ -33,7 +33,7 @@ pub enum ParsedFile {
 ///  Compare `polkadot/pallet.rs` to `polkadot/template/pallet.rs`.
 ///  It this case the pallet name is different, since it are two distinct runtimes.
 ///  The pallets should not be compared to each other but registered as `Added`.
-#[derive(Copy, clap::ArgEnum, PartialEq, Eq, Clone, Debug)]
+#[derive(Copy, clap::ValueEnum, PartialEq, Eq, Clone, Debug)]
 pub enum PathStripping {
 	/// Only the file name.
 	FileName,

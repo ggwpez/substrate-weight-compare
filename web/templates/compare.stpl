@@ -25,7 +25,7 @@
 		<tbody>
 			<tr>
 				<td>Version</td>
-				<td><%= swc_core::VERSION.clone() %></td>
+				<td><a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank"><%= swc_core::VERSION.clone() %></a></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Repository") %></td>
@@ -38,11 +38,11 @@
 				</td>
 			</tr>
 			<tr>
-				<td>Old Commit</td>
+				<td>Old Commit/Branch</td>
 				<td><input id="input_old" type="text" value="<%= args.old %>"></td>
 			</tr>
 			<tr>
-				<td>New Commit</td>
+				<td>New Commit/Branch</td>
 				<td><input id="input_new" type="text" value="<%= args.new %>"></td>
 			</tr>
 			<tr>
@@ -69,11 +69,12 @@
 				</td>
 			</tr>
 			<tr>
-				<td><%- readme_link("Unit") %></td>
+				<td><%- readme_link("Dimension") %></td>
 				<td>
 					<select id="select_unit">
-						<option value="weight" <%- if args.unit == Unit::Weight { "selected" } else { "" } %>>Weight</option>
-						<option value="time" <%- if args.unit == Unit::Time { "selected" } else { "" } %>>Time</option>
+						<% for (val, repr) in swc_core::Dimension::reflect().iter() { %>
+							<option value="<%= repr %>" <%- if &args.unit == val { "selected" } else { "" } %>><%= repr %></option>
+						<% } %>
 					</select>
 				</td>
 			</tr>
@@ -82,9 +83,9 @@
 
 				<td>
 					<select id="select_method">
-						<option value="base"  <%- if args.method == swc_core::CompareMethod::Base { "selected" } else { "" } %>>Base</option>
-						<option value="guess-worst" <%- if args.method == swc_core::CompareMethod::GuessWorst { "selected" } else { "" } %>>Guess Worst</option>
-						<option value="exact-worst" <%- if args.method == swc_core::CompareMethod::ExactWorst { "selected" } else { "" } %>>Exact Worst</option>
+						<% for (val, repr) in swc_core::CompareMethod::reflect().iter() { %>
+							<option value="<%= repr %>" <%- if &args.method == val { "selected" } else { "" } %>><%= repr %></option>
+						<% } %>
 					</select>
 				</td>
 			</tr>
@@ -156,9 +157,15 @@
 				<td>
 					<%= info.file %>
 				</td>
-				<td>
+				<% if info.warning().is_some() { %>
+					<td class="text-warning">
+				<% } else { %>
+						<td>
+				<% } %>
 					<%= info.name %>
-					<sup><a href=<%- format!("\"#{}.{}\"", &info.file, &info.name) %>>🔗</a></sup>
+					<sup>
+						<a href=<%- format!("\"#{}.{}\"", &info.file, &info.name) %>>🔗</a>
+					</sup>
 				</td>
 
 				<td data-order='<%- change.old_v.unwrap_or_default() %>'>
@@ -181,7 +188,7 @@
 					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%= format!("{:?}", &change.scope) %>
+					<%= format!("{}", &change.scope) %>
 				</td>
 			</tr>
 		<% } %>

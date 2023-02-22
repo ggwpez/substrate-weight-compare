@@ -1,7 +1,7 @@
 use std::path::Path;
 use syn::{BinOp, Expr, ExprStruct, Item, ItemConst, Type};
 
-use crate::{parse::path_to_string, term::Term};
+use crate::{parse::path_to_string, term::SimpleTerm as Term};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Db {
@@ -25,6 +25,14 @@ pub struct Weights {
 #[macro_export]
 macro_rules! reads {
 	($a:expr) => {
+		SimpleTerm::Mul($a.into(), SimpleTerm::Var($crate::scope::STORAGE_READ_VAR.into()).into())
+	};
+}
+
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_READ_VAR`] constant.
+#[macro_export]
+macro_rules! creads {
+	($a:expr) => {
 		Term::Mul($a.into(), Term::Var($crate::scope::STORAGE_READ_VAR.into()).into())
 	};
 }
@@ -32,6 +40,14 @@ macro_rules! reads {
 /// Multiplies a [`Term`] with the [`crate::scope::STORAGE_WRITE_VAR`] constant.
 #[macro_export]
 macro_rules! writes {
+	($a:expr) => {
+		SimpleTerm::Mul($a.into(), SimpleTerm::Var($crate::scope::STORAGE_WRITE_VAR.into()).into())
+	};
+}
+
+/// Multiplies a [`Term`] with the [`crate::scope::STORAGE_WRITE_VAR`] constant.
+#[macro_export]
+macro_rules! cwrites {
 	($a:expr) => {
 		Term::Mul($a.into(), Term::Var($crate::scope::STORAGE_WRITE_VAR.into()).into())
 	};
@@ -153,10 +169,10 @@ fn parse_expression(expr: &Expr) -> Result<Term, String> {
 			};
 			Ok(term)
 		},
-		Expr::Lit(lit) => Ok(Term::Value(super::pallet::lit_to_value(&lit.lit))),
+		Expr::Lit(lit) => Ok(Term::Scalar(super::pallet::lit_to_value(&lit.lit))),
 		Expr::Path(p) => Ok(Term::Var(crate::term::VarValue(path_to_string(&p.path, Some("::"))))),
-		Expr::MethodCall(mcall) => super::pallet::parse_method_call(mcall),
-		_ => Err("Unexpected expression".into()),
+		Expr::MethodCall(mcall) => panic!("okay {:?}", mcall), /* super::pallet::parse_method_call(mcall), */
+		_ => Err("Unexpected expression storage expr".into()),
 	}
 }
 
