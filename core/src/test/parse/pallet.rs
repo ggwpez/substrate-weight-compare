@@ -258,6 +258,15 @@ fn parse_expression_works_v15(#[case] input: &str, #[case] want: SimpleTerm) {
 			Box::new(Term::Var("s".into())),
 		))),
 ))]
+#[case("Weight::from_parts(0 as u64, 0)
+.saturating_add(Weight::from_parts(520 as u64, 0).saturating_mul(x as u64))"
+	, Term::Add(
+		Box::new(Term::Value((0, 0).into())),
+		Box::new(Term::Mul(
+			Box::new(Term::Value((520, 0).into())),
+			Box::new(Term::Var("x".into())),
+		)),
+	))]
 fn chromatic_syntax(#[case] input: &str, #[case] want: ChromaticTerm) {
 	let expr: Expr = syn::parse_str(input).unwrap();
 	let got = parse_expression(&expr).unwrap();
