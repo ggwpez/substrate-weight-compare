@@ -107,10 +107,10 @@ $(document).ready(function () {
 			let disable = (function (mr) {
 				// Disable the row.
 				$(row).css('color', 'gray');
-				$(row).attr('title', 'Only paritytech is currently supported as remote.');
+				$(row).attr('title', 'Forks are unsupported. Remote: ' + mr['head']['repo']['owner']['login'] + ' != ' + owner);
 			});
 
-			if (mr['head']['repo']['owner']['login'] != "paritytech") {
+			if (mr['head']['repo']['owner']['login'] != owner) {
 				$(row).css('color', 'gray');
 				disable(mr);
 			} else {
