@@ -396,7 +396,7 @@ pub(crate) fn parse_parts_args(args: &Punctuated<Expr, Token![,]>) -> Result<Chr
 	if args.len() != 2 {
 		return Err(format!("Expected two arguments for `from_parts`, got {}", args.len()))
 	}
-	
+
 	let a = parse_parts_expr(&args[0])?;
 	let b = parse_parts_expr(&args[1])?;
 	Ok(ChromaticTerm::Value((a, b).into()))
