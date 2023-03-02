@@ -97,7 +97,7 @@ struct CompareCommitsCmd {
 #[derive(Debug, Parser)]
 struct ParseFilesCmd {
 	/// The files to parse.
-	#[clap(long, index = 1, required(true), num_args = 0..00)]
+	#[clap(long, index = 1, required(true), num_args = 0..1000)]
 	pub files: Vec<PathBuf>,
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "swc_web"
-version = "2.0.2"
+version = "2.1.1"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
@@ -14,16 +14,16 @@ polkadot = []
 [dependencies]
 swc_core = { version = "2.0.0", path = "../core" }
 
-actix-web = { version = "4.3.0", features = ["openssl"] }
+actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
-clap = { version = "4.1.6", features = ["derive"] }
+clap = { version = "4.1.8", features = ["derive"] }
 env_logger = "0.10.0"
 lazy_static = "1.4.0"
 log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "1.0.107", features = ["parsing", "full"] }
+syn = { version = "1.0.109", features = ["parsing", "full"] }
 serde = { version = "1.0.152", features = [ "derive" ] }
-sailfish = "0.6.0"
+sailfish = { version  = "0.7.0", git = "https://github.com/ggwpez/sailfish", branch = "master" }
 badge-maker = "0.3.1"
 dashmap = "5.4.0"
 cached = "0.42.0"
@@ -34,5 +34,5 @@ html-escape = "0.2.13"
 assert_cmd = "2.0.8"
 serial_test = "*"
 reqwest = { version = "0.11.14", default-features = false, features = ["blocking"] }
-tempfile = "3.3.0"
+tempfile = "3.4.0"
 rstest = { version = "0.16.0", default-features = false }

@@ -384,18 +384,22 @@ fn parse_scalar_call(call: &ExprCall) -> Result<SimpleTerm> {
 	}
 }
 
+pub(crate) fn parse_parts_expr(expr: &Expr) -> Result<u128> {
+	match expr {
+		Expr::Lit(lit) => Ok(lit_to_value(&lit.lit)),
+		Expr::Cast(cast) => parse_parts_expr(&cast.expr),
+		_ => Err("Expected literal expression for `from_parts`".into()),
+	}
+}
+
 pub(crate) fn parse_parts_args(args: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
 	if args.len() != 2 {
 		return Err(format!("Expected two arguments for `from_parts`, got {}", args.len()))
 	}
-	match (&args[0], &args[1]) {
-		(Expr::Lit(lit), Expr::Lit(lit2)) => {
-			let n = lit_to_value(&lit.lit);
-			let d = lit_to_value(&lit2.lit);
-			Ok(ChromaticTerm::Value((n, d).into()))
-		},
-		_ => Err("Expected literal arguments for `from_parts`".into()),
-	}
+
+	let a = parse_parts_expr(&args[0])?;
+	let b = parse_parts_expr(&args[1])?;
+	Ok(ChromaticTerm::Value((a, b).into()))
 }
 
 pub(crate) fn parse_ref_time_args(expr: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
