@@ -20,7 +20,7 @@ use crate::{
 #[case("../test_data/new/pallet_staking.rs.txt")]
 #[case("../test_data/old/pallet_staking.rs.txt")]
 #[case("../test_data/new/staking_chromatic.rs.txt")]
-#[case("/home/vados/work/swc/test_data/new/staking_chromatic.rs.txt")]
+#[case("../test_data/new/staking_chromatic.rs.txt")]
 fn parses_weight_files(#[case] path: PathBuf) {
 	if let Err(err) = parse_file(&path) {
 		panic!("Failed to parse file: {:?} with error: {:?}", path, err);
