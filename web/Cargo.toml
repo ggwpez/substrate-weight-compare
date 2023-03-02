@@ -23,7 +23,7 @@ log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
 syn = { version = "1.0.109", features = ["parsing", "full"] }
 serde = { version = "1.0.152", features = [ "derive" ] }
-sailfish = "0.6.0"
+sailfish = { version  = "0.7.0", git = "https://github.com/ggwpez/sailfish", branch = "master" }
 badge-maker = "0.3.1"
 dashmap = "5.4.0"
 cached = "0.42.0"

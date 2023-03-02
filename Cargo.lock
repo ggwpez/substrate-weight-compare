@@ -44,16 +44,16 @@ dependencies = [
 
 [[package]]
 name = "actix-http"
-version = "3.3.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0070905b2c4a98d184c4e81025253cb192aa8a73827553f38e9410801ceb35bb"
+checksum = "c2079246596c18b4a33e274ae10c0e50613f4d32a4198e09c7b93771013fed74"
 dependencies = [
  "actix-codec",
  "actix-rt",
  "actix-service",
  "actix-tls",
  "actix-utils",
- "ahash",
+ "ahash 0.8.3",
  "base64 0.21.0",
  "bitflags",
  "brotli",
@@ -188,7 +188,7 @@ dependencies = [
  "actix-tls",
  "actix-utils",
  "actix-web-codegen",
- "ahash",
+ "ahash 0.7.6",
  "bytes",
  "bytestring",
  "cfg-if",
@@ -238,6 +238,18 @@ version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
 dependencies = [
+ "getrandom",
+ "once_cell",
+ "version_check",
+]
+
+[[package]]
+name = "ahash"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c99f64d1e06488f620f932677e24bc6e2897582980441ae90a671415bd7ec2f"
+dependencies = [
+ "cfg-if",
  "getrandom",
  "once_cell",
  "version_check",
@@ -1864,9 +1876,8 @@ checksum = "7b4b9743ed687d4b4bcedf9ff5eaa7398495ae14e61cba0a295704edbc7decde"
 
 [[package]]
 name = "sailfish"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd1369644089e936dea5df0d6201636e2b6eb2e9ad098efb2eca5606ece3fab7"
+version = "0.7.0"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
 dependencies = [
  "itoap",
  "ryu",
@@ -1876,9 +1887,8 @@ dependencies = [
 
 [[package]]
 name = "sailfish-compiler"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "761019f0de360c654d51e068f07acfa8677e9566391ca290e1ab7c53a55d8d02"
+version = "0.7.0"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
 dependencies = [
  "filetime",
  "home",
@@ -1892,9 +1902,8 @@ dependencies = [
 
 [[package]]
 name = "sailfish-macros"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dad9a1a51d085aa939115cf537c71b1e438de7d27363a039ce525bf393262303"
+version = "0.7.0"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
 dependencies = [
  "proc-macro2",
  "sailfish-compiler",
