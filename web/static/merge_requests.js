@@ -85,13 +85,8 @@ $(document).ready(function () {
 				last_push.toLocaleDateString(),
 			]).draw().node();
 
-			if (should_highlight(mr)) {
-				$(row).css('color', 'seagreen');
-				highlighted++;
-			}
-
 			// Create a double-click handler for the row:
-			(function (mr) {
+			let click_compare = (function (mr) {
 				$(row).dblclick(function() {
 					loading(true);
 					let params = new URLSearchParams(default_params(repo));
@@ -108,7 +103,23 @@ $(document).ready(function () {
 				/*$(row).click(function() {
 					window.location.href = mr.html_url;
 				});*/
-			})(mr);
+			});
+			let disable = (function (mr) {
+				// Disable the row.
+				$(row).css('color', 'gray');
+				$(row).attr('title', 'Only paritytech is currently supported as remote.');
+			});
+
+			if (mr['head']['repo']['owner']['login'] != "paritytech") {
+				$(row).css('color', 'gray');
+				disable(mr);
+			} else {
+				if (should_highlight(mr)) {
+					$(row).css('color', 'seagreen');
+					highlighted++;
+				}
+				click_compare(mr);
+			}
 		}
 
 		// Set the 'highlighted' variable.
