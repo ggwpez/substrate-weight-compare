@@ -2067,7 +2067,7 @@ dependencies = [
 
 [[package]]
 name = "swc"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "assert_cmd",
  "clap 4.1.8",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "swc_core"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "clap 4.1.8",
  "criterion",
@@ -2103,7 +2103,7 @@ dependencies = [
 
 [[package]]
 name = "swc_web"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "actix-files",
  "actix-web",
