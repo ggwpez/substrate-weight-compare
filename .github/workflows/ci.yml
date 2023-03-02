@@ -32,8 +32,7 @@ jobs:
         run: cargo +nightly fmt --all -- --check
 
       - name: Build
-        run:
-          run: sh -c "cargo build --locked --release --all-targets --all-features || cat /home/vados/actions-runner/_work/substrate-weight-compare/substrate-weight-compare/target/release/build/sailfish-compiler-59c25d47ed6b9a15/out/templates/root-fab546a76fe1e243 && false"
+        run: cargo build --locked --release --all-targets --all-features || cat /home/vados/actions-runner/_work/substrate-weight-compare/substrate-weight-compare/target/release/build/sailfish-compiler-59c25d47ed6b9a15/out/templates/root-fab546a76fe1e243 && false
 
       - uses: actions-rs/cargo@v1
         name: Build (Tests)
@@ -42,7 +41,7 @@ jobs:
           args: --locked --no-run --release --all-targets
 
       - name: Clippy
-        run: sh -c "cargo clippy --locked --release --all-targets --all-features -- -D warnings || cat /home/vados/actions-runner/_work/substrate-weight-compare/substrate-weight-compare/target/release/build/sailfish-compiler-59c25d47ed6b9a15/out/templates/root-fab546a76fe1e243 && false"
+        run: cargo clippy --locked --release --all-targets --all-features -- -D warnings || cat /home/vados/actions-runner/_work/substrate-weight-compare/substrate-weight-compare/target/release/build/sailfish-compiler-59c25d47ed6b9a15/out/templates/root-fab546a76fe1e243 && false
 
       - uses: actions-rs/cargo@v1
         name: Documentation
