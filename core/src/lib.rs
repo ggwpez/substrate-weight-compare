@@ -286,7 +286,7 @@ pub enum CompareMethod {
 
 	/// Try to find the worst case increase. Errors if any component misses a range annotation.
 	ExactWorst,
-	/// Similar to [`ExactWorst`], but guesses if any component misses a range annotation.
+	/// Similar to [`Self::ExactWorst`], but guesses if any component misses a range annotation.
 	GuessWorst,
 
 	Asymptotic,
