@@ -283,10 +283,70 @@ fn list_files(
 pub enum CompareMethod {
 	/// The constant base weight of the extrinsic.
 	Base,
-	/// The worst case weight by setting all variables to 100.
-	GuessWorst,
-	/// Try to find the worst case increase. Errors if it cannot be found.
+
+	/// Try to find the worst case increase. Errors if any component misses a range annotation.
 	ExactWorst,
+	/// Similar to [`ExactWorst`], but guesses if any component misses a range annotation.
+	GuessWorst,
+
+	Asymptotic,
+}
+
+impl CompareMethod {
+	pub const fn min(&self) -> ComponentInstanceStrategy {
+		match self {
+			Self::Base | Self::ExactWorst => ComponentInstanceStrategy::exact_min(),
+			Self::GuessWorst => ComponentInstanceStrategy::guess_min(),
+			Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
+		}
+	}
+
+	pub const fn max(&self) -> ComponentInstanceStrategy {
+		match self {
+			Self::Base | Self::ExactWorst => ComponentInstanceStrategy::exact_max(),
+			Self::GuessWorst => ComponentInstanceStrategy::guess_max(),
+			Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
+		}
+	}
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub struct ComponentInstanceStrategy {
+	pub exact: bool,
+	pub min_or_max: MinOrMax,
+}
+
+impl ComponentInstanceStrategy {
+	pub const fn exact_min() -> Self {
+		Self { exact: true, min_or_max: MinOrMax::Min }
+	}
+
+	pub const fn exact_max() -> Self {
+		Self { exact: true, min_or_max: MinOrMax::Max }
+	}
+
+	pub const fn guess_min() -> Self {
+		Self { exact: false, min_or_max: MinOrMax::Min }
+	}
+
+	pub const fn guess_max() -> Self {
+		Self { exact: false, min_or_max: MinOrMax::Max }
+	}
+}
+
+#[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum MinOrMax {
+	Min,
+	Max
+}
+
+impl core::fmt::Display for MinOrMax {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			MinOrMax::Min => write!(f, "min"),
+			MinOrMax::Max => write!(f, "max"),
+		}
+	}
 }
 
 // We call this *Unit* for ease of use but it is actually a *dimension* and a unit.
@@ -309,6 +369,7 @@ impl std::str::FromStr for CompareMethod {
 			"base" => Ok(CompareMethod::Base),
 			"guess-worst" => Ok(CompareMethod::GuessWorst),
 			"exact-worst" => Ok(CompareMethod::ExactWorst),
+			"asymptotic" => Ok(CompareMethod::Asymptotic),
 			_ => Err(format!("Unknown method: {}", s)),
 		}
 	}
@@ -316,11 +377,11 @@ impl std::str::FromStr for CompareMethod {
 
 impl CompareMethod {
 	pub fn all() -> Vec<Self> {
-		vec![Self::Base, Self::GuessWorst, Self::ExactWorst]
+		vec![Self::Base, Self::GuessWorst, Self::ExactWorst, Self::Asymptotic]
 	}
 
 	pub fn variants() -> Vec<&'static str> {
-		vec!["base", "guess-worst", "exact-worst"]
+		vec!["base", "guess-worst", "exact-worst", "asymptotic"]
 	}
 
 	pub fn reflect() -> Vec<(Self, &'static str)> {
@@ -473,8 +534,8 @@ pub(crate) fn extend_scoped_components(
 	// Combine the maximum and minimum of each component with combinatorics.
 	let (mut lowest, mut highest) = (Vec::new(), Vec::new());
 	for free in frees.iter() {
-		lowest.push(component_value(free, &ra, &rb, CompareMethod::Base, &pallet, &extrinsic)?);
-		highest.push(component_value(free, &ra, &rb, method, &pallet, &extrinsic)?);
+		lowest.push(instance_component(free, &ra, &rb, method.min(), &pallet, &extrinsic)?);
+		highest.push(instance_component(free, &ra, &rb, method.max(), &pallet, &extrinsic)?);
 	}
 
 	// cartesian product of lowest and highest
@@ -492,36 +553,42 @@ pub(crate) fn extend_scoped_components(
 	Ok(scopes.into_iter().collect())
 }
 
-fn component_value(
+fn instance_component(
 	component: &str,
 	ra: &Option<HashMap<String, ComponentRange>>,
 	rb: &Option<HashMap<String, ComponentRange>>,
-	method: CompareMethod,
+	strategy: ComponentInstanceStrategy,
 	pallet: &str,
 	extrinsic: &str,
 ) -> Result<u32, String> {
+	use MinOrMax::*;
+
 	match (ra.as_ref().and_then(|r| r.get(component)), rb.as_ref().and_then(|r| r.get(component))) {
 		// Only one extrinsic has a component range? Good
-		(Some(r), None) | (None, Some(r)) => Ok(match method {
-			CompareMethod::Base => r.min,
-			CompareMethod::GuessWorst | CompareMethod::ExactWorst => r.max,
+		(Some(r), None) | (None, Some(r)) => Ok(match strategy.min_or_max {
+			Min => r.min,
+			Max => r.max,
 		}),
 		// Both extrinsics have the same range? Good
-		(Some(ra), Some(rb)) if ra == rb => Ok(match method {
-			CompareMethod::Base => ra.min,
-			CompareMethod::GuessWorst | CompareMethod::ExactWorst => ra.max,
+		(Some(ra), Some(rb)) if ra == rb => Ok(match strategy.min_or_max {
+			Min => ra.min,
+			Max => ra.max,
 		}),
-		// Both extrinsics have different ranges? Bad, use the min/max
-		(Some(ra), Some(rb)) => Ok(match method {
-			CompareMethod::Base => ra.min.min(rb.min),
-			CompareMethod::ExactWorst | CompareMethod::GuessWorst => ra.max.max(rb.max),
-		}),
-		// No ranges? Bad, just guess 100
-		(None, None) => match method {
-			CompareMethod::Base => Ok(0),
-			CompareMethod::GuessWorst => Ok(100),
-			CompareMethod::ExactWorst => Err(format!(
-				"No range for component {} of call {}::{} - use GuessWorst instead!",
+		// Both extrinsics have different ranges? Bad, use the min/max.
+		(Some(ra), Some(rb)) => match (strategy.exact, strategy.min_or_max) {
+			(true, _) => Err(format!(
+				"Component {} of call {}::{} has different ranges in the old and new version - Use Guess instead!",
+				component, pallet, extrinsic,
+			)),
+			(false, Min) => Ok(ra.min.min(rb.min)),
+			(false, Max) => Ok(ra.max.max(rb.max)),
+		},
+		// No ranges? Bad, just guess 100.
+		(None, None) => match (strategy.exact, strategy.min_or_max) {
+			(false, Min) => Ok(0),
+			(false, Max) => Ok(100),
+			(true, _) => Err(format!(
+				"No range for component {} of call {}::{} - use Guess instead!",
 				component, pallet, extrinsic,
 			)),
 		},
