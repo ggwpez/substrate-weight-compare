@@ -337,7 +337,7 @@ impl ComponentInstanceStrategy {
 #[derive(serde::Deserialize, clap::ValueEnum, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum MinOrMax {
 	Min,
-	Max
+	Max,
 }
 
 impl core::fmt::Display for MinOrMax {
