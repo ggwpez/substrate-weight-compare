@@ -2,6 +2,7 @@
 use rstest::*;
 
 use crate::{parse::pallet::*, scope::*, term::*, *};
+use maplit::hashmap;
 
 #[test]
 fn extend_scoped_components_works() {
@@ -283,6 +284,97 @@ fn extend_scoped_components_works() {
 				vec![("a".into(), scalar!(200)), ("b".into(), scalar!(0))],
 				vec![("a".into(), scalar!(200)), ("b".into(), scalar!(200))]
 			]
+		);
+	}
+}
+
+#[rstest]
+#[case(
+	// 7.57M + 13.03M * n + 485.56K * l + 2 * READ + 2 * WRITE
+	add!(add!(add!(add!(scalar!(7570000), mul!(scalar!(13030000), var!("n"))), mul!(scalar!(485560), var!("l"))), mul!(scalar!(2), var!("READ"))), mul!(scalar!(2), var!("WRITE"))),
+	// 8.35M + 16.89M * n + 402.57K * l + 2 * READ + 2 * WRITE
+	add!(add!(add!(add!(scalar!(8350000), mul!(scalar!(16890000), var!("n"))), mul!(scalar!(402570), var!("l"))), mul!(scalar!(2), var!("READ"))), mul!(scalar!(2), var!("WRITE"))),
+	&[(CompareMethod::Asymptotic, RelativeChange::Changed, 21.706),
+	  (CompareMethod::ExactWorst, RelativeChange::Changed, 24.784),
+	  (CompareMethod::Base, RelativeChange::Changed, 0.302)],
+)]
+#[case(
+	// 1K + 1K * n
+	add!(scalar!(1000), mul!(scalar!(1000), var!("n"))),
+	// 1K + 0.5K * n
+	add!(scalar!(1000), mul!(scalar!(500), var!("n"))),
+	&[(CompareMethod::Asymptotic, RelativeChange::Changed, -49.504),
+	  (CompareMethod::ExactWorst, RelativeChange::Changed, 0.0),
+	  (CompareMethod::Base, RelativeChange::Changed, 0.0)
+	],
+)]
+#[case(
+	// 1K + 0.5K * n
+	add!(scalar!(1000), mul!(scalar!(500), var!("n"))),
+	// 1K + 1K * n
+	add!(scalar!(1000), mul!(scalar!(1000), var!("n"))),
+	&[(CompareMethod::Asymptotic, RelativeChange::Changed, 98.039),
+	  (CompareMethod::ExactWorst, RelativeChange::Changed, 98.039),
+	  (CompareMethod::Base, RelativeChange::Changed, 0.0)],
+)]
+#[case(
+	// 1K + 0.5K * n
+	add!(scalar!(1000), mul!(scalar!(500), var!("n"))),
+	// 1001 + 1K * n
+	add!(scalar!(1001), mul!(scalar!(1000), var!("n"))),
+	&[(CompareMethod::Asymptotic, RelativeChange::Changed, 98.041),
+	  (CompareMethod::ExactWorst, RelativeChange::Changed, 98.041),
+	  (CompareMethod::Base, RelativeChange::Changed, 0.099)],
+)]
+#[case(
+	// 1K + 0.5K * n
+	add!(scalar!(1000), mul!(scalar!(500), var!("n"))),
+	// 999 + 1K * n
+	add!(scalar!(999), mul!(scalar!(1000), var!("n"))),
+	&[(CompareMethod::Asymptotic, RelativeChange::Changed, 98.037),
+	  (CompareMethod::ExactWorst, RelativeChange::Changed, 98.037),
+	  (CompareMethod::Base, RelativeChange::Changed, -0.1)],
+)]
+fn compare_extrinsics_works(
+	#[case] old: SimpleTerm,
+	#[case] new: SimpleTerm,
+	#[case] expected: &[(CompareMethod, RelativeChange, f64)],
+) {
+	let old = SimpleExtrinsic {
+		name: "".into(),
+		pallet: "".into(),
+		term: old,
+		// n=100, l=255
+		comp_ranges: Some(hashmap! {
+			"n".into() => ComponentRange { min: 0, max: 100 },
+			"l".into() => ComponentRange { min: 0, max: 255 },
+		}),
+	};
+	let new = SimpleExtrinsic {
+		name: "".into(),
+		pallet: "".into(),
+		term: new,
+		// n=100, l=255
+		comp_ranges: Some(hashmap! {
+			"n".into() => ComponentRange { min: 0, max: 100 },
+			"l".into() => ComponentRange { min: 0, max: 255 },
+		}),
+	};
+	for expected in expected {
+		let params = CompareParams {
+			method: expected.0,
+			unit: Dimension::Time,
+			ignore_errors: false,
+			git_pull: false,
+		};
+
+		let change = compare_extrinsics(Some(old.clone()), Some(new.clone()), &params).unwrap();
+		assert_eq!(change.change, expected.1);
+		assert!(
+			(change.percent - expected.2).abs() < 0.001,
+			"expected: {}, got: {}",
+			expected.2,
+			change.percent
 		);
 	}
 }

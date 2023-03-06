@@ -288,24 +288,24 @@ pub enum CompareMethod {
 	ExactWorst,
 	/// Similar to [`Self::ExactWorst`], but guesses if any component misses a range annotation.
 	GuessWorst,
-
+	/// Set all components to their exact maximum value.
 	Asymptotic,
 }
 
 impl CompareMethod {
 	pub const fn min(&self) -> ComponentInstanceStrategy {
 		match self {
-			Self::Base | Self::ExactWorst => ComponentInstanceStrategy::exact_min(),
-			Self::GuessWorst => ComponentInstanceStrategy::guess_min(),
+			Self::Base | Self::GuessWorst => ComponentInstanceStrategy::guess_min(),
+			Self::ExactWorst => ComponentInstanceStrategy::exact_min(),
 			Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
 		}
 	}
 
 	pub const fn max(&self) -> ComponentInstanceStrategy {
 		match self {
-			Self::Base | Self::ExactWorst => ComponentInstanceStrategy::exact_max(),
+			Self::Base => ComponentInstanceStrategy::guess_min(),
 			Self::GuessWorst => ComponentInstanceStrategy::guess_max(),
-			Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
+			Self::ExactWorst | Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
 		}
 	}
 }
@@ -603,7 +603,8 @@ pub fn compare_terms(
 ) -> Result<TermChange, String> {
 	let old_v = old.map(|t| t.eval(scope)).transpose()?;
 	let new_v = new.map(|t| t.eval(scope)).transpose()?;
-	let change = RelativeChange::new(old_v, new_v);
+	let change =
+		if old == new { RelativeChange::Unchanged } else { RelativeChange::new(old_v, new_v) };
 	let p = percent(old_v.unwrap_or_default(), new_v.unwrap_or_default());
 	log::trace!(target: "compare", "Evaluating {:?}  vs {:?} ({:?}) [{:?}]", old_v.unwrap_or_default(), new_v.unwrap_or_default(), p, &scope);
 
@@ -720,15 +721,16 @@ impl TermDiff {
 
 impl TermChange {
 	fn cmp(&self, other: &Self) -> Ordering {
-		let ord = self.change.cmp(&other.change).reverse();
+		let ord = self.change.cmp(&other.change);
 		if ord == Ordering::Equal {
-			if self.percent > other.percent {
+			/*if self.percent > other.percent {
 				Ordering::Greater
 			} else if self.percent == other.percent {
 				Ordering::Equal
 			} else {
 				Ordering::Less
-			}
+			}*/
+			((self.percent * 1000.0) as i128).cmp(&((other.percent * 1000.0) as i128))
 		} else {
 			ord
 		}
@@ -759,7 +761,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 impl RelativeChange {
 	pub fn new(old: Option<u128>, new: Option<u128>) -> RelativeChange {
 		match (old, new) {
-			(old, new) if old == new => RelativeChange::Unchanged,
+			//(old, new) if old == new => RelativeChange::Unchanged,
 			(Some(_), Some(_)) => RelativeChange::Changed,
 			(None, Some(_)) => RelativeChange::Added,
 			(Some(_), None) => RelativeChange::Removed,
