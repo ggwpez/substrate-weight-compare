@@ -94,7 +94,7 @@ fn swc_compare_files_works() {
 		.args(["compare", "files", "--method", "base"])
 		.args([
 			"--old",
-			root_dir().join("test_data/old/pallet_staking.rs.txt").to_str().unwrap(),
+			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--new",
 			root_dir().join("test_data/new/pallet_staking.rs.txt").to_str().unwrap(),
 			"--threshold",

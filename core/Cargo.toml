@@ -1,6 +1,6 @@
 [package]
 name = "swc_core"
-version = "2.1.1"
+version = "2.2.0"
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 
@@ -43,6 +43,7 @@ syn = { version = "1.0.109", features = ["parsing", "full"] }
 criterion = { version = "0.4", features = [ "html_reports" ] }
 rstest = "0.16.0"
 serial_test = "*"
+maplit = "1.0.2"
 
 # Work-around for <https://github.com/rust-lang/cargo/issues/2911>
 swc_core = { path = ".", features = ["bloat"] }

@@ -191,8 +191,9 @@ This is a deciding factor when making a decision whether or not a weight got wor
 
 - *Base*: Only consider the constant factor of the weight plus storage operations.
 - *Exact Worst*: Assumes both equations to be hyper-planes and finds their greatest relative increase by evaluating all corners. The runtime for `n` components is `2^n` which is hard-limited to 16 components.   
-This requires your weight files to support component range annotations. One way to check that is to search for the string `"The range of component"` in your weight.rs files.
-- *Guess Worst*: Tries to apply *Exact Worst* but assumes all components to have a maximum of 100, if no maximum was found. This is a best-effort approach in case your weight files do not have [component range annotations](https://github.com/paritytech/substrate/issues/11397).
+This requires your weight files to support [component range annotations](https://github.com/paritytech/substrate/issues/11397). One way to check that is to search for the string `"The range of component"` in your weight.rs files.
+- *Guess Worst*: Tries to apply *Exact Worst* but assumes all components to have a maximum of 100, if no maximum was found. This is a best-effort approach in case your weight files do not have component range annotations.
+- *Asymptotic*: Set all components to their maximum value. Can be used to get a feeling for the asymptotic change of the formula.
 
 NOTE: The storage weights are currently set to RocksDB Substrate default.  
 ## Rel Threshold
