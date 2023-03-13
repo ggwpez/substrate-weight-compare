@@ -1883,7 +1883,7 @@ checksum = "7b4b9743ed687d4b4bcedf9ff5eaa7398495ae14e61cba0a295704edbc7decde"
 [[package]]
 name = "sailfish"
 version = "0.7.0"
-source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#e33d71b8b7fd211fddc4845bb6e4b0e2b41e8d80"
 dependencies = [
  "itoap",
  "ryu",
@@ -1894,7 +1894,7 @@ dependencies = [
 [[package]]
 name = "sailfish-compiler"
 version = "0.7.0"
-source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#e33d71b8b7fd211fddc4845bb6e4b0e2b41e8d80"
 dependencies = [
  "filetime",
  "home",
@@ -1909,7 +1909,7 @@ dependencies = [
 [[package]]
 name = "sailfish-macros"
 version = "0.7.0"
-source = "git+https://github.com/ggwpez/sailfish?branch=master#d55cf6333dcc91a2df35e357e2a9767e257d9c2a"
+source = "git+https://github.com/ggwpez/sailfish?branch=master#e33d71b8b7fd211fddc4845bb6e4b0e2b41e8d80"
 dependencies = [
  "proc-macro2",
  "sailfish-compiler",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "swc"
-version = "2.1.1"
+version = "2.2.0"
 dependencies = [
  "assert_cmd",
  "clap 4.1.8",
@@ -2097,7 +2097,7 @@ dependencies = [
 
 [[package]]
 name = "swc_core"
-version = "2.1.1"
+version = "2.2.0"
 dependencies = [
  "clap 4.1.8",
  "criterion",
@@ -2119,7 +2119,7 @@ dependencies = [
 
 [[package]]
 name = "swc_web"
-version = "2.1.1"
+version = "2.2.0"
 dependencies = [
  "actix-files",
  "actix-web",
