@@ -26,7 +26,7 @@ export function default_params(repo) {
 		"repo": repo,
 		"threshold": "10",
 		"path_pattern": pattern,
-		"method": "guess-worst",
+		"method": "asymptotic",
 		"ignore_errors": "true",
 		"unit": "time",
 	};

@@ -147,7 +147,7 @@ $(document).ready(function () {
     $("#bthPost").click(function () {
         const repo = $('#repoSelect').val();
 
-        var url = "/compare?unit=weight&ignore_errors=true&threshold=10&method=guess-worst";
+        var url = "/compare?unit=weight&ignore_errors=true&threshold=10&method=asymptotic";
         url += "&repo=" + repo;
         url += "&old=" + $('#firstSelect').val();
         url += "&new=" + $('#secondSelect').val();
