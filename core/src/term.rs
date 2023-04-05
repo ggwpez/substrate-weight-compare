@@ -431,6 +431,25 @@ impl ChromaticTerm {
 			)),
 		}
 	}
+
+	/// Splice orthogonal weight terms together so that they produce a sum.
+	pub fn splice_add(self, other: Self) -> Self {
+		match (self, other) {
+			(Self::Add(t1, p1), Self::Add(t2, p2)) =>
+				Self::Add(Box::new(t1.splice_add(*t2)), Box::new(p1.splice_add(*p2))),
+			(Self::Value(x), Self::Value(y)) => {
+				// check for orthogonality
+				if x.time == 0 && y.proof == 0 {
+					Self::Value(Weight { time: y.time, proof: x.proof })
+				} else if x.proof == 0 && y.time == 0 {
+					Self::Value(Weight { time: x.time, proof: y.proof })
+				} else {
+					Self::Add(Box::new(Self::Value(x)), Box::new(Self::Value(y)))
+				}
+			},
+			(s, o) => Self::Add(Box::new(s), Box::new(o)),
+		}
+	}
 }
 
 impl<T> fmt::Display for Term<T>

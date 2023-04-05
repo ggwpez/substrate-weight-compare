@@ -46,7 +46,7 @@ macro_rules! integration_test {
 				///
 				/// Other tests could have messed it up.
 				fn init() {
-					if let Err(err) = reset(&root(), $known_good) {
+					if let Err(err) = reset(&root(), $known_good, false) {
 						panic!("Could not check out `repos/{}` to: {}", $repo, err);
 					}
 				}

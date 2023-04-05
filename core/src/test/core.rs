@@ -366,6 +366,7 @@ fn compare_extrinsics_works(
 			unit: Dimension::Time,
 			ignore_errors: false,
 			git_pull: false,
+			offline: true,
 		};
 
 		let change = compare_extrinsics(Some(old.clone()), Some(new.clone()), &params).unwrap();

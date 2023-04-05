@@ -38,9 +38,9 @@ integration_test!(
 integration_test!(
 	polkadot,
 	"polkadot",
-	"4863d0a33a4a3534236f76abb5b1dc91751c6c34",
-	653,
-	135,
+	"dc230b323b5baeb9b4297430ed539b208d30bf6a",
+	709,
+	173,
 	10,
 	10,
 	vec![

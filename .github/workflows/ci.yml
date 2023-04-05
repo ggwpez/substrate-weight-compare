@@ -84,10 +84,10 @@ jobs:
           cd repos/polkadot
           git init
           git remote add origin https://github.com/paritytech/polkadot
-          git fetch origin 4863d0a33a4a3534236f76abb5b1dc91751c6c34
+          git fetch origin dc230b323b5baeb9b4297430ed539b208d30bf6a
           git fetch origin refs/tags/v0.9.19:refs/tags/v0.9.19
           git fetch origin refs/tags/v0.9.20:refs/tags/v0.9.20
-          git checkout 4863d0a33a4a3534236f76abb5b1dc91751c6c34
+          git checkout dc230b323b5baeb9b4297430ed539b208d30bf6a
 
       - uses: actions-rs/cargo@v1
         name: Polkadot Tests (version locked)
