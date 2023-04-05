@@ -133,6 +133,10 @@ pub struct CompareParams {
 	/// This ensures that you get the newest commit on a branch.
 	#[clap(long)]
 	pub git_pull: bool,
+
+	/// Don't access the network.
+	#[clap(long)]
+	pub offline: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Args)]
@@ -153,6 +157,12 @@ pub struct FilterParams {
 	pub pallet: Option<String>,
 }
 
+impl CompareParams {
+	pub fn should_pull(&self) -> bool {
+		self.git_pull && !self.offline
+	}
+}
+
 pub fn compare_commits(
 	repo: &Path,
 	old: &str,
@@ -166,7 +176,7 @@ pub fn compare_commits(
 		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = reset(repo, old) {
+	if let Err(err) = reset(repo, old, params) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -179,7 +189,7 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = reset(repo, new) {
+	if let Err(err) = reset(repo, new, params) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -193,10 +203,10 @@ pub fn compare_commits(
 	compare_files(olds, news, params, filter)
 }
 
-pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
-	// fetch the single branch
-	log::info!("Fetching branch {}", refname);
-	if !is_commit(refname) {
+pub fn reset(path: &Path, refname: &str, params: &CompareParams) -> Result<(), String> {
+	if params.should_pull() && !is_commit(refname) {
+		log::info!("Fetching branch {}", refname);
+
 		let output = Command::new("git")
 			.arg("fetch")
 			.arg("origin")
@@ -210,6 +220,8 @@ pub fn reset(path: &Path, refname: &str) -> Result<(), String> {
 				String::from_utf8_lossy(&output.stderr),
 			))
 		}
+	} else {
+		log::debug!("Not fetching branch {} (should_fetch={})", refname, params.should_pull());
 	}
 	// try to reset with remote...
 	log::info!("Resetting to origin/{}", refname);
