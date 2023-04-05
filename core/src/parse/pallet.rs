@@ -391,7 +391,7 @@ pub(crate) fn parse_parts_args(args: &Punctuated<Expr, Token![,]>) -> Result<Chr
 
 	let t = parse_scalar_expression(&args[0])?.into_chromatic(Dimension::Time);
 	let p = parse_scalar_expression(&args[1])?.into_chromatic(Dimension::Proof);
-	Ok(ChromaticTerm::Add(t.into(), p.into()))
+	Ok(t.splice_add(p))
 }
 
 pub(crate) fn parse_ref_time_args(expr: &Punctuated<Expr, Token![,]>) -> Result<ChromaticTerm> {
