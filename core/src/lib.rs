@@ -135,6 +135,8 @@ pub struct CompareParams {
 	pub git_pull: bool,
 
 	/// Don't access the network.
+	///
+	/// This overrides any other options like `--git-pull`.
 	#[clap(long)]
 	pub offline: bool,
 }
