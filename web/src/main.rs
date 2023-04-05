@@ -403,7 +403,7 @@ fn do_compare_cached(
 		args.git_pull.unwrap_or(true),
 	);
 
-	let params = CompareParams { method, ignore_errors, unit, git_pull };
+	let params = CompareParams { method, ignore_errors, unit, git_pull, offline: false };
 	let filter = FilterParams {
 		threshold: args.threshold as f64,
 		change: None,

@@ -178,7 +178,7 @@ pub fn compare_commits(
 		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = reset(repo, old, params) {
+	if let Err(err) = reset(repo, old, params.should_pull()) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -191,7 +191,7 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = reset(repo, new, params) {
+	if let Err(err) = reset(repo, new, params.should_pull()) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -205,8 +205,8 @@ pub fn compare_commits(
 	compare_files(olds, news, params, filter)
 }
 
-pub fn reset(path: &Path, refname: &str, params: &CompareParams) -> Result<(), String> {
-	if params.should_pull() && !is_commit(refname) {
+pub fn reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
+	if pull && !is_commit(refname) {
 		log::info!("Fetching branch {}", refname);
 
 		let output = Command::new("git")
@@ -223,7 +223,7 @@ pub fn reset(path: &Path, refname: &str, params: &CompareParams) -> Result<(), S
 			))
 		}
 	} else {
-		log::debug!("Not fetching branch {} (should_fetch={})", refname, params.should_pull());
+		log::debug!("Not fetching branch {} (should_fetch={})", refname, pull);
 	}
 	// try to reset with remote...
 	log::info!("Resetting to origin/{}", refname);
