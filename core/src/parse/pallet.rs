@@ -12,8 +12,8 @@ use std::{
 	path::{Path, PathBuf},
 };
 use syn::{
-	punctuated::Punctuated, Attribute, Expr, ExprCall, ExprMethodCall, ImplItem,
-	Item, Lit, ReturnType, Stmt, Token, Type, ImplItemFn, __private::ToTokens,
+	punctuated::Punctuated, Attribute, Expr, ExprCall, ExprMethodCall, ImplItem, ImplItemFn, Item,
+	Lit, ReturnType, Stmt, Token, Type, __private::ToTokens,
 };
 
 use crate::{
