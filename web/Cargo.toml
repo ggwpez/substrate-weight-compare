@@ -16,23 +16,23 @@ swc_core = { version = "2.3.0", path = "../core" }
 
 actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
-clap = { version = "4.1.8", features = ["derive"] }
+clap = { version = "4.2.1", features = ["derive"] }
 env_logger = "0.10.0"
 lazy_static = "1.4.0"
 log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "1.0.109", features = ["parsing", "full"] }
-serde = { version = "1.0.152", features = [ "derive" ] }
+syn = { version = "2.0.14", features = ["parsing", "full"] }
+serde = { version = "1.0.160", features = [ "derive" ] }
 sailfish = { version  = "0.7.0", git = "https://github.com/ggwpez/sailfish", branch = "master" }
 badge-maker = "0.3.1"
 dashmap = "5.4.0"
-cached = "0.42.0"
+cached = "0.43.0"
 fancy-regex = "0.11.0"
 html-escape = "0.2.13"
 
 [dev-dependencies]
-assert_cmd = "2.0.8"
+assert_cmd = "2.0.10"
 serial_test = "*"
-reqwest = { version = "0.11.14", default-features = false, features = ["blocking"] }
-tempfile = "3.4.0"
-rstest = { version = "0.16.0", default-features = false }
+reqwest = { version = "0.11.16", default-features = false, features = ["blocking"] }
+tempfile = "3.5.0"
+rstest = { version = "0.17.0", default-features = false }
