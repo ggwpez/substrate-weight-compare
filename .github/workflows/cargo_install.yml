@@ -13,16 +13,16 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  basic:
+  smokescreen:
     name: "Rust"
     runs-on: self-hosted
 
-  steps:
-    - name: Cargo install
-      run: cargo install --git ${{ github.server_url }}/${{ github.repository }} swc swc_web --rev $GITHUB_SHA
-    
-    - name: CLI works
-      run: swc --version && swc --help
+    steps:
+      - name: Cargo install
+        run: cargo install --git ${{ github.server_url }}/${{ github.repository }} swc swc_web --rev $GITHUB_SHA
+      
+      - name: CLI works
+        run: swc --version && swc --help
 
-    - name: Web works
-      run: swc-web --version && swc-web --help
+      - name: Web works
+        run: swc-web --version && swc-web --help
