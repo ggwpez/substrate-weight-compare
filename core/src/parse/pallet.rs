@@ -12,8 +12,8 @@ use std::{
 	path::{Path, PathBuf},
 };
 use syn::{
-	punctuated::Punctuated, Attribute, Expr, ExprCall, ExprMethodCall, ImplItem, ImplItemMethod,
-	Item, Lit, ReturnType, Stmt, Token, Type,
+	punctuated::Punctuated, Attribute, Expr, ExprCall, ExprMethodCall, ImplItem,
+	Item, Lit, ReturnType, Stmt, Token, Type, ImplItemFn, __private::ToTokens,
 };
 
 use crate::{
@@ -151,7 +151,7 @@ pub(crate) fn handle_item(pallet: PalletName, item: &Item) -> Result<Vec<Chromat
 			// TODO validate the trait type.
 			let mut weights = Vec::new();
 			for f in &imp.items {
-				if let ImplItem::Method(m) = f {
+				if let ImplItem::Fn(m) = f {
 					let (ext_name, term, comp_ranges) = handle_method(m)?;
 
 					weights.push(ChromaticExtrinsic {
@@ -190,7 +190,15 @@ fn parse_component_attr(attr: &Attribute) -> Result<Option<(ComponentName, Compo
 		.unwrap();
 	}
 
-	let input = attr.tokens.to_string();
+	let input = match &attr.meta {
+		syn::Meta::NameValue(syn::MetaNameValue { path, value, .. }) => {
+			if path_to_string(&path, None) != "doc" {
+				return Ok(None)
+			}
+			value.to_token_stream().to_string()
+		},
+		_ => return Ok(None),
+	};
 	let caps = REGEX.captures(&input).expect("Regex is known good");
 	if caps.is_none() {
 		return Ok(None)
@@ -241,7 +249,7 @@ fn parse_component_attrs(attrs: &Vec<Attribute>) -> Result<Option<ComponentRange
 }
 
 fn handle_method(
-	m: &ImplItemMethod,
+	m: &ImplItemFn,
 ) -> Result<(ExtrinsicName, ChromaticTerm, Option<ComponentRanges>)> {
 	let name = m.sig.ident.to_string();
 	// Check the return type to end with `Weight`.
@@ -263,7 +271,7 @@ fn handle_method(
 	let stmt = m.block.stmts.first().unwrap();
 
 	let expr = match stmt {
-		Stmt::Expr(expr) => expr,
+		Stmt::Expr(expr, _) => expr,
 		_ => unreachable!("Expected expression"),
 	};
 	let weight = match parse_expression(expr) {
@@ -291,7 +299,7 @@ pub(crate) fn parse_expression(expr: &Expr) -> Result<ChromaticTerm> {
 			Ok(ChromaticTerm::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_call(call),
-		e => Err(format!("Unexpected expression in pallet expr: {:?}", e)),
+		e => Err(format!("Unexpected expression in pallet expr: {:?}", e.into_token_stream())),
 	}
 }
 
@@ -306,7 +314,7 @@ pub(crate) fn parse_scalar_expression(expr: &Expr) -> Result<Term<u128>> {
 			Ok(Term::Var(ident.into()))
 		},
 		Expr::Call(call) => parse_scalar_call(call),
-		e => Err(format!("Expected scalar but got: {:?}", e)),
+		e => Err(format!("Expected scalar but got: {:?}", e.into_token_stream())),
 	}
 }
 
