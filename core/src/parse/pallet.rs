@@ -192,7 +192,7 @@ fn parse_component_attr(attr: &Attribute) -> Result<Option<(ComponentName, Compo
 
 	let input = match &attr.meta {
 		syn::Meta::NameValue(syn::MetaNameValue { path, value, .. }) => {
-			if path_to_string(&path, None) != "doc" {
+			if path_to_string(path, None) != "doc" {
 				return Ok(None)
 			}
 			value.to_token_stream().to_string()
