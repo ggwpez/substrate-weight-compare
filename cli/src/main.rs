@@ -132,12 +132,14 @@ pub enum OutputFormat {
 	CSV,
 	/// Json output.
 	JSON,
+	/// Markdown output
+	Markdown,
 }
 
 impl OutputFormat {
 	/// All possible variants of [`Self`].
 	pub fn variants() -> Vec<&'static str> {
-		vec!["human", "brief-human", "csv", "json"]
+		vec!["human", "brief-human", "csv", "json", "markdown"]
 	}
 }
 
@@ -150,6 +152,7 @@ impl std::str::FromStr for OutputFormat {
 			"brief-human" => Ok(OutputFormat::BriefHuman),
 			"csv" => Ok(OutputFormat::CSV),
 			"json" => Ok(OutputFormat::JSON),
+			"markdown" => Ok(OutputFormat::Markdown),
 			_ => Err(format!("Unknown output format: {}", s)),
 		}
 	}
@@ -217,7 +220,8 @@ fn print_changes(
 	unit: Dimension,
 ) -> Result<(), Box<dyn std::error::Error>> {
 	let output = match format.format {
-		OutputFormat::Human => print_changes_human(per_extrinsic, verbose, format, unit),
+		OutputFormat::Human => print_changes_human(per_extrinsic, verbose, format, unit, false),
+		OutputFormat::Markdown => print_changes_human(per_extrinsic, verbose, format, unit, true),
 		OutputFormat::CSV => print_changes_csv(per_extrinsic, verbose, format, unit),
 		_ => Err("Unsupported output format".into()),
 	};
@@ -248,7 +252,7 @@ fn print_changes_csv(
 
 	for (info, change) in per_extrinsic.iter().filter_map(|p| p.term().map(|t| (p, t))) {
 		let mut row = format!(
-			"{},{},{},{},{},",
+			"{},{},{},{},{}",
 			info.file.clone(),
 			info.name.clone(),
 			change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
@@ -281,6 +285,7 @@ fn print_changes_human(
 	verbose: bool,
 	format: FormatParams,
 	unit: Dimension,
+	markdown: bool,
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
@@ -289,6 +294,9 @@ fn print_changes_human(
 
 	let mut table = Table::new();
 	table.set_constraints(vec![comfy_table::ColumnConstraint::ContentWidth]);
+	if markdown {
+		table.load_preset(comfy_table::presets::ASCII_MARKDOWN);
+	}
 	let mut header = vec!["File", "Extrinsic", "Old", "New", "Change [%]"];
 	if format.print_terms {
 		header.extend(vec!["Old Weight Term", "New Weight Term", "Used variables"]);
