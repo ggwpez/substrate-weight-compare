@@ -117,6 +117,22 @@ pub struct FormatParams {
 	/// Disable color output.
 	#[clap(long)]
 	no_color: bool,
+
+	/// Non-regex string to strip common path prefixes from the file paths.
+	///
+	/// Example: `--strip-path-prefix "^runtime/*/src/weights/"`.
+	/// Uses the `fancy_regex` crate.
+	#[clap(long)]
+	strip_path_prefix: Option<String>,
+}
+
+impl FormatParams {
+	pub fn filter_path(&self, path: String) -> String {
+		match self.strip_path_prefix.as_ref() {
+			Some(prefix) => path.strip_prefix(prefix).unwrap_or(&path).to_string(),
+			None => path,
+		}
+	}
 }
 
 #[derive(
@@ -305,14 +321,19 @@ fn print_changes_human(
 
 	// Print all errors
 	for (info, _change) in per_extrinsic.iter().filter_map(|p| p.error().map(|t| (p, t))) {
-		let row =
-			vec![info.file.clone(), info.name.clone(), "-".into(), "-".into(), "ERROR".into()];
+		let row = vec![
+			format.filter_path(info.file.clone()),
+			info.name.clone(),
+			"-".into(),
+			"-".into(),
+			"ERROR".into(),
+		];
 		table.add_row(row);
 	}
 
 	for (info, change) in per_extrinsic.iter().filter_map(|p| p.term().map(|t| (p, t))) {
 		let mut row = vec![
-			info.file.clone(),
+			format.filter_path(info.file.clone()),
 			info.name.clone(),
 			change.old_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
 			change.new_v.map(|v| unit.fmt_value(v)).unwrap_or_default(),
