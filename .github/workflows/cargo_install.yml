@@ -13,8 +13,8 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  smokescreen:
-    name: "Rust"
+  install:
+    name: "Smokescreen Install"
     runs-on: self-hosted
 
     steps:
