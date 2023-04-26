@@ -206,7 +206,7 @@ pub fn compare_commits(
 }
 
 pub fn reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
-	if pull && !is_commit(refname) {
+	if pull {
 		log::info!("Fetching branch {}", refname);
 
 		let output = Command::new("git")
@@ -257,11 +257,6 @@ pub fn reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
 		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)))
 	}
 	Ok(())
-}
-
-/// Tries to guess whether a refname is a commit hash or not.
-fn is_commit(refname: &str) -> bool {
-	refname.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 fn list_files(
