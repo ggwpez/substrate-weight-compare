@@ -3,7 +3,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::path::Path;
 
-use subweight-core::parse::{pallet::parse_file as parse_pallet, storage::parse_file as parse_storage};
+use subweight_core::parse::{
+	pallet::parse_file as parse_pallet, storage::parse_file as parse_storage,
+};
 
 fn bench_parse_pallet(c: &mut Criterion) {
 	let path = Path::new("../test_data/new/pallet_staking.rs.txt");

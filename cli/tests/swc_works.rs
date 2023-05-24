@@ -2,7 +2,9 @@ use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-use subweight_core::testing::{assert_contains, assert_not_contains, assert_version, root_dir, succeeds};
+use subweight_core::testing::{
+	assert_contains, assert_not_contains, assert_version, root_dir, succeeds,
+};
 
 #[test]
 fn swc_version_works() {
