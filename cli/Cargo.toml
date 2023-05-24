@@ -7,7 +7,6 @@ version.workspace = true
 repository.workspace = true
 readme.workspace = true
 license.workspace = true
-license-file.workspace = true
 description.workspace = true
 
 [features]
