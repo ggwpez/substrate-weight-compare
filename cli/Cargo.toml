@@ -1,18 +1,22 @@
 [package]
 name = "swc"
-version = "2.4.0"
-edition = "2021"
-authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+repository.workspace = true
+readme.workspace = true
 
 [features]
 polkadot = []
 
 [dependencies]
-swc_core = { version = "2.3.0", path = "../core" }
+swc_core.workspace = true
 
-env_logger = "0.10.0"
-log = "0.4.17"
-clap = { version = "4.3.0", features = ["derive"] }
+env_logger.workspace = true
+log.workspace = true
+clap.workspace = true
+
 syn = { version = "2.0.16", features = ["parsing", "full"] }
 comfy-table = { version = "6.1.4", default-features = false }
 serde = { version = "1.0.163", features = [ "derive" ] }

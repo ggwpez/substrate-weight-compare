@@ -1,8 +1,11 @@
 [package]
 name = "swc_web"
-version = "2.3.0"
-edition = "2021"
-authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+repository.workspace = true
+readme.workspace = true
 
 [[bin]]
 name = "swc-web"
@@ -12,18 +15,19 @@ path = "src/main.rs"
 polkadot = []
 
 [dependencies]
-swc_core = { version = "2.3.0", path = "../core" }
+swc_core.workspace = true
+
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true
+sailfish.workspace = true
 
 actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
-clap = { version = "4.3.0", features = ["derive"] }
-env_logger = "0.10.0"
 lazy_static = "1.4.0"
-log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
 syn = { version = "2.0.16", features = ["parsing", "full"] }
 serde = { version = "1.0.163", features = [ "derive" ] }
-sailfish = { version  = "0.7.1", git = "https://github.com/ggwpez/sailfish", branch = "master" }
 badge-maker = "0.3.1"
 dashmap = "5.4.0"
 cached = "0.43.0"
