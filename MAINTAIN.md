@@ -1,8 +1,7 @@
 # Bumping The Versions
 
-```bash
-cargo install cargo-workspaces
-cargo workspaces version major --allow-branch dev --no-git-push --no-individual-tags
-```
+Bump te version in the workspace `Cargo.toml`.
 
-Then amend the commit to sign-off.
+```bash
+make publish
+```
