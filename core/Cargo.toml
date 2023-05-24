@@ -1,5 +1,5 @@
 [package]
-name = "swc_core"
+name = "subweight-core"
 
 edition.workspace = true
 authors.workspace = true
@@ -50,4 +50,4 @@ serial_test = "*"
 maplit = "1.0.2"
 
 # Work-around for <https://github.com/rust-lang/cargo/issues/2911>
-swc_core = { path = ".", features = ["bloat"] }
+subweight-core = { path = ".", features = ["bloat"] }

@@ -2,13 +2,13 @@
 
 use actix_web::HttpResponse;
 
-use swc_core::{Dimension, Percent, RelativeChange, TermChange};
+use subweight_core::{Dimension, Percent, RelativeChange, TermChange};
 
 pub mod templates {
 	use super::*;
 	use crate::{CompareArgs, Repo};
 	use sailfish::TemplateOnce;
-	use swc_core::TotalDiff;
+	use subweight_core::TotalDiff;
 
 	#[derive(TemplateOnce)]
 	#[template(path = "root.stpl")]

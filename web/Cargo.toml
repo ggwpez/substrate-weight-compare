@@ -1,5 +1,5 @@
 [package]
-name = "swc_web"
+name = "subweight-web"
 
 edition.workspace = true
 authors.workspace = true
@@ -8,14 +8,14 @@ repository.workspace = true
 readme.workspace = true
 
 [[bin]]
-name = "swc-web"
+name = "subweight-web"
 path = "src/main.rs"
 
 [features]
 polkadot = []
 
 [dependencies]
-swc_core.workspace = true
+subweight-core.workspace = true
 
 clap.workspace = true
 env_logger.workspace = true

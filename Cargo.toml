@@ -3,7 +3,7 @@ cargo-features = ["strip"]
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
-version = "2.4.1"
+version = "3.0.0"
 repository = "https://github.com/ggwpez/typesafe-builders"
 readme = "README.md"
 
@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.dependencies]
-swc_core = { version = "2.3.0", path = "core" }
+subweight-core = { version = "3.0.0", path = "core" }
 
 clap = { version = "4.3.0", features = ["derive"] }
 env_logger = "0.10.0"

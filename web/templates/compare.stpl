@@ -25,7 +25,7 @@
 		<tbody>
 			<tr>
 				<td>Version</td>
-				<td><a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank"><%= swc_core::VERSION.clone() %></a></td>
+				<td><a href="https://github.com/ggwpez/substrate-weight-compare" target="_blank"><%= subweight_core::VERSION.clone() %></a></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Repository") %></td>
@@ -72,7 +72,7 @@
 				<td><%- readme_link("Dimension") %></td>
 				<td>
 					<select id="select_unit">
-						<% for (val, repr) in swc_core::Dimension::reflect().iter() { %>
+						<% for (val, repr) in subweight_core::Dimension::reflect().iter() { %>
 							<option value="<%= repr %>" <%- if &args.unit == val { "selected" } else { "" } %>><%= repr %></option>
 						<% } %>
 					</select>
@@ -83,7 +83,7 @@
 
 				<td>
 					<select id="select_method">
-						<% for (val, repr) in swc_core::CompareMethod::reflect().iter() { %>
+						<% for (val, repr) in subweight_core::CompareMethod::reflect().iter() { %>
 							<option value="<%= repr %>" <%- if &args.method == val { "selected" } else { "" } %>><%= repr %></option>
 						<% } %>
 					</select>

@@ -1,5 +1,5 @@
 [package]
-name = "swc"
+name = "subweight"
 
 edition.workspace = true
 authors.workspace = true
@@ -11,7 +11,7 @@ readme.workspace = true
 polkadot = []
 
 [dependencies]
-swc_core.workspace = true
+subweight-core.workspace = true
 
 env_logger.workspace = true
 log.workspace = true

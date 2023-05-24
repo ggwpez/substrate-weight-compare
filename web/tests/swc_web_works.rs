@@ -4,7 +4,7 @@ use assert_cmd::cargo::CommandCargoExt;
 use serial_test::serial;
 use std::process::Command;
 
-use swc_core::testing::{assert_version, root_dir, succeeds, KillChildOnDrop};
+use subweight_core::testing::{assert_version, root_dir, succeeds, KillChildOnDrop};
 
 #[test]
 fn swc_web_version_works() {

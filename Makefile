@@ -1,9 +1,9 @@
 .PHONY: publish
 publish:
 	@echo "Checking if crate can be published..."
-	@cargo publish --dry-run -p swc_core
-	@cargo publish --dry-run -p swc_cli
-	@cargo publish --dry-run -p swc_web
+	@cargo publish --dry-run -p subweight-core
+	@cargo publish --dry-run -p swc
+	@cargo publish --dry-run -p subweight-web
 
 	$(eval VERSION := $(shell grep -E '^version = "[0-9.]+"' Cargo.toml | cut -d'"' -f2))
 	$(eval TAG := v$(VERSION))
@@ -14,9 +14,9 @@ publish:
 	git push origin $(TAG)
 	@echo "- Publishing crate to crates.io..."
 	@echo " - Publishing core..."
-	@cargo publish -p swc_core
+	@cargo publish -p subweight-core
 	@echo " - Publishing cli..."
-	@cargo publish -p swc_cli
+	@cargo publish -p swc
 	@echo " - Publishing web..."
 	@cargo publish -p swc_web
 	@echo "Done!"

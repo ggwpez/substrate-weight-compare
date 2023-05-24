@@ -2099,8 +2099,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "swc"
-version = "2.4.1"
+name = "subweight"
+version = "3.0.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -2109,13 +2109,13 @@ dependencies = [
  "log",
  "serde",
  "serial_test",
- "swc_core",
+ "subweight-core",
  "syn 2.0.16",
 ]
 
 [[package]]
-name = "swc_core"
-version = "2.4.1"
+name = "subweight-core"
+version = "3.0.0"
 dependencies = [
  "clap",
  "criterion",
@@ -2131,13 +2131,13 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
- "swc_core",
+ "subweight-core",
  "syn 2.0.16",
 ]
 
 [[package]]
-name = "swc_web"
-version = "2.4.1"
+name = "subweight-web"
+version = "3.0.0"
 dependencies = [
  "actix-files",
  "actix-web",
@@ -2157,7 +2157,7 @@ dependencies = [
  "sailfish",
  "serde",
  "serial_test",
- "swc_core",
+ "subweight-core",
  "syn 2.0.16",
  "tempfile",
 ]
