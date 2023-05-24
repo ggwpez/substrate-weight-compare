@@ -6,6 +6,9 @@ authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
 version = "3.0.0"
 repository = "https://github.com/ggwpez/typesafe-builders"
 readme = "README.md"
+license = [ "GPL-3.0-only" ]
+license-file = "LICENSE"
+description = "Compare weight files of the Substrate blockchain SDK."
 
 [workspace]
 members = [
