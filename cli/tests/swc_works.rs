@@ -7,17 +7,17 @@ use subweight_core::testing::{
 };
 
 #[test]
-fn swc_version_works() {
-	let output = Command::cargo_bin("swc").unwrap().arg("--version").output().unwrap();
+fn subweight_version_works() {
+	let output = Command::cargo_bin("subweight").unwrap().arg("--version").output().unwrap();
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-	assert_version(&out, "swc");
+	assert_version(&out, "subweight");
 }
 
 #[test]
-fn swc_help_works() {
-	let output = Command::cargo_bin("swc").unwrap().arg("--help").output().unwrap();
+fn subweight_help_works() {
+	let output = Command::cargo_bin("subweight").unwrap().arg("--help").output().unwrap();
 	succeeds(&output);
 
 	let out = String::from_utf8_lossy(&output.stdout).trim().to_owned();
@@ -27,8 +27,8 @@ fn swc_help_works() {
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "polkadot"), ignore)]
-fn swc_compare_commits_works() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_commits_works() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args([
 			"compare",
@@ -51,8 +51,8 @@ fn swc_compare_commits_works() {
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "polkadot"), ignore)]
-fn swc_compare_commits_same_no_changes() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_commits_same_no_changes() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args([
 			"compare",
@@ -75,8 +75,8 @@ fn swc_compare_commits_same_no_changes() {
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "polkadot"), ignore)]
-fn swc_compare_commits_errors() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_commits_errors() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args(["compare", "commits", "--method", "base", "--path-pattern", ".*/.*rs"])
 		.args(["vWrong"])
@@ -90,8 +90,8 @@ fn swc_compare_commits_errors() {
 }
 
 #[test]
-fn swc_compare_files_works() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_files_works() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args(["compare", "files", "--method", "base"])
 		.args([
@@ -112,8 +112,8 @@ fn swc_compare_files_works() {
 }
 
 #[test]
-fn swc_compare_files_same_no_changes() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_files_same_no_changes() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args(["compare", "files", "--method", "base"])
 		.args([
@@ -136,8 +136,8 @@ fn swc_compare_files_same_no_changes() {
 }
 
 #[test]
-fn swc_compare_files_errors() {
-	let output = Command::cargo_bin("swc")
+fn subweight_compare_files_errors() {
+	let output = Command::cargo_bin("subweight")
 		.unwrap()
 		.args(["compare", "files", "--method", "base"])
 		.args([
