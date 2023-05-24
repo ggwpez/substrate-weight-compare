@@ -48,7 +48,7 @@ syn = { version = "2.0.16", features = ["parsing", "full"] }
 [dev-dependencies]
 criterion = { version = "0.5", features = [ "html_reports" ] }
 rstest = "0.17.0"
-serial_test = "*"
+serial_test = "2.0.0"
 maplit = "1.0.2"
 
 # Work-around for <https://github.com/rust-lang/cargo/issues/2911>

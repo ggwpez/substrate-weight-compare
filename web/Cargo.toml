@@ -38,7 +38,7 @@ html-escape = "0.2.13"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
-serial_test = "*"
+serial_test = "2.0.0"
 reqwest = { version = "0.11.18", default-features = false, features = ["blocking"] }
 tempfile = "3.5.0"
 rstest = { version = "0.17.0", default-features = false }
