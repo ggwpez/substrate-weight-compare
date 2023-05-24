@@ -24,8 +24,7 @@ clap = { version = "4.3.0", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.17"
 
-# Patched version of sailfish
-sailfish = { version  = "0.7.1", git = "https://github.com/ggwpez/sailfish", branch = "master" }
+sailfish = { version  = "0.6.1" }
 
 [profile.test-release]
 inherits = "release"
