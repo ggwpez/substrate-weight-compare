@@ -1,12 +1,31 @@
 cargo-features = ["strip"]
-[workspace]
 
+[workspace.package]
+edition = "2021"
+authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+version = "3.0.0"
+repository = "https://github.com/ggwpez/typesafe-builders"
+readme = "README.md"
+keywords = [ "polkadot", "substrate", "blockchain" ]
+license = "GPL-3.0-only"
+description = "Compare weight files of the Substrate blockchain SDK."
+
+[workspace]
 members = [
 	"core",
 	"cli",
 	"web"
 ]
 
+[workspace.dependencies]
+subweight-core = { version = "3.0.0", path = "core" }
+
+clap = { version = "4.3.0", features = ["derive"] }
+env_logger = "0.10.0"
+log = "0.4.17"
+
+# Patched version of sailfish
+sailfish = { version  = "0.7.1", git = "https://github.com/ggwpez/sailfish", branch = "master" }
 
 [profile.test-release]
 inherits = "release"

@@ -21,7 +21,7 @@ use std::{
 	process::Command,
 };
 
-use swc_core::{
+use subweight_core::{
 	compare_commits, filter_changes, sort_changes, CompareMethod, CompareParams, Dimension,
 	FilterParams, TotalDiff, VERSION,
 };
@@ -341,7 +341,7 @@ async fn compare_mrs(_req: HttpRequest) -> HttpResponse {
 /// Returns codes 200 or 500.
 #[get("/version")]
 async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
-	let current = swc_core::VERSION.clone();
+	let current = subweight_core::VERSION.clone();
 
 	if let Some(version) = args.is {
 		// Hack: + becomes a space in query params, so just replace it…
@@ -367,7 +367,7 @@ async fn version(web::Query(args): web::Query<VersionArgs>) -> HttpResponse {
 async fn version_badge() -> HttpResponse {
 	let svg = BadgeBuilder::new()
 		.label("Deployed")
-		.message(&swc_core::VERSION)
+		.message(&subweight_core::VERSION)
 		.color_parse("#33B5E5")
 		.build()
 		.expect("Must build svg")

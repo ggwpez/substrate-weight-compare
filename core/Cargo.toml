@@ -1,8 +1,13 @@
 [package]
-name = "swc_core"
-version = "2.3.0"
-edition = "2021"
-authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+name = "subweight-core"
+
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+description.workspace = true
 
 [[bench]]
 name = "parse"
@@ -27,23 +32,24 @@ chain = []
 bloat = []
 
 [dependencies]
-clap = { version = "4.2.1", features = ["derive"] }
+clap.workspace = true
+log.workspace = true
+
 fancy-regex = "0.11.0"
 git-version = "0.3.5"
 glob = "0.3.1"
 lazy_static = "1.4.0"
-log = "0.4.17"
-proc-macro2 = "1.0.56"
+proc-macro2 = "1.0.58"
 semver = "1.0.17"
-serde = { version = "1.0.160", features = [ "derive" ] }
-serde_json = "1.0.95"
-syn = { version = "2.0.14", features = ["parsing", "full"] }
+serde = { version = "1.0.163", features = [ "derive" ] }
+serde_json = "1.0.96"
+syn = { version = "2.0.16", features = ["parsing", "full"] }
 
 [dev-dependencies]
-criterion = { version = "0.4", features = [ "html_reports" ] }
+criterion = { version = "0.5", features = [ "html_reports" ] }
 rstest = "0.17.0"
 serial_test = "*"
 maplit = "1.0.2"
 
 # Work-around for <https://github.com/rust-lang/cargo/issues/2911>
-swc_core = { path = ".", features = ["bloat"] }
+subweight-core = { path = ".", features = ["bloat"] }

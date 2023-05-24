@@ -2,7 +2,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
-use swc_core::{add, scalar, scope::SimpleScope, var};
+use subweight_core::{add, scalar, scope::SimpleScope, var};
 
 fn bench_term_add(c: &mut Criterion) {
 	let mut group = c.benchmark_group("Term");

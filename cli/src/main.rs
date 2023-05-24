@@ -2,7 +2,7 @@ use clap::{Args, Parser};
 use comfy_table::Table;
 use std::{fmt::Write as _, path::PathBuf};
 
-use swc_core::{
+use subweight_core::{
 	compare_commits, compare_files, filter_changes,
 	parse::pallet::{parse_files, try_parse_files},
 	sort_changes, CompareParams, Dimension, FilterParams, Percent, RelativeChange, TotalDiff,

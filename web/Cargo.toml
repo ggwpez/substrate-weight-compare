@@ -1,29 +1,35 @@
 [package]
-name = "swc_web"
-version = "2.3.0"
-edition = "2021"
-authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
+name = "subweight-web"
+
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+description.workspace = true
 
 [[bin]]
-name = "swc-web"
+name = "subweight-web"
 path = "src/main.rs"
 
 [features]
 polkadot = []
 
 [dependencies]
-swc_core = { version = "2.3.0", path = "../core" }
+subweight-core.workspace = true
+
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true
+sailfish.workspace = true
 
 actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
-clap = { version = "4.2.1", features = ["derive"] }
-env_logger = "0.10.0"
 lazy_static = "1.4.0"
-log = "0.4.17"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "2.0.14", features = ["parsing", "full"] }
-serde = { version = "1.0.160", features = [ "derive" ] }
-sailfish = { version  = "0.7.0", git = "https://github.com/ggwpez/sailfish", branch = "master" }
+syn = { version = "2.0.16", features = ["parsing", "full"] }
+serde = { version = "1.0.163", features = [ "derive" ] }
 badge-maker = "0.3.1"
 dashmap = "5.4.0"
 cached = "0.43.0"
@@ -31,8 +37,8 @@ fancy-regex = "0.11.0"
 html-escape = "0.2.13"
 
 [dev-dependencies]
-assert_cmd = "2.0.10"
+assert_cmd = "2.0.11"
 serial_test = "*"
-reqwest = { version = "0.11.16", default-features = false, features = ["blocking"] }
+reqwest = { version = "0.11.18", default-features = false, features = ["blocking"] }
 tempfile = "3.5.0"
 rstest = { version = "0.17.0", default-features = false }
