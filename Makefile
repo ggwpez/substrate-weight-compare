@@ -2,7 +2,7 @@
 publish:
 	@echo "Checking if crate can be published..."
 	@cargo publish --dry-run -p subweight-core
-	@cargo publish --dry-run -p swc
+	@cargo publish --dry-run -p subweight
 	@cargo publish --dry-run -p subweight-web
 
 	$(eval VERSION := $(shell grep -E '^version = "[0-9.]+"' Cargo.toml | cut -d'"' -f2))
@@ -16,7 +16,7 @@ publish:
 	@echo " - Publishing core..."
 	@cargo publish -p subweight-core
 	@echo " - Publishing cli..."
-	@cargo publish -p swc
+	@cargo publish -p subweight
 	@echo " - Publishing web..."
-	@cargo publish -p swc_web
+	@cargo publish -p subweight-web
 	@echo "Done!"
