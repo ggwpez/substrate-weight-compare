@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Cargo install
-        run: cargo install --git ${{ github.server_url }}/${{ github.repository }} swc swc_web --rev $GITHUB_SHA
+        run: cargo install --git ${{ github.server_url }}/${{ github.repository }} subweight subweight-web --rev $GITHUB_SHA
       
       - name: CLI works
         run: swc --version && swc --help
