@@ -6,7 +6,6 @@ on:
     branches: [master, dev]
     tags: ["v*.*.*"]
   pull_request:
-    types: [review_requested, ready_for_review]
 
 env:
   CARGO_TERM_COLOR: always
@@ -22,7 +21,7 @@ jobs:
         run: cargo install --git ${{ github.server_url }}/${{ github.repository }} subweight subweight-web --rev $GITHUB_SHA
       
       - name: CLI works
-        run: swc --version && swc --help
+        run: subweight --version && subweight --help
 
       - name: Web works
-        run: swc-web --version && swc-web --help
+        run: subweight-web --version && subweight-web --help
