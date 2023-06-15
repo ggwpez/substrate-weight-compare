@@ -13,4 +13,4 @@ COPY web/static web/static
 
 EXPOSE 443
 EXPOSE 80
-CMD ["swc-web"]
+CMD ["subweight-web"]
