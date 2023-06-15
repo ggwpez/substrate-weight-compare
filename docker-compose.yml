@@ -12,7 +12,7 @@ services:
       - "443:8080"
     command: >
       sh -c "git config --global --add safe.directory '*' && 
-      swc-web --root /repos/ --repos substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
+      subweight-web --root /repos/ --repos substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos
@@ -29,7 +29,7 @@ services:
       - "8443:8080"
     command: >
       sh -c "git config --global --add safe.directory '*' && 
-      swc-web --root /repos/ --repos acala substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
+      subweight-web --root /repos/ --repos acala substrate polkadot cumulus chain --endpoint '0.0.0.0' --cert /certs/cert.pem --key /certs/key.pem"
     volumes:
       - /home/vados/certs:/certs:ro
       - /home/vados/repos:/repos
