@@ -2,7 +2,7 @@ FROM rust:1.70 as builder
 # The exact rust version comes from the toolchain file.
 WORKDIR /opt/swc
 COPY . .
-RUN cargo install --profile production --path subweightweb &&\
+RUN cargo install --profile production --path web &&\
 	cargo install --profile production --path cli
 
 FROM debian:bullseye-slim
