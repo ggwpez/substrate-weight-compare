@@ -2089,7 +2089,7 @@ dependencies = [
 
 [[package]]
 name = "subweight"
-version = "3.0.1"
+version = "3.0.2"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -2104,7 +2104,7 @@ dependencies = [
 
 [[package]]
 name = "subweight-core"
-version = "3.0.1"
+version = "3.0.2"
 dependencies = [
  "clap",
  "criterion",
@@ -2126,7 +2126,7 @@ dependencies = [
 
 [[package]]
 name = "subweight-web"
-version = "3.0.1"
+version = "3.0.2"
 dependencies = [
  "actix-files",
  "actix-web",

@@ -3,7 +3,7 @@ cargo-features = ["strip"]
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
-version = "3.0.1"
+version = "3.0.2"
 repository = "https://github.com/ggwpez/substrate-weight-compare"
 readme = "README.md"
 keywords = [ "polkadot", "substrate", "blockchain" ]
