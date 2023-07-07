@@ -44,6 +44,8 @@ integration_test!(
 	10,
 	10,
 	vec![
+		// This contains one mock WeightInfo impl:
+		"runtime/parachains/src/inclusion/mod.rs",
 		"runtime/*/src/weights/**/*.rs",
 		"bridges/modules/*/src/weights.rs",
 		"bridges/primitives/messages/src/source_chain.rs",

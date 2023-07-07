@@ -3,8 +3,8 @@ cargo-features = ["strip"]
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
-version = "3.0.0"
-repository = "https://github.com/ggwpez/typesafe-builders"
+version = "3.0.2"
+repository = "https://github.com/ggwpez/substrate-weight-compare"
 readme = "README.md"
 keywords = [ "polkadot", "substrate", "blockchain" ]
 license = "GPL-3.0-only"
@@ -18,11 +18,11 @@ members = [
 ]
 
 [workspace.dependencies]
-subweight-core = { version = "3.0.0", path = "core" }
+subweight-core = { version = "3.0.1", path = "core" }
 
-clap = { version = "4.3.0", features = ["derive"] }
+clap = { version = "4.3.3", features = ["derive"] }
 env_logger = "0.10.0"
-log = "0.4.17"
+log = "0.4.18"
 
 sailfish = { version  = "0.6.1" }
 
