@@ -3,7 +3,7 @@ cargo-features = ["strip"]
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
-version = "3.0.1"
+version = "3.0.2"
 repository = "https://github.com/ggwpez/substrate-weight-compare"
 readme = "README.md"
 keywords = [ "polkadot", "substrate", "blockchain" ]
@@ -18,14 +18,12 @@ members = [
 ]
 
 [workspace.dependencies]
-subweight-core = { version = "3.0.1", path = "core" }
+subweight-core = { version = "3.0.2", path = "core" }
 
 clap = { version = "4.3.3", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.18"
-
-# Patched version of sailfish
-sailfish = { version  = "0.7.1", git = "https://github.com/ggwpez/sailfish", branch = "master" }
+sailfish = { version  = "0.8.0" }
 
 [profile.test-release]
 inherits = "release"
