@@ -42,7 +42,7 @@ The *dev* branch is deployed at <https://weights.tasty.limo:8443/>.
 Install both binaries:
 
 ```sh
-cargo install --git https://github.com/ggwpez/substrate-weight-compare subweight subweight-web
+cargo install subweight subweight-web
 
 subweight --version
 subweight-web --version
