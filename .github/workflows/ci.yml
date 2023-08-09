@@ -10,6 +10,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   basic:
     name: "Rust"
@@ -28,43 +32,43 @@ jobs:
           cargo clippy --version
 
       - name: Format
-        run: cargo +nightly fmt --all -- --check
+        run: cargo +nightly fmt --all -- --check -q
 
       - uses: actions-rs/cargo@v1
         name: Build
         with:
           command: build
-          args: --locked --release --all-targets --all-features
+          args: --locked --release --all-targets --all-features -q
 
       - uses: actions-rs/cargo@v1
         name: Build (Tests)
         with:
           command: test
-          args: --locked --no-run --release --all-targets
+          args: --locked --no-run --release --all-targets -q
 
       - uses: actions-rs/cargo@v1
         name: Clippy
         with:
           command: clippy
-          args: --locked --release --all-targets --all-features -- -D warnings
+          args: --locked --release --all-targets --all-features -q -- -D warnings
 
       - uses: actions-rs/cargo@v1
         name: Documentation
         with:
           command: doc
-          args: --locked --release --no-deps --all-features
+          args: --locked --release --no-deps --all-features -q
 
       - uses: actions-rs/cargo@v1
         name: Test
         with:
           command: test
-          args: --locked --release --all-targets # no --all-features
+          args: --locked --release --all-targets -q # no --all-features
 
       - uses: actions-rs/cargo@v1
         name: Doc Test
         with:
           command: test
-          args: --locked --release --doc
+          args: --locked --release --doc -q
 
   polkadot_version_locked:
     name: "Polkadot (version locked)"
