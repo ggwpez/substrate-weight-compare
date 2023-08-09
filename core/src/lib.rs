@@ -32,8 +32,8 @@ use scope::SimpleScope;
 use term::SimpleTerm;
 
 lazy_static! {
-	/// Version of the library. Example: `swc 0.2.0+78a04b2-dirty`.
-	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--dirty", "--always"], fallback = "unknown"));
+	/// Version of the library. Example: `swc 0.2.0+78a04b2`.
+	pub static ref VERSION: String = format!("{}+{}", env!("CARGO_PKG_VERSION"), git_version!(args = ["--always"], fallback = "unknown"));
 
 	pub static ref VERSION_DIRTY: bool = {
 		VERSION.clone().contains("dirty")
@@ -586,7 +586,7 @@ fn instance_component(
 		// Both extrinsics have different ranges? Bad, use the min/max.
 		(Some(ra), Some(rb)) => match (strategy.exact, strategy.min_or_max) {
 			(true, _) => Err(format!(
-				"Component {} of call {}::{} has different ranges in the old and new version - Use Guess instead!",
+				"Component {} of call {}::{} has different ranges in the old and new version - use Guess instead!",
 				component, pallet, extrinsic,
 			)),
 			(false, Min) => Ok(ra.min.min(rb.min)),
