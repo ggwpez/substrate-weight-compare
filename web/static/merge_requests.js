@@ -57,7 +57,7 @@ $(document).ready(function () {
 	});
 
 	var owner = $.param('owner', 'paritytech');
-	var repo = $.param('repo', 'substrate');
+	var repo = $.param('repo', 'polkadot-sdk');
 	$('#select_repo').val(owner + ':' + repo);
 	init_ui();
 

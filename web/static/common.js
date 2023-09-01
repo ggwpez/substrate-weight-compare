@@ -10,10 +10,7 @@ export function loading(yes) {
 }
 
 export const path_pattern_presets = {
-	"substrate": "frame/**/src/weights.rs",
-	"polkadot": "runtime/*/src/weights/**/*.rs,bridges/modules/*/src/weights.rs",
-	"cumulus": "**/weights/*.rs,**/weights/xcm/*.rs,**/src/weights.rs",
-	"chain": "pallets/*/src/weights.rs,runtimes/*/src/weights/*.rs",
+	"polkadot-sdk": "substrate/frame/**/src/weights.rs,polkadot/runtime/*/src/weights/**/*.rs,polkadot/bridges/modules/*/src/weights.rs,cumulus/**/weights/*.rs,cumulus/**/weights/xcm/*.rs,cumulus/**/src/weights.rs",
 };
 
 export function default_params(repo) {
