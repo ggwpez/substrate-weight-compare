@@ -134,6 +134,10 @@ pub struct CompareParams {
 	#[clap(long)]
 	pub git_pull: bool,
 
+	/// Use a git hard-reset instead of checkout.
+	#[clap(long)]
+	pub git_force: bool,
+
 	/// Don't access the network.
 	///
 	/// This overrides any other options like `--git-pull`.
@@ -178,7 +182,7 @@ pub fn compare_commits(
 		return Err("Path pattern cannot contain '..'".into())
 	}
 	// Parse the old files.
-	if let Err(err) = reset(repo, old, params.should_pull()) {
+	if let Err(err) = git_checkout(repo, old, params.should_pull(), params.git_force) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -191,7 +195,7 @@ pub fn compare_commits(
 	};
 
 	// Parse the new files.
-	if let Err(err) = reset(repo, new, params.should_pull()) {
+	if let Err(err) = git_checkout(repo, new, params.should_pull(), params.git_force) {
 		return Err(format!("{:?}", err).into())
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
@@ -205,23 +209,59 @@ pub fn compare_commits(
 	compare_files(olds, news, params, filter)
 }
 
-pub fn reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
-	if pull {
-		log::info!("Fetching branch {}", refname);
+pub fn git_checkout(path: &Path, refname: &str, should_pull: bool, force: bool) -> Result<(), String> {
+	if force {
+		return git_reset(path, refname, should_pull);
+	}
 
-		let output = Command::new("git")
-			.arg("fetch")
-			.arg("origin")
-			.arg(refname)
-			.current_dir(path)
-			.output()
-			.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
-		if !output.status.success() {
-			return Err(format!(
-				"Failed to fetch branch: {}",
-				String::from_utf8_lossy(&output.stderr),
-			))
-		}
+	log::info!("Checking out {}", refname);
+	if should_pull {
+		git_pull(path, refname)?;
+	} else {
+		log::debug!("Not fetching branch {} (should_fetch={})", refname, should_pull);
+	}
+
+	let output = Command::new("git")
+		.arg("checkout")
+		.arg(refname)
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to checkout branch: {:?}", e))?;
+
+	if !output.status.success() {
+		return Err(format!(
+			"Failed to checkout branch: {}",
+			String::from_utf8_lossy(&output.stderr),
+		))
+	}
+
+	Ok(())
+}
+
+pub fn git_pull(path: &Path, refname: &str) -> Result<(), String> {
+	log::info!("Fetching branch {}", refname);
+
+	let output = Command::new("git")
+		.arg("fetch")
+		.arg("origin")
+		.arg(refname)
+		.current_dir(path)
+		.output()
+		.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
+	
+	if !output.status.success() {
+		return Err(format!(
+			"Failed to fetch branch: {}",
+			String::from_utf8_lossy(&output.stderr),
+		))
+	}
+
+	Ok(())
+}
+
+pub fn git_reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
+	if pull {
+		git_pull(path, refname)?;
 	} else {
 		log::debug!("Not fetching branch {} (should_fetch={})", refname, pull);
 	}

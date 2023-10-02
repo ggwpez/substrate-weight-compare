@@ -21,7 +21,7 @@ macro_rules! integration_test {
 			use std::path::{Path, PathBuf};
 
 			use $crate::{
-				reset,
+				git_reset,
 				parse::ParsedFile,
 			};
 
@@ -46,7 +46,7 @@ macro_rules! integration_test {
 				///
 				/// Other tests could have messed it up.
 				fn init() {
-					if let Err(err) = reset(&root(), $known_good, false) {
+					if let Err(err) = git_reset(&root(), $known_good, false) {
 						panic!("Could not check out `repos/{}` to: {}", $repo, err);
 					}
 				}
