@@ -47,7 +47,7 @@ fn subweight_web_url_works() {
 	for _ in 0..20 {
 		std::thread::sleep(std::time::Duration::from_millis(100));
 
-		let Ok(resp) = reqwest::blocking::get(url).map(|r| r.text().unwrap()) else {
+		let Ok(resp) = reqwest::blocking::get("http://127.0.0.1:8080/compare").map(|r| r.text().unwrap()) else {
 			continue
 		};
 
