@@ -86,7 +86,7 @@ fn subweight_compare_commits_errors() {
 	assert!(!output.status.success());
 
 	let out = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-	assert_contains(&out, "Failed to reset branch");
+	assert_contains(&out, "Failed to checkout branch");
 }
 
 #[test]

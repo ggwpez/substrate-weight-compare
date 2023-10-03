@@ -24,21 +24,21 @@ env_logger.workspace = true
 log.workspace = true
 sailfish.workspace = true
 
-actix-web = { version = "4.3.1", features = ["openssl"] }
+actix-web = { version = "4.4.0", features = ["openssl"] }
 actix-files = "0.6.2"
 lazy_static = "1.4.0"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "2.0.28", features = ["parsing", "full"] }
-serde = { version = "1.0.183", features = [ "derive" ] }
+syn = { version = "2.0.37", features = ["parsing", "full"] }
+serde = { version = "1.0.188", features = [ "derive" ] }
 badge-maker = "0.3.1"
-dashmap = "5.5.0"
-cached = "0.44.0"
+dashmap = "5.5.3"
+cached = "0.46.0"
 fancy-regex = "0.11.0"
 html-escape = "0.2.13"
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
 serial_test = "2.0.0"
-reqwest = { version = "0.11.18", default-features = false, features = ["blocking"] }
-tempfile = "3.7.1"
-rstest = { version = "0.18.1", default-features = false }
+reqwest = { version = "0.11.21", default-features = false, features = ["blocking"] }
+tempfile = "3.8.0"
+rstest = { version = "0.18.2", default-features = false }

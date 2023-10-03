@@ -42,7 +42,7 @@ pub(crate) struct MainCmd {
 	#[clap(long, num_args = 0.., default_value = "polkadot")]
 	pub repos: Vec<String>,
 
-	#[clap(long, short, default_value = "localhost")]
+	#[clap(long, short, default_value = "127.0.0.1")]
 	pub endpoint: String,
 
 	#[clap(long, short, default_value = "8080")]
@@ -403,7 +403,8 @@ fn do_compare_cached(
 		args.git_pull.unwrap_or(true),
 	);
 
-	let params = CompareParams { method, ignore_errors, unit, git_pull, offline: false };
+	let params =
+		CompareParams { method, ignore_errors, unit, git_pull, offline: false, git_force: true };
 	let filter = FilterParams {
 		threshold: args.threshold as f64,
 		change: None,

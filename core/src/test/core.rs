@@ -367,6 +367,7 @@ fn compare_extrinsics_works(
 			ignore_errors: false,
 			git_pull: false,
 			offline: true,
+			git_force: false,
 		};
 
 		let change = compare_extrinsics(Some(old.clone()), Some(new.clone()), &params).unwrap();
