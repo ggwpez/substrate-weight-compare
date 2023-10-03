@@ -209,9 +209,14 @@ pub fn compare_commits(
 	compare_files(olds, news, params, filter)
 }
 
-pub fn git_checkout(path: &Path, refname: &str, should_pull: bool, force: bool) -> Result<(), String> {
+pub fn git_checkout(
+	path: &Path,
+	refname: &str,
+	should_pull: bool,
+	force: bool,
+) -> Result<(), String> {
 	if force {
-		return git_reset(path, refname, should_pull);
+		return git_reset(path, refname, should_pull)
 	}
 
 	log::info!("Checking out {}", refname);
@@ -248,12 +253,9 @@ pub fn git_pull(path: &Path, refname: &str) -> Result<(), String> {
 		.current_dir(path)
 		.output()
 		.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
-	
+
 	if !output.status.success() {
-		return Err(format!(
-			"Failed to fetch branch: {}",
-			String::from_utf8_lossy(&output.stderr),
-		))
+		return Err(format!("Failed to fetch branch: {}", String::from_utf8_lossy(&output.stderr),))
 	}
 
 	Ok(())
