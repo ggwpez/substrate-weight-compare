@@ -8,11 +8,11 @@ publish:
 	@echo "Publishing version '$(VERSION)' with tag '$(TAG)'"
 	@echo "- Publishing crate to crates.io..."
 	@echo " - Publishing core..."
-	@cargo publish -p subweight-core --allow-dirty
+	@cargo publish -p subweight-core --allow-dirty -q
 	@echo " - Publishing cli..."
-	@cargo publish -p subweight  --allow-dirty
+	@cargo publish -p subweight  --allow-dirty -q
 	@echo " - Publishing web..."
-	@cargo publish -p subweight-web  --allow-dirty
+	@cargo publish -p subweight-web  --allow-dirty -q
 	@echo "- Please sign the tag..."
 	git tag -s -a $(TAG) -m "Version $(VERSION)"
 	@echo "- Pushing tag to GitHub..."
