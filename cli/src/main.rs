@@ -15,7 +15,7 @@ struct MainCmd {
 	#[clap(subcommand)]
 	subcommand: SubCommand,
 
-	#[clap(long)]
+	#[clap(long, global = true)]
 	verbose: bool,
 }
 
@@ -242,7 +242,7 @@ fn print_changes(
 		_ => Err("Unsupported output format".into()),
 	};
 
-	print(output?, verbose);
+	println!("{}", output?);
 	Ok(())
 }
 
