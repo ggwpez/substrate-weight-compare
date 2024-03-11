@@ -15,7 +15,7 @@ struct MainCmd {
 	#[clap(subcommand)]
 	subcommand: SubCommand,
 
-	#[clap(long)]
+	#[clap(long, global = true)]
 	verbose: bool,
 }
 
@@ -220,9 +220,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			print_changes(diff, cmd.verbose, format, params.unit)?;
 		},
 		SubCommand::Parse(ParseCmd::Files(ParseFilesCmd { files })) => {
-			println!("Trying to parse {} files...", files.len());
+			print(format!("Trying to parse {} files...", files.len()), cmd.verbose);
 			let parsed = parse_files(&files)?;
-			println!("Parsed {} files successfully", parsed.len());
+			print(format!("Parsed {} files successfully", parsed.len()), cmd.verbose);
 		},
 	}
 
@@ -242,7 +242,7 @@ fn print_changes(
 		_ => Err("Unsupported output format".into()),
 	};
 
-	print(output?, verbose);
+	println!("{}", output?);
 	Ok(())
 }
 

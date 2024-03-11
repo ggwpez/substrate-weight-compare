@@ -316,7 +316,7 @@ fn list_files(
 		let files = files
 			.collect::<Result<Vec<_>, _>>()
 			.map_err(|e| format!("Path pattern error: {:?}", e))?;
-		let files: Vec<_> = files.iter().cloned().filter(|f| !f.ends_with("mod.rs")).collect();
+		let files: Vec<_> = files.iter().filter(|f| !f.ends_with("mod.rs")).cloned().collect();
 		paths.extend(files);
 		if paths.len() > max_files {
 			return Err(
@@ -436,7 +436,7 @@ impl CompareMethod {
 	}
 
 	pub fn reflect() -> Vec<(Self, &'static str)> {
-		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
+		Self::all().into_iter().zip(Self::variants()).collect()
 	}
 }
 
@@ -887,6 +887,6 @@ impl Dimension {
 	}
 
 	pub fn reflect() -> Vec<(Self, &'static str)> {
-		Self::all().into_iter().zip(Self::variants().into_iter()).collect()
+		Self::all().into_iter().zip(Self::variants()).collect()
 	}
 }
