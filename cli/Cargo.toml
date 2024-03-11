@@ -19,10 +19,10 @@ env_logger.workspace = true
 log.workspace = true
 clap.workspace = true
 
-syn = { version = "2.0.38", features = ["parsing", "full"] }
+syn = { version = "2.0.52", features = ["parsing", "full"] }
 comfy-table = { version = "7.1.0", default-features = false }
-serde = { version = "1.0.190", features = [ "derive" ] }
+serde = { version = "1.0.197", features = [ "derive" ] }
 
 [dev-dependencies]
-assert_cmd = "2.0.12"
-serial_test = "2.0.0"
+assert_cmd = "2.0.14"
+serial_test = "3.0.0"
