@@ -39,11 +39,11 @@ fancy-regex = "0.13.0"
 git-version = "0.3.9"
 glob = "0.3.1"
 lazy_static = "1.4.0"
-proc-macro2 = "1.0.78"
+proc-macro2 = "1.0.79"
 semver = "1.0.22"
 serde = { version = "1.0.197", features = [ "derive" ] }
-serde_json = "1.0.114"
-syn = { version = "2.0.52", features = ["parsing", "full"] }
+serde_json = "1.0.115"
+syn = { version = "2.0.55", features = ["parsing", "full"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = [ "html_reports" ] }

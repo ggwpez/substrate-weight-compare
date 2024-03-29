@@ -120,17 +120,18 @@ pub struct FormatParams {
 
 	/// Non-regex string to strip common path prefixes from the file paths.
 	///
-	/// Example: `--strip-path-prefix "^runtime/*/src/weights/"`.
-	/// Uses the `fancy_regex` crate.
+	/// Example: `--strip-path-prefix ".*/"` to strip everything but the file-name.
 	#[clap(long)]
 	strip_path_prefix: Option<String>,
 }
 
 impl FormatParams {
 	pub fn filter_path(&self, path: String) -> String {
-		match self.strip_path_prefix.as_ref() {
-			Some(prefix) => path.strip_prefix(prefix).unwrap_or(&path).to_string(),
-			None => path,
+		if let Some(prefix) = self.strip_path_prefix.as_ref() {
+			let re = fancy_regex::Regex::new(prefix).expect("Invalid regex");
+			re.replace_all(&path, "").to_string()
+		} else {
+			path
 		}
 	}
 }
