@@ -1,5 +1,3 @@
-cargo-features = ["strip"]
-
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
@@ -37,6 +35,6 @@ debug-assertions = true
 [profile.production]
 inherits = "release"
 lto = "fat"
-codegen-units = 1
 strip = true
+codegen-units = 1
 opt-level = "z"
