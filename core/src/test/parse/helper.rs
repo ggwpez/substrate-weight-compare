@@ -99,6 +99,9 @@ macro_rules! integration_test {
 				overhead_files: Vec<PathBuf>,
 			) {
 				for f in &rust_files {
+					let path = std::fs::canonicalize(f).unwrap();
+					let f = &path;
+					
 					match $crate::parse::try_parse_file(Path::new("."), f){
 						None => if pallet_files.contains(f) {
 							let err = $crate::parse::pallet::parse_file(f).unwrap_err();
@@ -142,6 +145,7 @@ macro_rules! integration_test {
 						)
 					})
 					.flatten()
+					.map(|f| std::fs::canonicalize(f).unwrap())
 					.collect()
 			}
 
@@ -156,6 +160,7 @@ macro_rules! integration_test {
 						glob(&pattern).unwrap().map(|f| f.unwrap())
 					})
 					.flatten()
+					.map(|f| std::fs::canonicalize(f).unwrap())
 					.collect()
 			}
 
@@ -170,6 +175,7 @@ macro_rules! integration_test {
 						glob(&pattern).unwrap().map(|f| f.unwrap())
 					})
 					.flatten()
+					.map(|f| std::fs::canonicalize(f).unwrap())
 					.collect()
 			}
 
