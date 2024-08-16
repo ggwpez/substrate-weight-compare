@@ -1,7 +1,7 @@
 [workspace.package]
 edition = "2021"
 authors = ["Oliver Tale-Yazdi <oliver.tale-yazdi@parity.io>"]
-version = "3.4.2"
+version = "3.4.3"
 repository = "https://github.com/ggwpez/substrate-weight-compare"
 readme = "README.md"
 keywords = [ "polkadot", "substrate", "blockchain" ]
@@ -18,7 +18,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-subweight-core = { version = "3.4.2", path = "core" }
+subweight-core = { version = "3.4.3", path = "core" }
 
 clap = { version = "4.5.16", features = ["derive"] }
 env_logger = "0.11.5"
