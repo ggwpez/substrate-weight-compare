@@ -432,7 +432,13 @@ impl std::str::FromStr for CompareMethod {
 
 impl CompareMethod {
 	pub fn all() -> Vec<Self> {
-		vec![Self::Base, Self::GuessWorst, Self::ExactWorst, Self::ExactAsymptotic, Self::Asymptotic]
+		vec![
+			Self::Base,
+			Self::GuessWorst,
+			Self::ExactWorst,
+			Self::ExactAsymptotic,
+			Self::Asymptotic,
+		]
 	}
 
 	pub fn variants() -> Vec<&'static str> {
