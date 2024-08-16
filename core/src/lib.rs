@@ -340,6 +340,7 @@ pub enum CompareMethod {
 	/// Similar to [`Self::ExactWorst`], but guesses if any component misses a range annotation.
 	GuessWorst,
 	/// Set all components to their exact maximum value.
+	ExactAsymptotic,
 	Asymptotic,
 }
 
@@ -348,7 +349,8 @@ impl CompareMethod {
 		match self {
 			Self::Base | Self::GuessWorst => ComponentInstanceStrategy::guess_min(),
 			Self::ExactWorst => ComponentInstanceStrategy::exact_min(),
-			Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
+			Self::ExactAsymptotic => ComponentInstanceStrategy::exact_max(),
+			Self::Asymptotic => ComponentInstanceStrategy::guess_max(),
 		}
 	}
 
@@ -356,7 +358,8 @@ impl CompareMethod {
 		match self {
 			Self::Base => ComponentInstanceStrategy::guess_min(),
 			Self::GuessWorst => ComponentInstanceStrategy::guess_max(),
-			Self::ExactWorst | Self::Asymptotic => ComponentInstanceStrategy::exact_max(),
+			Self::ExactWorst | Self::ExactAsymptotic => ComponentInstanceStrategy::exact_max(),
+			Self::Asymptotic => ComponentInstanceStrategy::guess_max(),
 		}
 	}
 }
@@ -420,6 +423,7 @@ impl std::str::FromStr for CompareMethod {
 			"base" => Ok(CompareMethod::Base),
 			"guess-worst" => Ok(CompareMethod::GuessWorst),
 			"exact-worst" => Ok(CompareMethod::ExactWorst),
+			"exact-asymptotic" => Ok(CompareMethod::ExactAsymptotic),
 			"asymptotic" => Ok(CompareMethod::Asymptotic),
 			_ => Err(format!("Unknown method: {}", s)),
 		}
@@ -428,11 +432,17 @@ impl std::str::FromStr for CompareMethod {
 
 impl CompareMethod {
 	pub fn all() -> Vec<Self> {
-		vec![Self::Base, Self::GuessWorst, Self::ExactWorst, Self::Asymptotic]
+		vec![
+			Self::Base,
+			Self::GuessWorst,
+			Self::ExactWorst,
+			Self::ExactAsymptotic,
+			Self::Asymptotic,
+		]
 	}
 
 	pub fn variants() -> Vec<&'static str> {
-		vec!["base", "guess-worst", "exact-worst", "asymptotic"]
+		vec!["base", "guess-worst", "exact-worst", "exact-asymptotic", "asymptotic"]
 	}
 
 	pub fn reflect() -> Vec<(Self, &'static str)> {

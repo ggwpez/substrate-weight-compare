@@ -53,7 +53,7 @@ where
 	}
 
 	pub fn get(&self, name: &str) -> Option<T> {
-		self.vars.get(&name.to_string()).cloned()
+		self.vars.get(name).cloned()
 	}
 
 	pub fn merge(self, other: Self) -> Self {
