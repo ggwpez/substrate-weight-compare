@@ -8,8 +8,8 @@
   <a href="https://www.gnu.org/licenses/gpl-3.0">
     <img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3">
   </a>
-  <a href="https://weights.parity.io/">
-    <img src="https://weights.parity.io/version/badge"/>
+  <a href="https://weights.tasty.limo/">
+    <img src="https://weights.tasty.limo/version/badge"/>
   </a>
   <a href="https://github.com/ggwpez/substrate-weight-compare/actions/workflows/ci.yml">
     <img src="https://github.com/ggwpez/substrate-weight-compare/actions/workflows/ci.yml/badge.svg"/>
