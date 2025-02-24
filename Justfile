@@ -9,6 +9,9 @@ test:
 dev:
 	cargo r --release --bin subweight-web -- --endpoint 127.0.0.1 --repos polkadot-sdk --root repos --port 4000
 
+install:
+	cargo install --path cli/ && cargo install --path web/
+
 publish:
 	#!/usr/bin/env bash
 	echo "Checking if crate can be published..."
