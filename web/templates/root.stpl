@@ -40,9 +40,9 @@
 								<fieldset>
 									<div class="form-card">
 										<h2 class="fs-title">Repository</h2>
-										<p>Please select a repository. There are <var><%= repos.len() %></var> available.</p>
+										<p>Please select a repository. There are <var><%= self.repos.len() %></var> available.</p>
 										<select class="form-control js-example-basic-single" id="repoSelect" style="width: 100%;">
-											<% for repo in repos { %>
+											<% for repo in self.repos { %>
 												<option value="<%= repo.to_lowercase() %>"><%= repo %></option>
 											<% } %>
 										</select>
