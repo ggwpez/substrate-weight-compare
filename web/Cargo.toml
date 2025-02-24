@@ -28,17 +28,17 @@ actix-web = { version = "4.9.0", features = ["openssl"] }
 actix-files = "0.6.6"
 lazy_static = "1.5.0"
 openssl = { version = "0.10", features = ["v110"] }
-syn = { version = "2.0.74", features = ["parsing", "full"] }
-serde = { version = "1.0.208", features = [ "derive" ] }
+syn = { version = "2.0.98", features = ["parsing", "full"] }
+serde = { version = "1.0.218", features = [ "derive" ] }
 badge-maker = "0.3.1"
-dashmap = "6.0.1"
-cached = "0.53.1"
-fancy-regex = "0.13.0"
+dashmap = "6.1.0"
+cached = "0.54.0"
+fancy-regex = "0.14.0"
 html-escape = "0.2.13"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
-serial_test = "3.1.1"
-reqwest = { version = "0.12.5", default-features = false, features = ["blocking"] }
-tempfile = "3.12.0"
-rstest = { version = "0.22.0", default-features = false }
+serial_test = "3.2.0"
+reqwest = { version = "0.12.12", default-features = false, features = ["blocking"] }
+tempfile = "3.17.1"
+rstest = { version = "0.24.0", default-features = false }

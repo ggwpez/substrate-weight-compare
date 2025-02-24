@@ -75,6 +75,8 @@ fn subweight_web_compare_works() {
 				"polkadot",
 				"--static",
 				"../web/static",
+				"--port",
+				"4000",
 			])
 			.env("RUST_LOG", "error")
 			.spawn()
@@ -84,7 +86,7 @@ fn subweight_web_compare_works() {
 	for _ in 0..20 {
 		std::thread::sleep(std::time::Duration::from_millis(100));
 
-		let url = "http://127.0.0.1:8080/compare?old=v0.9.19&new=v0.9.20&repo=polkadot&threshold=10&unit=weight&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false&git_pull=false";
+		let url = "http://127.0.0.1:4000/compare?old=v0.9.19&new=v0.9.20&repo=polkadot&threshold=10&unit=weight&path_pattern=runtime/polkadot/src/weights/*.rs&method=base&ignore_errors=false&git_pull=false";
 
 		let Ok(resp) = reqwest::blocking::get(url).map(|r| r.text().unwrap()) else { continue };
 

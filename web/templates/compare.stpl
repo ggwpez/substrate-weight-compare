@@ -31,37 +31,37 @@
 				<td><%- readme_link("Repository") %></td>
 				<td>
 					<select id="select_repo">
-						<% for repo in repos.iter() { %>
-							<option value=<%= repo %> <%- if &args.repo == repo { "selected" } else { "" } %>><%= repo %></option>
+						<% for repo in self.repos.iter() { %>
+							<option value=<%= repo %> <%- if &self.args.repo == repo { "selected" } else { "" } %>><%= repo %></option>
 						<% } %>
 					</select>
 				</td>
 			</tr>
 			<tr>
 				<td>Old Commit/Branch</td>
-				<td><input id="input_old" type="text" value="<%= args.old %>"></td>
+				<td><input id="input_old" type="text" value="<%= self.args.old %>"></td>
 			</tr>
 			<tr>
 				<td>New Commit/Branch</td>
-				<td><input id="input_new" type="text" value="<%= args.new %>"></td>
+				<td><input id="input_new" type="text" value="<%= self.args.new %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Path Pattern") %></td>
-				<td><input id="input_path_pattern" type="text" value="<%= args.path_pattern %>"></td>
+				<td><input id="input_path_pattern" type="text" value="<%= self.args.path_pattern %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Pallet") %></td>
-				<td><input id="input_pallet" type="text" value="<%= args.pallet.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+				<td><input id="input_pallet" type="text" value="<%= self.args.pallet.clone().unwrap_or_else(|| ".*".into()) %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Extrinsic") %></td>
-				<td><input id="input_extrinsic" type="text" value="<%= args.extrinsic.clone().unwrap_or_else(|| ".*".into()) %>"></td>
+				<td><input id="input_extrinsic" type="text" value="<%= self.args.extrinsic.clone().unwrap_or_else(|| ".*".into()) %>"></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Rel Threshold") %></td>
 				<td>
 				<div class="input-group">
-					<input id="input_threshold" type="number" class="form-control" value="<%= args.threshold %>">
+					<input id="input_threshold" type="number" class="form-control" value="<%= self.args.threshold %>">
 					<div class="input-group-append">
 						<span class="input-group-text">%</span>
 					</div>
@@ -73,7 +73,7 @@
 				<td>
 					<select id="select_unit">
 						<% for (val, repr) in subweight_core::Dimension::reflect().iter() { %>
-							<option value="<%= repr %>" <%- if &args.unit == val { "selected" } else { "" } %>><%= repr %></option>
+							<option value="<%= repr %>" <%- if &self.args.unit == val { "selected" } else { "" } %>><%= repr %></option>
 						<% } %>
 					</select>
 				</td>
@@ -84,28 +84,28 @@
 				<td>
 					<select id="select_method">
 						<% for (val, repr) in subweight_core::CompareMethod::reflect().iter() { %>
-							<option value="<%= repr %>" <%- if &args.method == val { "selected" } else { "" } %>><%= repr %></option>
+							<option value="<%= repr %>" <%- if &self.args.method == val { "selected" } else { "" } %>><%= repr %></option>
 						<% } %>
 					</select>
 				</td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Ignore Errors") %></td>
-				<td><input id="checkbox_ignore_errors" type="checkbox" <%- if args.ignore_errors { "checked" } else { "" } %>></td>
+				<td><input id="checkbox_ignore_errors" type="checkbox" <%- if self.args.ignore_errors { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Git Pull") %></td>
-				<td><input id="checkbox_git_pull" type="checkbox" <%- if args.git_pull.unwrap_or(true) { "checked" } else { "" } %>></td>
+				<td><input id="checkbox_git_pull" type="checkbox" <%- if self.args.git_pull.unwrap_or(true) { "checked" } else { "" } %>></td>
 			</tr>
 			<tr>
 				<td><%- readme_link("Cache") %> hit</td>
-				<td><%= if was_cached { "Yes" } else { "No" } %></td>
+				<td><%= if self.was_cached { "Yes" } else { "No" } %></td>
 			</tr>
 		</tbody>
 	</table>
 	</br>
 
-	<% let errors = diff.iter().filter_map(|c| c.error()).collect::<Vec<_>>(); if !errors.is_empty() { %>
+	<% let errors = self.diff.iter().filter_map(|c| c.error()).collect::<Vec<_>>(); if !errors.is_empty() { %>
 		<p>
 			<button class="btn btn-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrors" aria-expanded="false" aria-controls="collapseErrors">
 				<%- errors.len() %> errors generated
@@ -120,7 +120,7 @@
 		</div>
 	<% } %>
 
-	<% let warnings = diff.iter().filter_map(|c| c.warning()).collect::<Vec<_>>(); if !warnings.is_empty() { %>
+	<% let warnings = self.diff.iter().filter_map(|c| c.warning()).collect::<Vec<_>>(); if !warnings.is_empty() { %>
 		<p>
 			<button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWarns" aria-expanded="false" aria-controls="collapseWarns">
 				<%- warnings.len() %> warnings generated
@@ -141,8 +141,8 @@
 			<th>File</th>
 			<th>Extrinsic</th>
 
-			<th>Old [<%= format!("{:?}", args.unit) %>]</th>
-			<th>New [<%= format!("{:?}", args.unit) %>]</th>
+			<th>Old [<%= format!("{:?}", self.args.unit) %>]</th>
+			<th>New [<%= format!("{:?}", self.args.unit) %>]</th>
 			<th>Rel. Change</th>
 			<th>Abs. Change</th>
 
@@ -152,7 +152,7 @@
 		</tr>
 	</thead>
 	<tbody>
-		<% for (info, change) in diff.iter().filter_map(|c| c.term().map(|t| (c, t))) { %>
+		<% for (info, change) in self.diff.iter().filter_map(|c| c.term().map(|t| (c, t))) { %>
 			<tr id=<%- format!("\"{}.{}\"", &info.file, &info.name) %>>
 				<td>
 					<%= info.file %>
@@ -169,23 +169,23 @@
 				</td>
 
 				<td data-order='<%- change.old_v.unwrap_or_default() %>'>
-					<%= change.old_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
+					<%= change.old_v.map(|t| self.args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td data-order='<%- change.new_v.unwrap_or_default() %>'>
-					<%= change.new_v.map(|t| args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
+					<%= change.new_v.map(|t| self.args.unit.fmt_value(t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td data-order='<%- order_percent(change) %>'>
 					<%- html_color_percent(change.percent, change.change) %>
 				</td>
 				<td data-order='<%- order_abs(change) %>'>
-					<%- html_color_abs(change, args.unit) %>
+					<%- html_color_abs(change, self.args.unit) %>
 				</td>
 
 				<td>
-					<%- change.old.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.old), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.old.as_ref().map(|t| format!("{} {}", code_link(&self.args.repo, &self.organization, &info.name, &info.file, &self.args.old), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
-					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&args.repo, &organization, &info.name, &info.file, &args.new), t)).unwrap_or_else(|| "-".into()) %>
+					<%- change.new.as_ref().map(|t| format!("{} {}", code_link(&self.args.repo, &self.organization, &info.name, &info.file, &self.args.new), t)).unwrap_or_else(|| "-".into()) %>
 				</td>
 				<td>
 					<%= format!("{}", &change.scope) %>
