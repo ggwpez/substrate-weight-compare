@@ -1,7 +1,7 @@
 default: fmt test
 
 fmt:
-	cargo fmt --all
+	cargo +nightly-2024-09-11 fmt --all
 
 test:
 	cargo test --release --all-targets --all-features
