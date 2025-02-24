@@ -2337,7 +2337,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subweight"
-version = "3.4.4"
+version = "3.4.5"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -2353,7 +2353,7 @@ dependencies = [
 
 [[package]]
 name = "subweight-core"
-version = "3.4.4"
+version = "3.4.5"
 dependencies = [
  "clap",
  "criterion",
@@ -2375,7 +2375,7 @@ dependencies = [
 
 [[package]]
 name = "subweight-web"
-version = "3.4.4"
+version = "3.4.5"
 dependencies = [
  "actix-files",
  "actix-web",
