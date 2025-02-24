@@ -107,9 +107,25 @@ async fn main() -> std::io::Result<()> {
 			"Need at least one value to --repos",
 		))
 	}
+
+	if !cmd.root_path.exists() {
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::Other,
+			format!("Root path '{}' does not exist", cmd.root_path.display()),
+		))
+	}
+
 	for repo_name in cmd.repos {
 		// TODO check that the folder exists
 		let path = cmd.root_path.join(&repo_name);
+
+		if !path.exists() {
+			return Err(std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Repo directory '{}' does not exist", path.display()),
+			))
+		}
+
 		let organization = git::get_origin_org(&path).map_err(|e| {
 			std::io::Error::new(
 				std::io::ErrorKind::Other,
