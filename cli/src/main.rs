@@ -256,7 +256,7 @@ fn print_changes_csv(
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
-		return Ok(String::new());
+		return Ok(String::new())
 	}
 
 	let mut output = String::new();
@@ -306,7 +306,7 @@ fn print_changes_human(
 ) -> Result<String, Box<dyn std::error::Error>> {
 	if per_extrinsic.is_empty() {
 		print("No changes found.".into(), verbose);
-		return Ok(String::new());
+		return Ok(String::new())
 	}
 
 	let mut table = Table::new();
