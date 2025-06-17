@@ -11,6 +11,7 @@ export function loading(yes) {
 
 export const path_pattern_presets = {
 	"polkadot-sdk": "substrate/frame/**/src/weights.rs,polkadot/runtime/*/src/weights/**/*.rs,polkadot/bridges/modules/*/src/weights.rs,cumulus/**/weights/*.rs,cumulus/**/weights/xcm/*.rs,cumulus/**/src/weights.rs",
+	"runtimes": "relay/*/src/weights/**/*.rs,system-parachains/**/weights/**/*.rs",
 };
 
 export function default_params(repo) {
