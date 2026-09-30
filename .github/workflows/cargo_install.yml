@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Cargo install
-        run: cargo install --git ${{ github.server_url }}/${{ github.repository }} subweight subweight-web --rev $GITHUB_SHA
+        run: cargo install --locked --git ${{ github.server_url }}/${{ github.repository }} subweight subweight-web --rev $GITHUB_SHA
       
       - name: CLI works
         run: subweight --version && subweight --help
