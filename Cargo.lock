@@ -2361,6 +2361,7 @@ dependencies = [
  "git-version",
  "glob",
  "lazy_static",
+ "libc",
  "log",
  "maplit",
  "proc-macro2",
@@ -2398,6 +2399,7 @@ dependencies = [
  "subweight-core",
  "syn",
  "tempfile",
+ "tokio",
 ]
 
 [[package]]

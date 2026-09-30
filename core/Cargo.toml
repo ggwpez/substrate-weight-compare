@@ -53,3 +53,6 @@ maplit = "1.0.2"
 
 # Work-around for <https://github.com/rust-lang/cargo/issues/2911>
 subweight-core = { path = ".", features = ["bloat"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

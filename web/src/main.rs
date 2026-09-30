@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use std::{
 	path::{Path, PathBuf},
 	process::Command,
+	sync::{Arc, Mutex},
 };
 
 use subweight_core::{
@@ -82,13 +83,15 @@ pub struct Repo {
 	name: String,
 	path: PathBuf,
 	organization: String,
+	operation: Arc<Mutex<()>>,
 }
 
 lazy_static! {
-	/// Protects each git repo from concurrent access.
+	/// Repository metadata; never hold a map guard during Git or comparison work.
 	///
 	/// Maps the name of the repo to its origin-name and path.
 	static ref REPOS: DashMap<String, Repo> = DashMap::new();
+	static ref HEAVY_JOBS: Arc<tokio::sync::Semaphore> = Arc::new(tokio::sync::Semaphore::new(4));
 	static ref CONFIG: MainCmd = MainCmd::parse();
 }
 
@@ -105,14 +108,14 @@ async fn main() -> std::io::Result<()> {
 		return Err(std::io::Error::new(
 			std::io::ErrorKind::Other,
 			"Need at least one value to --repos",
-		))
+		));
 	}
 
 	if !cmd.root_path.exists() {
 		return Err(std::io::Error::new(
 			std::io::ErrorKind::Other,
 			format!("Root path '{}' does not exist", cmd.root_path.display()),
-		))
+		));
 	}
 
 	for repo_name in cmd.repos {
@@ -123,7 +126,7 @@ async fn main() -> std::io::Result<()> {
 			return Err(std::io::Error::new(
 				std::io::ErrorKind::Other,
 				format!("Repo directory '{}' does not exist", path.display()),
-			))
+			));
 		}
 
 		let organization = git::get_origin_org(&path).map_err(|e| {
@@ -138,6 +141,7 @@ async fn main() -> std::io::Result<()> {
 				name: repo_name.clone(),
 				path: path.clone(),
 				organization: organization.clone(),
+				operation: Arc::new(Mutex::new(())),
 			},
 		);
 		// Check if the repo directory exists.
@@ -145,7 +149,7 @@ async fn main() -> std::io::Result<()> {
 			return Err(std::io::Error::new(
 				std::io::ErrorKind::Other,
 				format!("Repo directory '{}' does not exist", path.display()),
-			))
+			));
 		}
 		info!("Exposing repo '{}/{}' at '{}'", &organization, &repo_name, path.display());
 	}
@@ -154,7 +158,7 @@ async fn main() -> std::io::Result<()> {
 		return Err(std::io::Error::new(
 			std::io::ErrorKind::Other,
 			format!("Web root path '{:?}' is not a directory", static_path),
-		))
+		));
 	}
 
 	let endpoint = format!("{}:{}", cmd.endpoint, cmd.port);
@@ -231,26 +235,53 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse query: {}", e))
 	})?;
 
-	let repo = REPOS.get(&args.repo).ok_or_else(|| {
+	let permit = HEAVY_JOBS.clone().try_acquire_owned().map_err(|_| {
+		actix_web::error::ErrorServiceUnavailable("Git/comparison capacity is busy; retry later")
+	})?;
+	let args = args.into_inner();
+	let branch = web::block(move || {
+		let _permit = permit;
+		list_branches(args)
+	})
+	.await
+	.map_err(actix_web::error::ErrorInternalServerError)?
+	.map_err(actix_web::error::ErrorInternalServerError)?;
+
+	#[derive(Serialize)]
+	struct Branches {
+		branch: Vec<(String, String)>,
+	}
+
+	let obj = Branches { branch };
+	Ok(web::Json(obj))
+}
+
+fn list_branches(args: BranchArgs) -> std::io::Result<Vec<(String, String)>> {
+	let repo = REPOS.get(&args.repo).map(|r| r.value().clone()).ok_or_else(|| {
 		std::io::Error::new(std::io::ErrorKind::Other, format!("Unknown repo '{}'", args.repo))
 	})?;
+	let _operation = repo
+		.operation
+		.lock()
+		.map_err(|_| std::io::Error::other("Repository lock poisoned"))?;
 	if args.fetch.unwrap_or_default() {
 		info!("Fetching branches for '{}'", &args.repo);
 		// Fetch all tags and branches from the repo by spawning a git command
 		// and parsing the output.
-		let output = Command::new("git")
-			.arg("fetch")
-			.arg("--all")
-			.arg("--prune")
-			.arg("--tags")
-			.current_dir(repo.path.deref())
-			.output()
-			.map_err(|e| {
-				std::io::Error::new(
-					std::io::ErrorKind::Other,
-					format!("Failed to fetch branches: '{}'", e),
-				)
-			})?;
+		let output = subweight_core::command::git_output(
+			Command::new("git")
+				.arg("fetch")
+				.arg("--all")
+				.arg("--prune")
+				.arg("--tags")
+				.current_dir(repo.path.deref()),
+		)
+		.map_err(|e| {
+			std::io::Error::new(
+				std::io::ErrorKind::Other,
+				format!("Failed to fetch branches: '{}'", e),
+			)
+		})?;
 		if !output.status.success() {
 			let err = String::from_utf8(output.stderr).unwrap();
 			log::error!("Failed to fetch branches: '{}'", &err);
@@ -259,15 +290,16 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 				std::io::ErrorKind::Other,
 				format!("Failed to fetch branches: '{}'", &err),
 			)
-			.into())
+			.into());
 		}
 	}
 
 	// Spawn a git command and return all branches
-	let output = Command::new("git")
-		.args(["ls-remote", "--tags", "--heads"])
-		.current_dir(repo.path.deref())
-		.output()?;
+	let output = subweight_core::command::git_output(
+		Command::new("git")
+			.args(["ls-remote", "--tags", "--heads"])
+			.current_dir(repo.path.deref()),
+	)?;
 	if !output.status.success() {
 		let err = String::from_utf8(output.stderr).unwrap();
 		log::error!("Failed to list branches: {}", &err);
@@ -275,7 +307,7 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 			std::io::ErrorKind::Other,
 			format!("Failed to list branches: {}", &err),
 		)
-		.into())
+		.into());
 	}
 	let stdout = String::from_utf8_lossy(&output.stdout);
 	// Collect all branches and remove the leading refs/heads/
@@ -293,20 +325,14 @@ async fn branches(req: HttpRequest) -> Result<impl Responder> {
 		})
 		.collect::<Vec<(String, String)>>();
 
-	#[derive(Serialize)]
-	struct Branches {
-		branch: Vec<(String, String)>,
-	}
-
-	let obj = Branches { branch };
-	Ok(web::Json(obj))
+	Ok(branch)
 }
 
 #[get("/compare")]
 async fn compare(req: HttpRequest) -> HttpResponse {
 	let args = web::Query::<CompareArgs>::from_query(req.query_string());
 	if let Err(err) = args {
-		return http_500(templates::Error::render(&err.to_string()))
+		return http_500(templates::Error::render(&err.to_string()));
 	}
 	let mut args = args.unwrap().into_inner();
 	// HTML decode the new and old branch names. TODO clean this up
@@ -322,19 +348,33 @@ async fn compare(req: HttpRequest) -> HttpResponse {
 		return http_500(templates::Error::render(&format!(
 			"Unknown repo organization '{}'",
 			&args.repo
-		)))
+		)));
 	}
 
-	match do_compare_cached(args.clone()) {
-		Ok(res) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(
-			templates::Compare::render(
-				&res.value,
-				&args,
-				organization.unwrap(),
-				&repos,
-				res.was_cached,
-			),
-		),
+	let permit = match HEAVY_JOBS.clone().try_acquire_owned() {
+		Ok(permit) => permit,
+		Err(_) =>
+			return HttpResponse::ServiceUnavailable()
+				.body("Git/comparison capacity is busy; retry later"),
+	};
+	let result = web::block(move || {
+		let _permit = permit;
+		do_compare_cached(args.clone())
+			.map(|res| {
+				templates::Compare::render(
+					&res.value,
+					&args,
+					organization.unwrap(),
+					&repos,
+					res.was_cached,
+				)
+			})
+			.map_err(|e| e.to_string())
+	})
+	.await;
+	match result {
+		Ok(Ok(html)) => HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html),
+		Ok(Err(e)) => http_500(templates::Error::render(&e)),
 		Err(e) => http_500(templates::Error::render(&e.to_string())),
 	}
 }
@@ -403,11 +443,13 @@ async fn version_badge() -> HttpResponse {
 fn do_compare_cached(
 	args: CompareArgs,
 ) -> Result<cached::Return<TotalDiff>, Box<dyn std::error::Error>> {
-	// Call get_mut to acquire an exclusive permit.
-	// Assumption tested in `dashmap_exclusive_permit_works`.
+	// Serialize repository mutation without locking metadata or HTTP workers.
 	let repo = REPOS
-		.get_mut(&args.repo)
+		.get(&args.repo)
+		.map(|r| r.value().clone())
 		.ok_or(format!("Value '{}' is invalid for argument 'repo'.", &args.repo))?;
+
+	let _operation = repo.operation.lock().map_err(|_| "Repository lock poisoned")?;
 
 	let (new, old) = (args.new.trim(), args.old.trim());
 	let (_thresh, unit, method, path_pattern, ignore_errors, git_pull) = (
@@ -437,23 +479,52 @@ fn do_compare_cached(
 
 #[cfg(test)]
 mod tests {
-	use dashmap::DashMap;
+	use super::*;
+	use actix_web::{http::StatusCode, test};
+	use std::time::Duration;
 
-	/// Test my assumption that a shared ref can be used as exclusive permit.
-	#[test]
-	fn dashmap_exclusive_permit_works() {
-		let map = DashMap::new();
-		map.insert("foo", "bar");
-
-		// Storing a mutable ref in a shared ref does not decay it.
-		{
-			let _permit = map.get_mut("foo");
-			assert!(map.try_get("foo").is_locked());
+	#[actix_web::test]
+	async fn stalled_repository_work_does_not_block_pages_and_excess_work_is_rejected() {
+		let repo = Repo {
+			name: "stalled-test".into(),
+			path: PathBuf::new(),
+			organization: "test".into(),
+			operation: Arc::new(Mutex::new(())),
+		};
+		REPOS.insert(repo.name.clone(), repo.clone());
+		let permits = HEAVY_JOBS.clone().acquire_many_owned(4).await.unwrap();
+		let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+		let (release_tx, release_rx) = std::sync::mpsc::channel();
+		let job = actix_web::rt::spawn(async move {
+			web::block(move || {
+				let _permit = permits;
+				let _lock = repo.operation.lock().unwrap();
+				started_tx.send(()).unwrap();
+				// Bound the fixture even if the test fails.
+				let _ = release_rx.recv_timeout(Duration::from_secs(3));
+			})
+			.await
+			.unwrap();
+		});
+		started_rx.await.unwrap();
+		let app =
+			test::init_service(App::new().service(root).service(version).service(branches)).await;
+		for (uri, expected) in [
+			("/", StatusCode::OK),
+			("/version", StatusCode::OK),
+			("/branches?repo=stalled-test", StatusCode::SERVICE_UNAVAILABLE),
+		] {
+			let response = actix_web::rt::time::timeout(
+				Duration::from_millis(500),
+				test::call_service(&app, test::TestRequest::get().uri(uri).to_request()),
+			)
+			.await
+			.expect("HTTP worker must remain responsive");
+			assert_eq!(response.status(), expected);
 		}
-		// Meanwhile `get` cannot be used to create an exclusive permit.
-		{
-			let _permit = map.get("foo");
-			assert!(!map.try_get("foo").is_locked());
-		}
+		release_tx.send(()).unwrap();
+		job.await.unwrap();
+		assert_eq!(HEAVY_JOBS.available_permits(), 4);
+		REPOS.remove("stalled-test");
 	}
 }
