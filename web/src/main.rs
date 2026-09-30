@@ -293,8 +293,7 @@ fn list_branches(args: BranchArgs) -> std::io::Result<Vec<(String, String)>> {
 			return Err(std::io::Error::new(
 				std::io::ErrorKind::Other,
 				format!("Failed to fetch branches: '{}'", &err),
-			)
-			.into());
+			));
 		}
 	}
 
@@ -310,8 +309,7 @@ fn list_branches(args: BranchArgs) -> std::io::Result<Vec<(String, String)>> {
 		return Err(std::io::Error::new(
 			std::io::ErrorKind::Other,
 			format!("Failed to list branches: {}", &err),
-		)
-		.into());
+		));
 	}
 	let stdout = String::from_utf8_lossy(&output.stdout);
 	// Collect all branches and remove the leading refs/heads/
