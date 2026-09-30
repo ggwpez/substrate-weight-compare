@@ -7,13 +7,15 @@ use std::{path::Path, process::Command};
 ///
 /// Yes this is inflexible and depends on GitHub - whatever it works.
 pub fn get_origin_org(repo: &Path) -> Result<String, String> {
-	let output = Command::new("git")
-		.args(["remote", "get-url", "origin"])
-		.current_dir(repo)
-		.output()
-		.map_err(|e| format!("Failed to get origin url: {}", e))?;
+	let output = subweight_core::command::git_output(
+		Command::new("git").args(["remote", "get-url", "origin"]).current_dir(repo),
+	)
+	.map_err(|e| format!("Failed to get origin url: {}", e))?;
 	if !output.status.success() {
-		return Err(format!("Failed to get origin url: {}", String::from_utf8_lossy(&output.stderr)))
+		return Err(format!(
+			"Failed to get origin url: {}",
+			String::from_utf8_lossy(&output.stderr)
+		));
 	}
 	let regex = Regex::new(r"^https://github.com/([^/]+)/").unwrap();
 	regex

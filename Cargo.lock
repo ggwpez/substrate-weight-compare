@@ -2361,6 +2361,7 @@ dependencies = [
  "git-version",
  "glob",
  "lazy_static",
+ "libc",
  "log",
  "maplit",
  "proc-macro2",
@@ -2388,6 +2389,7 @@ dependencies = [
  "fancy-regex",
  "html-escape",
  "lazy_static",
+ "libc",
  "log",
  "openssl",
  "reqwest",
@@ -2398,6 +2400,7 @@ dependencies = [
  "subweight-core",
  "syn",
  "tempfile",
+ "tokio",
 ]
 
 [[package]]

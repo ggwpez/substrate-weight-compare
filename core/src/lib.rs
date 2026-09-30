@@ -15,6 +15,7 @@ use std::{
 };
 use syn::{Expr, Item, Type};
 
+pub mod command;
 pub mod parse;
 pub mod scope;
 pub mod term;
@@ -179,11 +180,11 @@ pub fn compare_commits(
 	max_files: usize,
 ) -> Result<TotalDiff, Box<dyn std::error::Error>> {
 	if path_pattern.contains("..") {
-		return Err("Path pattern cannot contain '..'".into())
+		return Err("Path pattern cannot contain '..'".into());
 	}
 	// Parse the old files.
 	if let Err(err) = git_checkout(repo, old, params.should_pull(), params.git_force) {
-		return Err(format!("{:?}", err).into())
+		return Err(format!("{:?}", err).into());
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
 	// Ignore any parsing errors.
@@ -196,7 +197,7 @@ pub fn compare_commits(
 
 	// Parse the new files.
 	if let Err(err) = git_checkout(repo, new, params.should_pull(), params.git_force) {
-		return Err(format!("{:?}", err).into())
+		return Err(format!("{:?}", err).into());
 	}
 	let paths = list_files(repo, path_pattern, max_files)?;
 	// Ignore any parsing errors.
@@ -216,7 +217,7 @@ pub fn git_checkout(
 	force: bool,
 ) -> Result<(), String> {
 	if force {
-		return git_reset(path, refname, should_pull)
+		return git_reset(path, refname, should_pull);
 	}
 
 	log::info!("Checking out {}", refname);
@@ -226,18 +227,15 @@ pub fn git_checkout(
 		log::debug!("Not fetching branch {} (should_fetch={})", refname, should_pull);
 	}
 
-	let output = Command::new("git")
-		.arg("checkout")
-		.arg(refname)
-		.current_dir(path)
-		.output()
-		.map_err(|e| format!("Failed to checkout branch: {:?}", e))?;
+	let output =
+		command::git_output(Command::new("git").arg("checkout").arg(refname).current_dir(path))
+			.map_err(|e| format!("Failed to checkout branch: {:?}", e))?;
 
 	if !output.status.success() {
 		return Err(format!(
 			"Failed to checkout branch: {}",
 			String::from_utf8_lossy(&output.stderr),
-		))
+		));
 	}
 
 	Ok(())
@@ -246,16 +244,13 @@ pub fn git_checkout(
 pub fn git_pull(path: &Path, refname: &str) -> Result<(), String> {
 	log::info!("Fetching branch {}", refname);
 
-	let output = Command::new("git")
-		.arg("fetch")
-		.arg("origin")
-		.arg(refname)
-		.current_dir(path)
-		.output()
-		.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
+	let output = command::git_output(
+		Command::new("git").arg("fetch").arg("origin").arg(refname).current_dir(path),
+	)
+	.map_err(|e| format!("Failed to fetch branch: {:?}", &e))?;
 
 	if !output.status.success() {
-		return Err(format!("Failed to fetch branch: {}", String::from_utf8_lossy(&output.stderr),))
+		return Err(format!("Failed to fetch branch: {}", String::from_utf8_lossy(&output.stderr),));
 	}
 
 	Ok(())
@@ -269,12 +264,13 @@ pub fn git_reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
 	}
 	// try to reset with remote...
 	log::info!("Resetting to origin/{}", refname);
-	let output = Command::new("git")
-		.arg("reset")
-		.arg("--hard")
-		.arg(format!("origin/{}", refname))
-		.current_dir(path)
-		.output();
+	let output = command::git_output(
+		Command::new("git")
+			.arg("reset")
+			.arg("--hard")
+			.arg(format!("origin/{}", refname))
+			.current_dir(path),
+	);
 	// Ignore any errors and try again without `origin/` prefix.
 	match output {
 		Err(err) => log::info!("Failed to reset to origin/{}: {}", refname, err),
@@ -282,21 +278,18 @@ pub fn git_reset(path: &Path, refname: &str, pull: bool) -> Result<(), String> {
 			if !output.status.success() {
 				log::warn!("Failed to reset to: origin/{}", String::from_utf8_lossy(&output.stderr))
 			} else {
-				return Ok(())
+				return Ok(());
 			},
 	}
 	// Try resetting without remote.
 	log::info!("Fallback: Resetting to {}", refname);
-	let output = Command::new("git")
-		.arg("reset")
-		.arg("--hard")
-		.arg(refname)
-		.current_dir(path)
-		.output()
-		.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
+	let output = command::git_output(
+		Command::new("git").arg("reset").arg("--hard").arg(refname).current_dir(path),
+	)
+	.map_err(|e| format!("Failed to reset branch: {:?}", e))?;
 
 	if !output.status.success() {
-		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)))
+		return Err(format!("Failed to reset branch: {}", String::from_utf8_lossy(&output.stderr)));
 	}
 	Ok(())
 }
@@ -321,7 +314,7 @@ fn list_files(
 		if paths.len() > max_files {
 			return Err(
 				format!("Found too many files. Found: {}, Max: {}", paths.len(), max_files).into()
-			)
+			);
 		}
 	}
 	paths.sort();
@@ -590,7 +583,7 @@ pub(crate) fn extend_scoped_components(
 			pallet,
 			extrinsic,
 			frees.len()
-		))
+		));
 	}
 	// Combine the maximum and minimum of each component with combinatorics.
 	let (mut lowest, mut highest) = (Vec::new(), Vec::new());
@@ -708,10 +701,10 @@ pub fn compare_files(
 	for (pallet, extrinsic) in names {
 		if !pallet_regex.as_ref().map_or(true, |r| r.is_match(&pallet).unwrap_or_default()) {
 			// TODO add "skipped" or "ignored" result type.
-			continue
+			continue;
 		}
 		if !ext_regex.as_ref().map_or(true, |r| r.is_match(&extrinsic).unwrap_or_default()) {
-			continue
+			continue;
 		}
 
 		let new = news.iter().find(|&n| n.name == extrinsic && n.pallet == pallet);
@@ -805,7 +798,7 @@ pub fn filter_changes(diff: TotalDiff, params: &FilterParams) -> TotalDiff {
 			TermDiff::Failed(_) => true,
 			TermDiff::Warning(ref change, ..) | TermDiff::Changed(ref change) => {
 				if !params.included(&change.change) {
-					return false
+					return false;
 				}
 
 				match change.change {

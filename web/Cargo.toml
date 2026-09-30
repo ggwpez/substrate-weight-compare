@@ -36,9 +36,14 @@ cached = "0.54.0"
 fancy-regex = "0.14.0"
 html-escape = "0.2.13"
 
+tokio = { version = "1", features = ["sync"] }
+
 [dev-dependencies]
 assert_cmd = "2.0.16"
 serial_test = "3.2.0"
 reqwest = { version = "0.12.12", default-features = false, features = ["blocking"] }
 tempfile = "3.17.1"
 rstest = { version = "0.24.0", default-features = false }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
