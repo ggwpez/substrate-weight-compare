@@ -2389,6 +2389,7 @@ dependencies = [
  "fancy-regex",
  "html-escape",
  "lazy_static",
+ "libc",
  "log",
  "openssl",
  "reqwest",

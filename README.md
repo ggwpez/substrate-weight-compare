@@ -61,6 +61,11 @@ cargo build --profile production
 ```
 # Example: Web Interface
 
+On Unix, the server requires an open-file soft limit of at least 65,536 and exits
+before opening repositories or listening if the limit is lower. Run
+`ulimit -Sn 65536` in the launching shell (including tmux), or configure
+`LimitNOFILE=65536` for a systemd service. The hard limit must permit this value.
+
 Assuming you have a Substrate compatible repository checked out in the parent directory:
 
 ```sh

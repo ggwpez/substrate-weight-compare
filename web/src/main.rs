@@ -29,6 +29,8 @@ use subweight_core::{
 
 mod git;
 mod html;
+#[cfg(unix)]
+mod limits;
 use html::*;
 
 #[derive(Debug, Parser, Clone)]
@@ -102,6 +104,8 @@ async fn main() -> std::io::Result<()> {
 	}
 	env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 	let cmd = CONFIG.clone();
+	#[cfg(unix)]
+	limits::check_open_files()?;
 	let static_path = cmd.static_path.into_os_string();
 
 	if cmd.repos.is_empty() {
